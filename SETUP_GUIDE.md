@@ -237,7 +237,7 @@ The deployment script creates a KQL Dashboard connected to the Eventhouse with 1
 
 ## Step 8: Graph Query Set
 
-The Graph Query Set provides 10 GQL (Graph Query Language) queries for exploring the ontology graph.
+The Graph Query Set provides 20 GQL (Graph Query Language) queries for exploring the ontology graph.
 
 > **Note**: The Fabric REST API does not yet support pushing queries into a Graph Query Set programmatically.
 > The deployment script creates the empty Graph Query Set item. Queries must be added manually via the Fabric UI.
@@ -325,8 +325,9 @@ cd OntologyAccelerator
 | 5 | Creates the Semantic Model (Direct Lake, TMDL, 13 tables, 17 relationships) | Fabric REST API |
 | 6 | Creates the Ontology (59 definition parts) and builds the Graph Model | Fabric REST API |
 | 7 | Deploys the RTI Dashboard (KQL Dashboard with 12 visualization tiles) | Fabric REST API |
-| 8 | Creates a Data Agent for natural-language queries (requires F64+) | Fabric REST API |
+| 8 | Creates a Data Agent with ontology as sole data source (requires F64+) | Fabric REST API |
 | 9 | Creates Graph Query Set item (queries must be added manually via UI) | Fabric REST API |
+| 10 | Creates an Operations Agent for RTI monitoring and Teams integration | Fabric REST API |
 
 ### After Deployment
 
@@ -335,8 +336,9 @@ The script will display a summary of what was created. Some remaining manual ste
 1. **If notebook didn't complete**: Open `OilGasRefinery_LoadTables` notebook in Fabric and run it manually.
 2. **Telemetry data**: Upload `data/SensorTelemetry.csv` to the Eventhouse KQL database via **Get data > Local file**.
 3. **RTI Dashboard**: Requires the **Create Real-Time dashboards** tenant setting. The dashboard auto-connects to the Eventhouse KQL database.
-4. **Data Agent**: Requires Fabric capacity **F64+** (not supported on Trial). The script will skip this step on Trial capacity.
+4. **Data Agent**: Uses the **Ontology** as its sole data source. Requires Fabric capacity **F64+** (not supported on Trial). The script will skip this step on Trial capacity.
 5. **Graph Query Set**: Open the GQS in Fabric, select the graph model, and copy queries from `deploy/RefineryGraphQueries.gql`.
+6. **Operations Agent**: Open the agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start.
 
 ### Validate the Deployment
 
@@ -352,12 +354,13 @@ This will check for the existence of the lakehouse, eventhouse, semantic model, 
 
 | File | Purpose |
 |------|---------|
-| `Deploy-OilGasOntology.ps1` | Main deployment orchestrator (Steps 0-9) |
+| `Deploy-OilGasOntology.ps1` | Main deployment orchestrator (Steps 0-10) |
 | `deploy/Build-Ontology.ps1` | Ontology definition builder (59 parts, entity types, relationships) |
 | `deploy/Build-GraphModel-v2.ps1` | Graph model builder |
 | `deploy/Deploy-RTIDashboard.ps1` | KQL Real-Time Dashboard (12 tiles, 5 KQL tables) |
 | `deploy/Deploy-DataAgent.ps1` | Fabric Data Agent for NL queries |
 | `deploy/Deploy-GraphQuerySet.ps1` | Graph Query Set item creator (queries added manually) |
+| `deploy/Deploy-OperationsAgent.ps1` | Operations Agent for RTI monitoring and Teams integration |
 | `deploy/LoadDataToTables.py` | PySpark notebook code (CSV → Delta tables) |
 | `deploy/RefineryGraphQueries.gql` | GQL query reference (copy-paste fallback) |
 | `deploy/Validate-Deployment.ps1` | Post-deployment validation script |

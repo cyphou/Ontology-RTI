@@ -133,7 +133,7 @@ The script automates all 10 steps (see [SETUP_GUIDE.md - Automated Deployment](S
 | OilGasRefineryOntology_graph_* | GraphModel | Graph model with full query readiness |
 | RefineryTelemetryDashboard | KQL Dashboard | 12 real-time visualization tiles |
 | OilGasRefineryQueries | Graph Query Set | Empty shell (add 10 GQL queries manually via UI) |
-| OilGasRefineryAgent | Data Agent | NL query agent (requires F64+ capacity) |
+| OilGasRefineryAgent | Data Agent | Ontology-powered NL query agent (requires F64+ capacity) |
 | RefineryOperationsAgent | Operations Agent | AI agent monitoring KQL telemetry, sends Teams recommendations |
 
 ---
@@ -202,18 +202,30 @@ The `OilGasRefineryQueries` Graph Query Set is created as an empty item. Due to 
 
 **To add queries**: Open the GQS in Fabric, select the ontology graph model, then copy-paste queries from [deploy/RefineryGraphQueries.gql](deploy/RefineryGraphQueries.gql).
 
-The reference file includes 10 GQL queries:
+The reference file includes 20 GQL queries:
 
-1. **Full Refinery Topology** — All nodes and edges
-2. **Process Units and Equipment** — Refinery → ProcessUnit → Equipment
-3. **Equipment Sensors and Alarms** — Equipment → Sensor ← SafetyAlarm
-4. **Maintenance Events** — Employee ← MaintenanceEvent → Equipment
-5. **Crude Oil Supply Chain** — CrudeOil ← CrudeOilFeed → ProcessUnit
-6. **Production Records** — ProcessUnit ← ProductionRecord → RefinedProduct
-7. **Storage Tanks and Products** — Refinery → StorageTank → RefinedProduct
-8. **Pipeline Network** — Refinery → Pipeline → ProcessUnit
-9. **End-to-End Crude to Product** — Full supply chain traversal
-10. **Workforce and Maintenance** — Refinery → Employee ← MaintenanceEvent
+| # | Query | Pattern |
+|---|-------|---------|
+| 1 | Full Refinery Topology | `MATCH (n)-[e]->(m) RETURN n, e, m` |
+| 2 | Process Units & Equipment | `Refinery → ProcessUnit → Equipment` |
+| 3 | Sensors & Alarms | `Equipment → Sensor ← SafetyAlarm` |
+| 4 | Maintenance Events | `Employee ← MaintenanceEvent → Equipment` |
+| 5 | Crude Supply Chain | `CrudeOil ← CrudeOilFeed → ProcessUnit` |
+| 6 | Production Records | `ProcessUnit ← ProductionRecord → RefinedProduct` |
+| 7 | Storage Tanks | `Refinery → StorageTank → RefinedProduct` |
+| 8 | Pipeline Network | `Refinery → Pipeline → ProcessUnit` |
+| 9 | End-to-End | `CrudeOil → ... → RefinedProduct` |
+| 10 | Workforce | `Refinery → Employee ← MaintenanceEvent` |
+| 11 | All Sensors on a Specific Equipment | Filter by EquipmentId |
+| 12 | Unresolved Safety Alarms | `SafetyAlarm WHERE Status = 'Active'` |
+| 13 | Equipment Without Recent Maintenance | Anti-pattern detection |
+| 14 | High-Severity Alarms by Refinery | Aggregated alarm analysis |
+| 15 | Pipeline Connections Between Units | `ProcessUnit → Pipeline → ProcessUnit` |
+| 16 | Products Stored per Refinery | `Refinery → StorageTank → RefinedProduct` |
+| 17 | Employee Maintenance Workload | Workload distribution |
+| 18 | Crude Oil API Gravity Analysis | Property-based filtering |
+| 19 | Multi-Hop: Crude to Final Product | Full value chain traversal |
+| 20 | Refinery Equipment Health Summary | Equipment status overview |
 
 ---
 

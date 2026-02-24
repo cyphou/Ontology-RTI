@@ -899,21 +899,9 @@ Write-Step "Step 8: Deploying Data Agent"
 
 $dataAgentScript = Join-Path $scriptDir "deploy\Deploy-DataAgent.ps1"
 if (Test-Path $dataAgentScript) {
-    # Find the SQL Endpoint ID for the lakehouse
-    $sqlEpId = $null
-    try {
-        $allItems = (Invoke-FabricApi -Method Get `
-            -Uri "$FabricApiBase/workspaces/$WorkspaceId/items" `
-            -Token $fabricToken).value
-        $sqlEp = $allItems | Where-Object { $_.displayName -eq $LakehouseName -and $_.type -eq 'SQLEndpoint' }
-        if ($sqlEp) { $sqlEpId = $sqlEp.id }
-    } catch { }
-
     try {
         $agentParams = @{ WorkspaceId = $WorkspaceId }
-        if ($sqlEpId) { $agentParams['LakehouseSqlEndpointId'] = $sqlEpId }
-        if ($kqlDbId) { $agentParams['KqlDatabaseId'] = $kqlDbId }
-        if ($semanticModelId) { $agentParams['SemanticModelId'] = $semanticModelId }
+        if ($ontologyId) { $agentParams['OntologyId'] = $ontologyId }
 
         & $dataAgentScript @agentParams
         Write-Success "Data Agent deployment script executed."
@@ -921,7 +909,7 @@ if (Test-Path $dataAgentScript) {
     catch {
         Write-Warn "Data Agent deployment encountered an issue: $_"
         Write-Info "Data Agents require Fabric capacity F64+. Trial capacity is not supported."
-        Write-Info "You can re-run: deploy\Deploy-DataAgent.ps1 -WorkspaceId $WorkspaceId"
+        Write-Info "You can re-run: deploy\Deploy-DataAgent.ps1 -WorkspaceId $WorkspaceId -OntologyId $ontologyId"
     }
 }
 else {
@@ -998,7 +986,9 @@ Write-Host "     (see SEMANTIC_MODEL_GUIDE.md)" -ForegroundColor Yellow
 Write-Host "  4. Open ontology and configure entity types + relationships" -ForegroundColor Yellow
 Write-Host "     (see SETUP_GUIDE.md Step 4)" -ForegroundColor Yellow
 Write-Host "  5. RTI Dashboard: Requires 'Create Real-Time dashboards' tenant setting" -ForegroundColor Yellow
-Write-Host "  6. Data Agent: Requires Fabric capacity F64+ (not Trial)" -ForegroundColor Yellow
-Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/RefineryGraphQueries.gql" -ForegroundColor YellowWrite-Host "  8. Operations Agent: Open agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start" -ForegroundColor YellowWrite-Host ""
+Write-Host "  6. Data Agent: Uses the Ontology as its sole data source (requires F64+)" -ForegroundColor Yellow
+Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/RefineryGraphQueries.gql" -ForegroundColor Yellow
+Write-Host "  8. Operations Agent: Open agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start" -ForegroundColor Yellow
+Write-Host ""
 Write-Host "  Fabric Portal: https://app.fabric.microsoft.com/" -ForegroundColor Cyan
 Write-Host ""
