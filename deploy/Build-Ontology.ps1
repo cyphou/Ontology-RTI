@@ -20,6 +20,12 @@ function ToBase64([string]$text) {
     return [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($text))
 }
 
+# Deterministic GUID from a seed string (ensures idempotent re-pushes)
+function DeterministicGuid([string]$seed) {
+    $hash = [System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($seed))
+    return ([guid]::new($hash)).ToString()
+}
+
 # ============================================================================
 # ID Allocation Plan (unique 64-bit integers)
 # Entity Type IDs:      1001 - 1013
@@ -366,7 +372,7 @@ foreach ($et in $entityTypes) {
     $parts += @{ path = "EntityTypes/$($et.id)/definition.json"; payload = (ToBase64 $entityJson); payloadType = "InlineBase64" }
 
     # --- NonTimeSeries Data Binding (Lakehouse) ---
-    $bindGuid = [guid]::NewGuid().ToString()
+    $bindGuid = DeterministicGuid "NonTimeSeries-$($et.id)"
     $propBindings = ($et.properties | ForEach-Object {
         $colName = $_.name
         # Map property name to column name if mapping exists
@@ -382,7 +388,7 @@ foreach ($et in $entityTypes) {
 
     # --- TimeSeries Data Binding (Eventhouse/KQL) ---
     if ($et.timeseriesTable) {
-        $tsBindGuid = [guid]::NewGuid().ToString()
+        $tsBindGuid = DeterministicGuid "TimeSeries-$($et.id)"
         $tsBindings = ($et.timeseriesProperties | ForEach-Object {
             '{"sourceColumnName":"' + $_.name + '","targetPropertyId":"' + $_.id + '"}'
         }) -join ','
@@ -420,7 +426,7 @@ foreach ($rel in $relationships) {
 
     if ($fkProp) {
         # FK is in source table - contextualization uses source entity's table
-        $ctxGuid = [guid]::NewGuid().ToString()
+        $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
         $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
         $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
     } else {
@@ -431,7 +437,7 @@ foreach ($rel in $relationships) {
             $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" }
         }
         if ($fkPropInTarget) {
-            $ctxGuid = [guid]::NewGuid().ToString()
+            $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
             $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
             $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
         } else {
@@ -464,10 +470,24 @@ try {
         $opUrl = $resp.Headers["Location"]
         Write-Host "LRO: $opUrl"
         Write-Host "Waiting for completion..."
-        Start-Sleep -Seconds 10
-        $poll = Invoke-RestMethod -Uri $opUrl -Headers @{ Authorization = "Bearer $FabricToken" }
-        Write-Host "Result: $($poll.status)"
-        if ($poll.error) { Write-Host "Error: $($poll.error.message)" }
+        $maxWait = 120; $waited = 0
+        while ($waited -lt $maxWait) {
+            Start-Sleep -Seconds 10
+            $waited += 10
+            $poll = Invoke-RestMethod -Uri $opUrl -Headers @{ Authorization = "Bearer $FabricToken" }
+            if ($poll.status -eq "Succeeded") {
+                Write-Host "Result: Succeeded ($waited`s)"
+                break
+            } elseif ($poll.status -eq "Failed") {
+                Write-Host "Result: Failed ($waited`s)"
+                if ($poll.error) { Write-Host "Error: $($poll.error.message)" }
+                break
+            }
+            Write-Host "  Status: $($poll.status) ($waited`s)..."
+        }
+        if ($waited -ge $maxWait -and $poll.status -notin @("Succeeded","Failed")) {
+            Write-Host "LRO timed out after $maxWait`s (status: $($poll.status))"
+        }
     }
 } catch {
     $sr = $_.Exception.Response
