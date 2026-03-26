@@ -1,15 +1,13 @@
 <p align="center">
+  <img src="assets/banner.svg" alt="Microsoft Fabric IQ Ontology Accelerator" width="900"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Microsoft%20Fabric-742774?style=for-the-badge&logo=microsoftfabric&logoColor=white" alt="Microsoft Fabric"/>
   <img src="https://img.shields.io/badge/Power%20BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI"/>
   <img src="https://img.shields.io/badge/KQL-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white" alt="KQL"/>
   <img src="https://img.shields.io/badge/PowerShell-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell"/>
   <img src="https://img.shields.io/badge/GQL-107C10?style=for-the-badge&logo=graphql&logoColor=white" alt="GQL"/>
-</p>
-
-<h1 align="center">:zap: Microsoft Fabric IQ Ontology Accelerator</h1>
-
-<p align="center">
-  <b>Deploy production-ready IQ Ontologies across 5 industry domains on Microsoft Fabric --- fully automated, one command.</b>
 </p>
 
 <p align="center">
@@ -76,42 +74,47 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 <table>
 <tr>
 <td width="20%" align="center">
+<img src="assets/icons/oil-gas.svg" width="80" alt="Oil & Gas"/>
 
-### :oil_drum: Oil & Gas
+### Oil & Gas
 **Refinery**
-13 entities  14 CSVs
+13 entities · 14 CSVs
 445 rows
 
 </td>
 <td width="20%" align="center">
+<img src="assets/icons/smart-building.svg" width="80" alt="Smart Building"/>
 
-### :office: Smart Building
+### Smart Building
 **Building Ops**
-12 entities  13 CSVs
+12 entities · 13 CSVs
 498 rows
 
 </td>
 <td width="20%" align="center">
+<img src="assets/icons/manufacturing.svg" width="80" alt="Manufacturing"/>
 
-### :factory: Manufacturing
+### Manufacturing
 **Plant Floor**
-11 entities  12 CSVs
+11 entities · 12 CSVs
 444 rows
 
 </td>
 <td width="20%" align="center">
+<img src="assets/icons/it-asset.svg" width="80" alt="IT Asset"/>
 
-### :desktop_computer: IT Asset
+### IT Asset
 **Infrastructure**
-11 entities  12 CSVs
+11 entities · 12 CSVs
 381 rows
 
 </td>
 <td width="20%" align="center">
+<img src="assets/icons/wind-turbine.svg" width="80" alt="Wind Turbine"/>
 
-### :wind_face: Wind Turbine
+### Wind Turbine
 **Wind Farm**
-12 entities  13 CSVs
+12 entities · 13 CSVs
 651 rows
 
 </td>

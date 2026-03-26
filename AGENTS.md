@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/banner.svg" alt="IQ Ontology Accelerator" width="900"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Copilot%20Agents-7-5391FE?style=for-the-badge&logo=github&logoColor=white" alt="7 Agents"/>
   <img src="https://img.shields.io/badge/Multi--Agent-Architecture-742774?style=for-the-badge" alt="Multi-Agent"/>
 </p>

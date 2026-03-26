@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2ECC71"/>
+      <stop offset="100%" style="stop-color:#107C10"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="56" fill="url(#g)"/>
+  <g transform="translate(22,20)" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Factory building -->
+    <path d="M5,75 L5,40 L20,25 L20,40 L35,25 L35,40 L50,25 L50,40 L65,25 L65,40 L75,40 L75,75 Z" fill="none"/>
+    <!-- Chimney -->
+    <rect x="8" y="10" width="8" height="30" fill="none"/>
+    <!-- Smoke puffs -->
+    <circle cx="12" cy="6" r="4" fill="#fff" fill-opacity="0.2" stroke="none"/>
+    <circle cx="16" cy="2" r="3" fill="#fff" fill-opacity="0.15" stroke="none"/>
+    <!-- Gear inside factory -->
+    <circle cx="28" cy="58" r="10" stroke-width="2"/>
+    <circle cx="28" cy="58" r="4" fill="#fff" fill-opacity="0.3" stroke="none"/>
+    <!-- Gear teeth -->
+    <line x1="28" y1="46" x2="28" y2="50"/>
+    <line x1="28" y1="66" x2="28" y2="70"/>
+    <line x1="16" y1="58" x2="20" y2="58"/>
+    <line x1="36" y1="58" x2="40" y2="58"/>
+    <!-- Conveyor belt -->
+    <line x1="48" y1="65" x2="72" y2="65"/>
+    <circle cx="50" cy="65" r="3" fill="#fff" fill-opacity="0.2" stroke-width="1.5"/>
+    <circle cx="70" cy="65" r="3" fill="#fff" fill-opacity="0.2" stroke-width="1.5"/>
+    <!-- Box on conveyor -->
+    <rect x="56" y="56" width="8" height="8" rx="1" fill="#FFD700" fill-opacity="0.4" stroke="#fff" stroke-width="1.5"/>
+  </g>
+</svg>

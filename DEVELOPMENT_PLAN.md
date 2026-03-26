@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/banner.svg" alt="IQ Ontology Accelerator" width="900"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Microsoft%20Fabric-742774?style=for-the-badge&logo=microsoftfabric&logoColor=white" alt="Microsoft Fabric"/>
   <img src="https://img.shields.io/badge/status-Active%20Development-107C10?style=for-the-badge" alt="Active Development"/>
 </p>

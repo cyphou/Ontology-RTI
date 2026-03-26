@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF8C00"/>
+      <stop offset="100%" style="stop-color:#CC5500"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="56" fill="url(#g)"/>
+  <!-- Oil derrick / refinery tower -->
+  <g transform="translate(30,18)" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Main tower -->
+    <polygon points="30,0 15,75 45,75" fill="none"/>
+    <line x1="20" y1="50" x2="40" y2="50"/>
+    <line x1="22" y1="35" x2="38" y2="35"/>
+    <line x1="24" y1="20" x2="36" y2="20"/>
+    <!-- Pipe coming off right -->
+    <path d="M45,75 L55,75 L55,60 L65,60" stroke-width="2.5"/>
+    <!-- Storage tank -->
+    <rect x="55" y="55" width="12" height="20" rx="2" fill="none"/>
+    <!-- Flame on top -->
+    <path d="M30,0 Q28,-8 30,-12 Q32,-8 30,0" fill="#FFD700" stroke="#FFD700" stroke-width="1"/>
+    <!-- Oil drop -->
+    <path d="M8,62 Q8,72 14,72 Q20,72 20,62 Q14,50 8,62Z" fill="#fff" fill-opacity="0.3" stroke="none"/>
+  </g>
+</svg>

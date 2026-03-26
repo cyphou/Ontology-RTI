@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/banner.svg" alt="IQ Ontology Accelerator" width="900"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Microsoft%20Fabric-742774?style=for-the-badge&logo=microsoftfabric&logoColor=white" alt="Microsoft Fabric"/>
   <img src="https://img.shields.io/badge/PowerShell-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell"/>
 </p>
@@ -175,11 +179,11 @@ If you prefer to create items manually (or as a learning exercise), follow the s
 
 | Domain | CSV Count | Key Tables |
 |--------|:---------:|------------|
-| :oil_drum: Oil & Gas | 14 | DimRefinery, DimEquipment, DimSensor, FactProduction, SensorTelemetry |
-| :office: Smart Building | 13 | DimBuilding, DimZone, DimSensor, DimHVACSystem, SensorTelemetry |
-| :factory: Manufacturing | 12 | DimPlant, DimMachine, DimSensor, FactProductionBatch, SensorTelemetry |
-| :desktop_computer: IT Asset | 12 | DimServer, DimRack, DimApplication, FactIncident, SensorTelemetry |
-| :wind_face: Wind Turbine | 13 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
+| <img src="assets/icons/oil-gas.svg" width="18"/> Oil & Gas | 14 | DimRefinery, DimEquipment, DimSensor, FactProduction, SensorTelemetry |
+| <img src="assets/icons/smart-building.svg" width="18"/> Smart Building | 13 | DimBuilding, DimZone, DimSensor, DimHVACSystem, SensorTelemetry |
+| <img src="assets/icons/manufacturing.svg" width="18"/> Manufacturing | 12 | DimPlant, DimMachine, DimSensor, FactProductionBatch, SensorTelemetry |
+| <img src="assets/icons/it-asset.svg" width="18"/> IT Asset | 12 | DimServer, DimRack, DimApplication, FactIncident, SensorTelemetry |
+| <img src="assets/icons/wind-turbine.svg" width="18"/> Wind Turbine | 13 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
 
 > [!WARNING]
 > Do **NOT** upload `SensorTelemetry.csv` to the lakehouse. This file goes to the **Eventhouse** (Step 5).
