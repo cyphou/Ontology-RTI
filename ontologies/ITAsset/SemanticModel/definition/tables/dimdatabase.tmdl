@@ -1,0 +1,82 @@
+table dimdatabase
+	lineageTag: 40000002-0001-0001-0001-000000000001
+
+	measure 'Database Count' = COUNTROWS(dimdatabase)
+		displayFolder: Measures
+		lineageTag: 40000002-0001-0001-0001-100000000001
+
+	measure 'Total DB Size GB' = SUM(dimdatabase[SizeGB])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 40000002-0001-0001-0001-100000000002
+
+	column DatabaseId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DatabaseId
+		lineageTag: 40000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DatabaseName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DatabaseName
+		lineageTag: 40000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerId
+		lineageTag: 40000002-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DBType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DBType
+		lineageTag: 40000002-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column SizeGB
+		dataType: double
+		summarizeBy: none
+		sourceColumn: SizeGB
+		lineageTag: 40000002-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Engine
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Engine
+		lineageTag: 40000002-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Version
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Version
+		lineageTag: 40000002-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000002-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimdatabase = entity
+		mode: directLake
+		entityName: dimdatabase
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

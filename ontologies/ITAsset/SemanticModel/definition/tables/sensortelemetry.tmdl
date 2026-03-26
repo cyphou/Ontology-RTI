@@ -1,0 +1,95 @@
+table sensortelemetry
+	lineageTag: 40000012-0001-0001-0001-000000000001
+
+	measure 'Telemetry Reading Count' = COUNTROWS(sensortelemetry)
+		displayFolder: Measures
+		lineageTag: 40000012-0001-0001-0001-100000000001
+
+	measure 'Avg CPU Percent' = AVERAGE(sensortelemetry[CPUPercent])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 40000012-0001-0001-0001-100000000002
+
+	measure 'Avg Memory Percent' = AVERAGE(sensortelemetry[MemoryPercent])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 40000012-0001-0001-0001-100000000003
+
+	column ReadingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ReadingId
+		lineageTag: 40000012-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerId
+		lineageTag: 40000012-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Timestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Timestamp
+		lineageTag: 40000012-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column CPUPercent
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CPUPercent
+		lineageTag: 40000012-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MemoryPercent
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MemoryPercent
+		lineageTag: 40000012-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column DiskIOPS
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DiskIOPS
+		lineageTag: 40000012-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column NetworkMbps
+		dataType: double
+		summarizeBy: none
+		sourceColumn: NetworkMbps
+		lineageTag: 40000012-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column QualityFlag
+		dataType: string
+		summarizeBy: none
+		sourceColumn: QualityFlag
+		lineageTag: 40000012-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsAnomaly
+		dataType: string
+		summarizeBy: none
+		sourceColumn: IsAnomaly
+		lineageTag: 40000012-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition sensortelemetry = entity
+		mode: directLake
+		entityName: sensortelemetry
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,77 @@
+table dimweatherstation
+	lineageTag: 50000008-0001-0001-0001-000000000001
+
+	measure 'Weather Station Count' = COUNTROWS(dimweatherstation)
+		displayFolder: Measures
+		lineageTag: 50000008-0001-0001-0001-100000000001
+
+	column StationId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StationId
+		lineageTag: 50000008-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column StationName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StationName
+		lineageTag: 50000008-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column WindFarmId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WindFarmId
+		lineageTag: 50000008-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Latitude
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Latitude
+		lineageTag: 50000008-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Longitude
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Longitude
+		lineageTag: 50000008-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column ElevationM
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ElevationM
+		lineageTag: 50000008-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 50000008-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000008-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimweatherstation = entity
+		mode: directLake
+		entityName: dimweatherstation
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

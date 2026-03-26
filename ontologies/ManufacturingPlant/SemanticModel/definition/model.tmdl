@@ -1,0 +1,25 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["dimmachine","dimmaterial","dimoperator","dimplant","dimproduct","dimproductionline","dimsensor","factalert","factmaintenanceorder","factproductionbatch","factqualitycheck","sensortelemetry"]
+
+ref table dimmachine
+ref table dimmaterial
+ref table dimoperator
+ref table dimplant
+ref table dimproduct
+ref table dimproductionline
+ref table dimsensor
+ref table factalert
+ref table factmaintenanceorder
+ref table factproductionbatch
+ref table factqualitycheck
+ref table sensortelemetry
+
+ref expression DatabaseQuery
+
+annotation PBI_QueryRelationships = []

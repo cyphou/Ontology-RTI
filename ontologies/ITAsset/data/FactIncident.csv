@@ -1,0 +1,21 @@
+IncidentId,ServerId,IncidentType,Severity,ReportedByUserId,CreatedDate,ResolvedDate,DurationHours,RootCause,Description,Status
+INC-001,SRV-005,Performance,Critical,USR-002,2024-01-10,2024-01-10,4.0,Disk I/O saturation,Database server IOPS exceeded capacity during peak load,Resolved
+INC-002,SRV-001,Availability,High,USR-002,2024-01-15,2024-01-15,1.5,Memory leak,Web server OOM kill - application memory leak in session handler,Resolved
+INC-003,SRV-007,Hardware,Critical,USR-003,2024-02-01,2024-02-02,18.0,GPU failure,GPU card failure on ML training server - replaced A100 module,Resolved
+INC-004,SRV-003,Security,High,USR-007,2024-02-10,2024-02-10,3.0,Misconfiguration,Unauthorized API access attempt blocked - updated firewall rules,Resolved
+INC-005,SRV-006,Performance,Medium,USR-005,2024-03-01,2024-03-01,2.0,Query optimization,Analytics queries causing temp tablespace exhaustion,Resolved
+INC-006,SRV-008,Availability,High,USR-002,2024-03-15,2024-03-15,2.5,Network,West region web server network partitioning during ISP maintenance,Resolved
+INC-007,SRV-005,Performance,Critical,USR-002,2024-04-01,2024-04-02,8.0,Replication lag,Primary-secondary replication lag exceeded 30 minutes,Resolved
+INC-008,SRV-014,Hardware,Medium,USR-006,2024-04-15,2024-04-16,12.0,Disk failure,Storage array disk failure - RAID rebuild completed,Resolved
+INC-009,SRV-001,Availability,Critical,USR-002,2024-05-01,2024-05-01,0.5,Deployment,Bad deployment caused 502 errors - rolled back in 30 minutes,Resolved
+INC-010,SRV-010,Performance,Medium,USR-005,2024-05-15,2024-05-15,3.0,Lock contention,EU database lock contention during batch job window,Resolved
+INC-011,SRV-003,Security,High,USR-007,2024-06-01,2024-06-01,1.0,Certificate,TLS certificate approaching expiration - renewed,Resolved
+INC-012,SRV-002,Availability,Medium,USR-002,2024-06-15,,0,Investigating,Intermittent monitoring data gaps - under investigation,Open
+"INC-013","SRV-004","Availability","High","USR-008","2024-02-01","2024-02-01","9.7","Network partition","Availability issue on SRV-004 - Network partition","Resolved"
+"INC-014","SRV-012","Availability","High","USR-003","2024-02-15","2024-02-15","11.6","Memory leak","Availability issue on SRV-012 - Memory leak","Resolved"
+"INC-015","SRV-002","Hardware","High","USR-002","2024-03-01","","21.5","Certificate expired","Hardware issue on SRV-002 - Certificate expired","Open"
+"INC-016","SRV-015","Performance","Low","USR-007","2024-03-10","2024-03-10","8.2","Memory leak","Performance issue on SRV-015 - Memory leak","Resolved"
+"INC-017","SRV-015","Performance","High","USR-010","2024-03-20","","11.1","Software bug","Performance issue on SRV-015 - Software bug","Open"
+"INC-018","SRV-009","Performance","Medium","USR-002","2024-04-01","","6.2","Software bug","Performance issue on SRV-009 - Software bug","Open"
+"INC-019","SRV-011","Network","High","USR-008","2024-04-15","","17.6","Network partition","Network issue on SRV-011 - Network partition","Open"
+"INC-020","SRV-004","Availability","Low","USR-010","2024-05-01","2024-05-01","7.6","Certificate expired","Availability issue on SRV-004 - Certificate expired","Resolved"

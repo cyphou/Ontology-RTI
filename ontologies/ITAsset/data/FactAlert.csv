@@ -1,0 +1,37 @@
+AlertId,ServerId,AlertType,Severity,Timestamp,Value,Threshold,Description,Status
+ALR-001,SRV-005,HighCPU,Critical,2024-01-15T10:00:00,98.5,90.0,DB server CPU sustained >90% for 15 minutes,Acknowledged
+ALR-002,SRV-001,HighMemory,High,2024-01-22T14:30:00,92.0,85.0,Web server memory usage exceeding threshold,Acknowledged
+ALR-003,SRV-007,GPUTemperature,Critical,2024-02-05T09:15:00,92.0,85.0,GPU 3 temperature above safe operating range,Acknowledged
+ALR-004,SRV-003,HighLatency,Medium,2024-03-01T11:00:00,450.0,200.0,API response latency >200ms avg,Acknowledged
+ALR-005,SRV-006,DiskSpace,High,2024-03-15T08:00:00,92.0,85.0,AnalyticsDB disk usage at 92%,Acknowledged
+ALR-006,SRV-014,DiskSpace,Critical,2024-05-10T06:30:00,98.0,85.0,Monitoring server disk critical,Acknowledged
+ALR-007,SRV-005,ReplicationLag,Critical,2024-04-20T16:00:00,1800.0,300.0,DB replication lag >30 minutes,Acknowledged
+ALR-008,SRV-009,HighCPU,Medium,2024-06-15T22:00:00,88.0,80.0,EU web server CPU spike during failover,Active
+ALR-009,SRV-013,BackupFailure,High,2024-04-01T03:00:00,1.0,0.0,Backup job failed for CustomerDB,Acknowledged
+ALR-010,SRV-001,SSLExpiry,Medium,2024-06-01T00:00:00,7.0,30.0,SSL certificate expiring in 7 days,Acknowledged
+"ALT-001","SRV-001","HighIOPS","Medium","2024-10-02T05:00:00",,,,
+"ALT-002","SRV-005","DiskFull","Medium","2024-10-02T16:00:00",,,,
+"ALT-003","SRV-005","HighMemory","Critical","2024-10-02T09:00:00",,,,
+"ALT-004","SRV-001","CertExpiring","Low","2024-10-02T15:00:00",,,,
+"ALT-005","SRV-004","HighCPU","Medium","2024-10-03T08:00:00",,,,
+"ALT-006","SRV-005","ServiceDown","Critical","2024-10-03T10:00:00",,,,
+"ALT-007","SRV-010","LatencySpike","High","2024-10-03T18:00:00",,,,
+"ALT-008","SRV-001","HighCPU","Low","2024-10-03T18:00:00",,,,
+"ALT-009","SRV-015","HighMemory","Low","2024-10-04T05:00:00",,,,
+"ALT-010","SRV-004","HighMemory","High","2024-10-04T00:00:00",,,,
+"ALT-011","SRV-003","HighIOPS","Medium","2024-10-04T22:00:00",,,,
+"ALT-012","SRV-003","CertExpiring","Critical","2024-10-04T11:00:00",,,,
+"ALT-013","SRV-004","ServiceDown","High","2024-10-04T15:00:00",,,,
+"ALT-014","SRV-009","DiskFull","Medium","2024-10-05T14:00:00",,,,
+"ALT-015","SRV-004","HighIOPS","Medium","2024-10-05T10:00:00",,,,
+"ALT-016","SRV-013","HighCPU","High","2024-10-05T07:00:00",,,,
+"ALT-017","SRV-005","ServiceDown","High","2024-10-05T10:00:00",,,,
+"ALT-018","SRV-001","HighIOPS","Low","2024-10-05T18:00:00",,,,
+"ALT-019","SRV-002","HighIOPS","High","2024-10-06T12:00:00",,,,
+"ALT-020","SRV-005","HighCPU","High","2024-10-06T21:00:00",,,,
+"ALT-021","SRV-003","NetworkSaturation","Low","2024-10-07T10:00:00",,,,
+"ALT-022","SRV-002","DiskFull","Medium","2024-10-07T06:00:00",,,,
+"ALT-023","SRV-004","HighIOPS","Low","2024-10-07T21:00:00",,,,
+"ALT-024","SRV-003","LatencySpike","Medium","2024-10-08T21:00:00",,,,
+"ALT-025","SRV-015","ServiceDown","High","2024-10-08T17:00:00",,,,
+"ALT-026","SRV-006","DiskFull","Low","2024-10-08T16:00:00",,,,

@@ -1,0 +1,11 @@
+DeviceId,DeviceName,DataCenterId,DeviceType,Manufacturer,Model,Ports,IPAddress,Firmware,Status
+ND-001,core-sw-01,DC-001,Core Switch,Cisco,Nexus 9500,48,10.1.0.1,10.3(2),Active
+ND-002,core-sw-02,DC-001,Core Switch,Cisco,Nexus 9500,48,10.1.0.2,10.3(2),Active
+ND-003,fw-01,DC-001,Firewall,Palo Alto,PA-5260,24,10.1.0.10,11.1.2,Active
+ND-004,lb-01,DC-001,Load Balancer,F5,BIG-IP i5800,16,10.1.0.20,17.1.1,Active
+ND-005,core-sw-west,DC-002,Core Switch,Cisco,Nexus 9300,48,10.2.0.1,10.3(2),Active
+ND-006,fw-west,DC-002,Firewall,Palo Alto,PA-3260,16,10.2.0.10,11.1.2,Active
+ND-007,core-sw-eu,DC-003,Core Switch,Arista,7280R3,48,10.3.0.1,4.30.2F,Active
+ND-008,fw-eu,DC-003,Firewall,Fortinet,FortiGate 600E,16,10.3.0.10,7.4.1,Active
+ND-009,core-sw-ap,DC-004,Core Switch,Cisco,Nexus 9300,48,10.4.0.1,10.3(2),Active
+ND-010,fw-uk-dr,DC-005,Firewall,Palo Alto,PA-3260,16,10.5.0.10,11.1.2,Standby

@@ -1,0 +1,98 @@
+table dimplant
+	lineageTag: 30000004-0001-0001-0001-000000000001
+
+	measure 'Plant Count' = COUNTROWS(dimplant)
+		displayFolder: Measures
+		lineageTag: 30000004-0001-0001-0001-100000000001
+
+	measure 'Total Production Capacity' = SUM(dimplant[ProductionCapacity])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 30000004-0001-0001-0001-100000000002
+
+	column PlantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantId
+		lineageTag: 30000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column PlantName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantName
+		lineageTag: 30000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Country
+		lineageTag: 30000004-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		summarizeBy: none
+		sourceColumn: State
+		lineageTag: 30000004-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		summarizeBy: none
+		sourceColumn: City
+		lineageTag: 30000004-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalAreaSqFt
+		dataType: double
+		summarizeBy: none
+		sourceColumn: TotalAreaSqFt
+		lineageTag: 30000004-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearBuilt
+		dataType: string
+		summarizeBy: none
+		sourceColumn: YearBuilt
+		lineageTag: 30000004-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductionCapacity
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ProductionCapacity
+		lineageTag: 30000004-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000004-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manager
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manager
+		lineageTag: 30000004-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimplant = entity
+		mode: directLake
+		entityName: dimplant
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

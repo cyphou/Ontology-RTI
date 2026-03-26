@@ -1,0 +1,90 @@
+table dimtransformer
+	lineageTag: 50000006-0001-0001-0001-000000000001
+
+	measure 'Transformer Count' = COUNTROWS(dimtransformer)
+		displayFolder: Measures
+		lineageTag: 50000006-0001-0001-0001-100000000001
+
+	measure 'Total Rating MVA' = SUM(dimtransformer[RatingMVA])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 50000006-0001-0001-0001-100000000002
+
+	column TransformerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TransformerId
+		lineageTag: 50000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransformerName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TransformerName
+		lineageTag: 50000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column WindFarmId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WindFarmId
+		lineageTag: 50000006-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column RatingMVA
+		dataType: double
+		summarizeBy: none
+		sourceColumn: RatingMVA
+		lineageTag: 50000006-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column VoltageKV
+		dataType: double
+		summarizeBy: none
+		sourceColumn: VoltageKV
+		lineageTag: 50000006-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 50000006-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 50000006-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastServiceDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastServiceDate
+		lineageTag: 50000006-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000006-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimtransformer = entity
+		mode: directLake
+		entityName: dimtransformer
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

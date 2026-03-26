@@ -1,0 +1,119 @@
+table factmaintenanceevent
+	lineageTag: 50000011-0001-0001-0001-000000000001
+
+	measure 'Maintenance Event Count' = COUNTROWS(factmaintenanceevent)
+		displayFolder: Measures
+		lineageTag: 50000011-0001-0001-0001-100000000001
+
+	measure 'Total Maintenance Cost' = SUM(factmaintenanceevent[CostUSD])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 50000011-0001-0001-0001-100000000002
+
+	measure 'Avg Maintenance Duration Hours' = AVERAGE(factmaintenanceevent[DurationHours])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 50000011-0001-0001-0001-100000000003
+
+	column EventId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EventId
+		lineageTag: 50000011-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TurbineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TurbineId
+		lineageTag: 50000011-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TechnicianId
+		lineageTag: 50000011-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column EventType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EventType
+		lineageTag: 50000011-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Priority
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Priority
+		lineageTag: 50000011-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column ScheduledDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ScheduledDate
+		lineageTag: 50000011-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompletedDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CompletedDate
+		lineageTag: 50000011-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column DurationHours
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DurationHours
+		lineageTag: 50000011-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Component
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Component
+		lineageTag: 50000011-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 50000011-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostUSD
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CostUSD
+		lineageTag: 50000011-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000011-0001-0001-0001-200000000012
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factmaintenanceevent = entity
+		mode: directLake
+		entityName: factmaintenanceevent
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

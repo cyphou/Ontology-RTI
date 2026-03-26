@@ -1,0 +1,16 @@
+FloorId,FloorName,BuildingId,FloorNumber,AreaSqFt,ZoneCount,Status
+FLR-001,Ground Floor,BLD-001,1,12500,4,Active
+FLR-002,Level 2,BLD-001,2,12500,3,Active
+FLR-003,Level 10,BLD-001,10,12500,5,Active
+FLR-004,Level 20,BLD-001,20,12500,4,Active
+FLR-005,Level 42 - Executive,BLD-001,42,12500,3,Active
+FLR-006,Ground Floor,BLD-002,1,22500,6,Active
+FLR-007,Level 2,BLD-002,2,22500,5,Active
+FLR-008,Level 5,BLD-002,5,22500,4,Active
+FLR-009,Ground Floor,BLD-003,1,11700,4,Active
+FLR-010,Level 15,BLD-003,15,11700,3,Active
+FLR-011,Level 30,BLD-003,30,11700,4,Active
+FLR-012,Ground Floor,BLD-004,1,7900,3,Active
+FLR-013,Level 6,BLD-004,6,7900,4,Active
+FLR-014,Ground Floor,BLD-005,1,12000,5,Active
+FLR-015,Level 3,BLD-005,3,12000,4,Active

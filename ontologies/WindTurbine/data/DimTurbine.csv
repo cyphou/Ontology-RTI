@@ -1,0 +1,16 @@
+TurbineId,TurbineName,WindFarmId,Model,Manufacturer,RatedCapacityKW,HubHeightM,RotorDiameterM,CommissionDate,Status
+WT-001,Alpha-T01,WF-001,V164-8.0MW,Vestas,8000,105,164,2019-03-15,Active
+WT-002,Alpha-T02,WF-001,V164-8.0MW,Vestas,8000,105,164,2019-03-15,Active
+WT-003,Alpha-T03,WF-001,SG 8.0-167 DD,Siemens Gamesa,8000,107,167,2019-04-01,Active
+WT-004,Alpha-T04,WF-001,SG 8.0-167 DD,Siemens Gamesa,8000,107,167,2019-04-01,Maintenance
+WT-005,Prairie-T01,WF-002,GE 2.5-127,GE Renewable,2500,89,127,2020-07-01,Active
+WT-006,Prairie-T02,WF-002,GE 2.5-127,GE Renewable,2500,89,127,2020-07-01,Active
+WT-007,Prairie-T03,WF-002,GE 3.0-140,GE Renewable,3000,95,140,2020-08-01,Active
+WT-008,Highland-T01,WF-003,V136-4.2MW,Vestas,4200,82,136,2018-11-20,Active
+WT-009,Highland-T02,WF-003,V136-4.2MW,Vestas,4200,82,136,2018-11-20,Fault
+WT-010,Highland-T03,WF-003,N149-4.5MW,Nordex,4500,105,149,2018-12-01,Active
+WT-011,Atacama-T01,WF-004,SG 3.4-132,Siemens Gamesa,3400,84,132,2021-01-10,Active
+WT-012,Atacama-T02,WF-004,SG 3.4-132,Siemens Gamesa,3400,84,132,2021-01-10,Active
+WT-013,Baltic-T01,WF-005,Haliade-X 13MW,GE Renewable,13000,138,220,2022-06-15,Active
+WT-014,Baltic-T02,WF-005,Haliade-X 13MW,GE Renewable,13000,138,220,2022-06-15,Active
+WT-015,Baltic-T03,WF-005,V236-15.0MW,Vestas,15000,150,236,2022-07-01,Active

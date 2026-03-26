@@ -1,0 +1,16 @@
+OccupantId,FullName,Department,ZoneId,AccessLevel,BadgeId,Status
+OCC-001,Alice Johnson,Facilities Management,ZN-004,Admin,BDG-1001,Active
+OCC-002,Bob Martinez,Engineering,ZN-005,Standard,BDG-1002,Active
+OCC-003,Carol Chen,Engineering,ZN-005,Standard,BDG-1003,Active
+OCC-004,David Kim,Finance,ZN-006,Standard,BDG-1004,Active
+OCC-005,Elena Rossi,Executive,ZN-008,Executive,BDG-1005,Active
+OCC-006,Frank Okafor,IT,ZN-014,Admin,BDG-1006,Active
+OCC-007,Grace Park,HR,ZN-016,Standard,BDG-1007,Active
+OCC-008,Hank Williams,Security,ZN-004,Admin,BDG-1008,Active
+OCC-009,Irene Nakamura,R&D,ZN-019,Lab,BDG-1009,Active
+OCC-010,James Brown,R&D,ZN-020,Lab,BDG-1010,Active
+OCC-011,Karen Lee,Operations,ZN-011,Standard,BDG-1011,Active
+OCC-012,Luis Garcia,Operations,ZN-011,Standard,BDG-1012,Active
+OCC-013,Maria Schmidt,Healthcare,ZN-021,Medical,BDG-1013,Active
+OCC-014,Nathan White,Healthcare,ZN-023,Medical,BDG-1014,Active
+OCC-015,Olivia Taylor,Pharmacy,ZN-025,Standard,BDG-1015,Active

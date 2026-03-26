@@ -1,0 +1,21 @@
+SensorId,SensorName,TurbineId,SensorType,Location,Unit,MinThreshold,MaxThreshold,InstallDate,Status
+SN-001,Alpha-T01-Wind,WT-001,Anemometer,Nacelle Top,m/s,3.0,25.0,2019-03-15,Active
+SN-002,Alpha-T01-Vibration,WT-001,Accelerometer,Gearbox,mm/s,0,10.0,2019-03-15,Active
+SN-003,Alpha-T01-Temp,WT-001,Temperature,Generator,C,10,85,2019-03-15,Active
+SN-004,Alpha-T02-Wind,WT-002,Anemometer,Nacelle Top,m/s,3.0,25.0,2019-03-15,Active
+SN-005,Alpha-T02-Vibration,WT-002,Accelerometer,Gearbox,mm/s,0,10.0,2019-03-15,Active
+SN-006,Prairie-T01-Wind,WT-005,Anemometer,Nacelle Top,m/s,3.0,25.0,2020-07-01,Active
+SN-007,Prairie-T01-Pitch,WT-005,Pitch Angle,Blade Hub,degrees,0,90,2020-07-01,Active
+SN-008,Prairie-T01-Temp,WT-005,Temperature,Generator,C,10,80,2020-07-01,Active
+SN-009,Highland-T01-Wind,WT-008,Anemometer,Nacelle Top,m/s,3.0,25.0,2018-11-20,Active
+SN-010,Highland-T02-Vibration,WT-009,Accelerometer,Main Bearing,mm/s,0,8.0,2018-11-20,Fault
+SN-011,Baltic-T01-Wind,WT-013,Anemometer,Nacelle Top,m/s,3.0,30.0,2022-06-15,Active
+SN-012,Baltic-T01-Yaw,WT-013,Yaw Angle,Nacelle,degrees,0,360,2022-06-15,Active
+SN-013,Baltic-T01-Temp,WT-013,Temperature,Generator,C,5,90,2022-06-15,Active
+SN-014,Baltic-T03-Wind,WT-015,Anemometer,Nacelle Top,m/s,3.0,30.0,2022-07-01,Active
+SN-015,Baltic-T03-Pitch,WT-015,Pitch Angle,Blade Hub,degrees,0,90,2022-07-01,Active
+SN-016,Atacama-T01-Wind,WT-011,Anemometer,Nacelle Top,m/s,3.0,25.0,2021-01-10,Active
+SN-017,Atacama-T01-Temp,WT-011,Temperature,Generator,C,15,85,2021-01-10,Active
+SN-018,Alpha-T03-Wind,WT-003,Anemometer,Nacelle Top,m/s,3.0,25.0,2019-04-01,Active
+SN-019,Alpha-T03-Pitch,WT-003,Pitch Angle,Blade Hub,degrees,0,90,2019-04-01,Active
+SN-020,Prairie-T03-Wind,WT-007,Anemometer,Nacelle Top,m/s,3.0,25.0,2020-08-01,Active

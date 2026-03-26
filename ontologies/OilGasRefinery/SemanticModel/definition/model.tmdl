@@ -1,0 +1,26 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["dimrefinery","dimprocessunit","dimequipment","dimpipeline","dimcrudeoil","dimrefinedproduct","dimstoragetank","dimsensor","dimemployee","factmaintenance","factsafetyalarm","factproduction","bridgecrudeoilprocessunit"]
+
+ref table dimrefinery
+ref table dimprocessunit
+ref table dimequipment
+ref table dimpipeline
+ref table dimcrudeoil
+ref table dimrefinedproduct
+ref table dimstoragetank
+ref table dimsensor
+ref table dimemployee
+ref table factmaintenance
+ref table factsafetyalarm
+ref table factproduction
+ref table bridgecrudeoilprocessunit
+
+ref expression DatabaseQuery
+
+annotation PBI_QueryRelationships = []

@@ -1,0 +1,85 @@
+table dimmachine
+	lineageTag: 30000001-0001-0001-0001-000000000001
+
+	measure 'Machine Count' = COUNTROWS(dimmachine)
+		displayFolder: Measures
+		lineageTag: 30000001-0001-0001-0001-100000000001
+
+	column MachineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MachineId
+		lineageTag: 30000001-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column MachineName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MachineName
+		lineageTag: 30000001-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineId
+		lineageTag: 30000001-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column MachineType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MachineType
+		lineageTag: 30000001-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 30000001-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 30000001-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 30000001-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000001-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column CriticalityLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CriticalityLevel
+		lineageTag: 30000001-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimmachine = entity
+		mode: directLake
+		entityName: dimmachine
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

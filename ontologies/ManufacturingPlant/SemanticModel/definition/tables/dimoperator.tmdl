@@ -1,0 +1,77 @@
+table dimoperator
+	lineageTag: 30000003-0001-0001-0001-000000000001
+
+	measure 'Operator Count' = COUNTROWS(dimoperator)
+		displayFolder: Measures
+		lineageTag: 30000003-0001-0001-0001-100000000001
+
+	column OperatorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: OperatorId
+		lineageTag: 30000003-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column FullName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FullName
+		lineageTag: 30000003-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Role
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Role
+		lineageTag: 30000003-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Shift
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Shift
+		lineageTag: 30000003-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineId
+		lineageTag: 30000003-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column HireDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HireDate
+		lineageTag: 30000003-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column CertificationLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CertificationLevel
+		lineageTag: 30000003-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000003-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimoperator = entity
+		mode: directLake
+		entityName: dimoperator
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

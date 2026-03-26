@@ -1,0 +1,61 @@
+relationship dimrack_DataCenterId_dimdatacenter
+	fromColumn: dimrack.DataCenterId
+	toColumn: dimdatacenter.DataCenterId
+	crossFilteringBehavior: oneDirection
+
+relationship dimserver_RackId_dimrack
+	fromColumn: dimserver.RackId
+	toColumn: dimrack.RackId
+	crossFilteringBehavior: oneDirection
+
+relationship dimapplication_ServerId_dimserver
+	fromColumn: dimapplication.ServerId
+	toColumn: dimserver.ServerId
+	crossFilteringBehavior: oneDirection
+
+relationship dimdatabase_ServerId_dimserver
+	isActive: false
+	fromColumn: dimdatabase.ServerId
+	toColumn: dimserver.ServerId
+	crossFilteringBehavior: oneDirection
+
+relationship dimvirtualmachine_ServerId_dimserver
+	isActive: false
+	fromColumn: dimvirtualmachine.ServerId
+	toColumn: dimserver.ServerId
+	crossFilteringBehavior: oneDirection
+
+relationship dimnetworkdevice_DataCenterId_dimdatacenter
+	isActive: false
+	fromColumn: dimnetworkdevice.DataCenterId
+	toColumn: dimdatacenter.DataCenterId
+	crossFilteringBehavior: oneDirection
+
+relationship dimlicense_AppId_dimapplication
+	fromColumn: dimlicense.AppId
+	toColumn: dimapplication.AppId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_ServerId_dimserver
+	isActive: false
+	fromColumn: factalert.ServerId
+	toColumn: dimserver.ServerId
+	crossFilteringBehavior: oneDirection
+
+relationship factincident_ServerId_dimserver
+	isActive: false
+	fromColumn: factincident.ServerId
+	toColumn: dimserver.ServerId
+	crossFilteringBehavior: oneDirection
+
+relationship factincident_ReportedByUserId_dimuser
+	fromColumn: factincident.ReportedByUserId
+	toColumn: dimuser.UserId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_ServerId_dimserver
+	isActive: false
+	fromColumn: sensortelemetry.ServerId
+	toColumn: dimserver.ServerId
+	crossFilteringBehavior: oneDirection
+

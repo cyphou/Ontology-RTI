@@ -1,0 +1,11 @@
+ElevatorId,ElevatorName,BuildingId,ElevatorType,CapacityLbs,MaxFloors,Manufacturer,InstallDate,Status
+ELV-001,Meridian Elevator 1,BLD-001,Passenger,4000,42,Otis,2018-01-15,Active
+ELV-002,Meridian Elevator 2,BLD-001,Passenger,4000,42,Otis,2018-01-15,Active
+ELV-003,Meridian Service Lift,BLD-001,Freight,8000,42,ThyssenKrupp,2018-01-15,Active
+ELV-004,Meridian Express,BLD-001,Express,5000,42,Otis,2018-01-15,Active
+ELV-005,Campus Elevator 1,BLD-002,Passenger,3500,8,Schindler,2020-01-01,Active
+ELV-006,Campus Elevator 2,BLD-002,Passenger,3500,8,Schindler,2020-01-01,Active
+ELV-007,GreenLeaf Elevator 1,BLD-003,Passenger,4500,35,KONE,2015-06-01,Active
+ELV-008,GreenLeaf Express,BLD-003,Express,5000,35,KONE,2015-06-01,Active
+ELV-009,Nordic Lab Elevator,BLD-004,Passenger,3000,12,Otis,2021-01-01,Active
+ELV-010,Health Plaza Elevator,BLD-005,Passenger,5000,6,ThyssenKrupp,2019-03-01,Active

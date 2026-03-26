@@ -1,0 +1,16 @@
+BladeId,BladeName,TurbineId,BladePosition,LengthM,Material,Manufacturer,InstallDate,LastInspectionDate,Status
+BL-001,Alpha-T01-B1,WT-001,1,80,Carbon Fiber,LM Wind Power,2019-03-15,2024-10-15,Good
+BL-002,Alpha-T01-B2,WT-001,2,80,Carbon Fiber,LM Wind Power,2019-03-15,2024-10-15,Good
+BL-003,Alpha-T01-B3,WT-001,3,80,Carbon Fiber,LM Wind Power,2019-03-15,2024-10-15,Good
+BL-004,Alpha-T02-B1,WT-002,1,80,Carbon Fiber,LM Wind Power,2019-03-15,2024-09-20,Good
+BL-005,Alpha-T02-B2,WT-002,2,80,Carbon Fiber,LM Wind Power,2019-03-15,2024-09-20,Minor Erosion
+BL-006,Prairie-T01-B1,WT-005,1,62,Fiberglass,TPI Composites,2020-07-01,2024-10-01,Good
+BL-007,Prairie-T01-B2,WT-005,2,62,Fiberglass,TPI Composites,2020-07-01,2024-10-01,Good
+BL-008,Prairie-T01-B3,WT-005,3,62,Fiberglass,TPI Composites,2020-07-01,2024-10-01,Good
+BL-009,Highland-T01-B1,WT-008,1,66,Carbon Fiber,LM Wind Power,2018-11-20,2024-11-10,Good
+BL-010,Highland-T02-B1,WT-009,1,66,Carbon Fiber,LM Wind Power,2018-11-20,2024-07-20,Crack Detected
+BL-011,Baltic-T01-B1,WT-013,1,107,Carbon Fiber,LM Wind Power,2022-06-15,2024-11-05,Good
+BL-012,Baltic-T01-B2,WT-013,2,107,Carbon Fiber,LM Wind Power,2022-06-15,2024-11-05,Good
+BL-013,Baltic-T01-B3,WT-013,3,107,Carbon Fiber,LM Wind Power,2022-06-15,2024-11-05,Good
+BL-014,Baltic-T03-B1,WT-015,1,115,Carbon Fiber,Vestas,2022-07-01,2024-11-15,Good
+BL-015,Baltic-T03-B2,WT-015,2,115,Carbon Fiber,Vestas,2022-07-01,2024-11-15,Good

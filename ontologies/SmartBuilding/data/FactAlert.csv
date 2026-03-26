@@ -1,0 +1,33 @@
+AlertId,SensorId,AlertType,Severity,AlertTimestamp,AcknowledgedTimestamp,AlertValue,ThresholdValue,Description,Status
+ALR-001,SNS-017,HighTemperature,Critical,2024-01-15T14:30:00,2024-01-15T14:32:00,88.5,80.0,Server room temperature exceeded critical threshold,Acknowledged
+ALR-002,SNS-018,HighHumidity,High,2024-01-15T14:35:00,2024-01-15T14:40:00,72.0,65.0,Server room humidity above safe operating range,Acknowledged
+ALR-003,SNS-007,HighCO2,Medium,2024-02-05T09:15:00,2024-02-05T09:30:00,1850.0,1500.0,Office A CO2 levels elevated - high occupancy,Acknowledged
+ALR-004,SNS-014,HighCO2,Medium,2024-02-12T14:00:00,2024-02-12T14:15:00,1920.0,1500.0,Campus workspace CO2 spike during all-hands meeting,Acknowledged
+ALR-005,SNS-021,LowTemperature,High,2024-03-01T06:00:00,2024-03-01T06:10:00,58.0,65.0,Patient wing temperature dropped below healthcare minimum,Acknowledged
+ALR-006,SNS-023,HighTemperature,Critical,2024-03-15T22:00:00,2024-03-15T22:05:00,82.0,76.0,ER Suite overheating - HVAC failure detected,Acknowledged
+ALR-007,SNS-001,HighTemperature,Low,2024-04-10T12:00:00,,78.5,76.0,Lobby temperature slightly above comfort range,Active
+ALR-008,SNS-020,PoorAirQuality,High,2024-04-20T10:30:00,2024-04-20T10:45:00,180.0,150.0,Lab A air quality index exceeded threshold,Acknowledged
+ALR-009,SNS-017,HighTemperature,Critical,2024-05-01T03:00:00,2024-05-01T03:02:00,92.0,80.0,Server room critical temp - CRAC unit failure,Acknowledged
+ALR-010,SNS-028,HighCO2,Medium,2024-05-15T17:00:00,,2100.0,1500.0,Fitness center CO2 elevated after peak gym hours,Active
+ALR-011,SNS-022,HighHumidity,High,2024-06-01T08:00:00,2024-06-01T08:20:00,70.0,60.0,Patient wing humidity above healthcare standard,Acknowledged
+ALR-012,SNS-025,HighTemperature,High,2024-06-15T14:00:00,2024-06-15T14:10:00,79.0,72.0,Pharmacy temperature above medication storage limit,Acknowledged
+ALR-013,SNS-019,LowTemperature,Medium,2024-07-01T07:00:00,2024-07-01T07:30:00,60.0,65.0,Lab A temperature below experiment requirements,Acknowledged
+ALR-014,SNS-003,HighOccupancy,Low,2024-07-15T12:30:00,,85.0,80.0,Lobby occupancy approaching maximum capacity,Active
+ALR-015,SNS-017,HighTemperature,Critical,2024-08-01T02:30:00,2024-08-01T02:33:00,95.0,80.0,Server room critical - backup cooling activated,Acknowledged
+"ALT-001","SNS-022","MotionAfterHours","High",,,,"60.5",,
+"ALT-002","SNS-027","MotionAfterHours","Low",,,,"45.5",,
+"ALT-003","SNS-021","DoorForcedOpen","Low",,,,"54.5",,
+"ALT-004","SNS-001","ElevatorFault","Critical",,,,"51.5",,
+"ALT-005","SNS-001","ElevatorFault","Low",,,,"77.5",,
+"ALT-006","SNS-026","HVACFailure","Medium",,,,"78.5",,
+"ALT-007","SNS-016","HVACFailure","Low",,,,"45.5",,
+"ALT-008","SNS-026","ElevatorFault","High",,,,"96.5",,
+"ALT-009","SNS-025","SmokeDetected","High",,,,"83.5",,
+"ALT-010","SNS-004","DoorForcedOpen","High",,,,"54.5",,
+"ALT-011","SNS-010","HighTemperature","High",,,,"84.5",,
+"ALT-012","SNS-010","LowAirQuality","Medium",,,,"41.5",,
+"ALT-013","SNS-025","WaterLeak","Low",,,,"98.5",,
+"ALT-014","SNS-015","WaterLeak","Critical",,,,"67.5",,
+"ALT-015","SNS-014","LowAirQuality","Medium",,,,"66.5",,
+"ALT-016","SNS-001","MotionAfterHours","Critical",,,,"93.5",,
+"ALT-017","SNS-018","HighTemperature","Medium",,,,"42.5",,

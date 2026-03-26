@@ -1,0 +1,88 @@
+relationship dimprocessunit_RefineryId_dimrefinery
+	fromColumn: dimprocessunit.RefineryId
+	toColumn: dimrefinery.RefineryId
+	crossFilteringBehavior: oneDirection
+
+relationship dimequipment_ProcessUnitId_dimprocessunit
+	fromColumn: dimequipment.ProcessUnitId
+	toColumn: dimprocessunit.ProcessUnitId
+	crossFilteringBehavior: oneDirection
+
+relationship dimpipeline_FromProcessUnitId_dimprocessunit
+	fromColumn: dimpipeline.FromProcessUnitId
+	toColumn: dimprocessunit.ProcessUnitId
+	crossFilteringBehavior: oneDirection
+
+relationship dimpipeline_ToProcessUnitId_dimprocessunit
+	isActive: false
+	fromColumn: dimpipeline.ToProcessUnitId
+	toColumn: dimprocessunit.ProcessUnitId
+	crossFilteringBehavior: oneDirection
+
+relationship dimpipeline_RefineryId_dimrefinery
+	isActive: false
+	fromColumn: dimpipeline.RefineryId
+	toColumn: dimrefinery.RefineryId
+	crossFilteringBehavior: oneDirection
+
+relationship dimstoragetank_RefineryId_dimrefinery
+	fromColumn: dimstoragetank.RefineryId
+	toColumn: dimrefinery.RefineryId
+	crossFilteringBehavior: oneDirection
+
+relationship dimstoragetank_ProductId_dimrefinedproduct
+	fromColumn: dimstoragetank.ProductId
+	toColumn: dimrefinedproduct.ProductId
+	crossFilteringBehavior: oneDirection
+
+relationship dimsensor_EquipmentId_dimequipment
+	fromColumn: dimsensor.EquipmentId
+	toColumn: dimequipment.EquipmentId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenance_EquipmentId_dimequipment
+	fromColumn: factmaintenance.EquipmentId
+	toColumn: dimequipment.EquipmentId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenance_PerformedByEmployeeId_dimemployee
+	fromColumn: factmaintenance.PerformedByEmployeeId
+	toColumn: dimemployee.EmployeeId
+	crossFilteringBehavior: oneDirection
+
+relationship factsafetyalarm_SensorId_dimsensor
+	fromColumn: factsafetyalarm.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+
+relationship factsafetyalarm_AcknowledgedByEmployeeId_dimemployee
+	isActive: false
+	fromColumn: factsafetyalarm.AcknowledgedByEmployeeId
+	toColumn: dimemployee.EmployeeId
+	crossFilteringBehavior: oneDirection
+
+relationship factproduction_ProcessUnitId_dimprocessunit
+	fromColumn: factproduction.ProcessUnitId
+	toColumn: dimprocessunit.ProcessUnitId
+	crossFilteringBehavior: oneDirection
+
+relationship factproduction_ProductId_dimrefinedproduct
+	fromColumn: factproduction.ProductId
+	toColumn: dimrefinedproduct.ProductId
+	crossFilteringBehavior: oneDirection
+
+relationship dimemployee_RefineryId_dimrefinery
+	isActive: false
+	fromColumn: dimemployee.RefineryId
+	toColumn: dimrefinery.RefineryId
+	crossFilteringBehavior: oneDirection
+
+relationship bridgecrudeoilprocessunit_CrudeOilId_dimcrudeoil
+	fromColumn: bridgecrudeoilprocessunit.CrudeOilId
+	toColumn: dimcrudeoil.CrudeOilId
+	crossFilteringBehavior: oneDirection
+
+relationship bridgecrudeoilprocessunit_ProcessUnitId_dimprocessunit
+	fromColumn: bridgecrudeoilprocessunit.ProcessUnitId
+	toColumn: dimprocessunit.ProcessUnitId
+	crossFilteringBehavior: oneDirection

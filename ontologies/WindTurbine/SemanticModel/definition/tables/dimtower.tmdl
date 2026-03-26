@@ -1,0 +1,85 @@
+table dimtower
+	lineageTag: 50000005-0001-0001-0001-000000000001
+
+	measure 'Tower Count' = COUNTROWS(dimtower)
+		displayFolder: Measures
+		lineageTag: 50000005-0001-0001-0001-100000000001
+
+	column TowerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TowerId
+		lineageTag: 50000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TowerName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TowerName
+		lineageTag: 50000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column TurbineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TurbineId
+		lineageTag: 50000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column HeightM
+		dataType: double
+		summarizeBy: none
+		sourceColumn: HeightM
+		lineageTag: 50000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Material
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Material
+		lineageTag: 50000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sections
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Sections
+		lineageTag: 50000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column FoundationType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FoundationType
+		lineageTag: 50000005-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 50000005-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000005-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimtower = entity
+		mode: directLake
+		entityName: dimtower
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

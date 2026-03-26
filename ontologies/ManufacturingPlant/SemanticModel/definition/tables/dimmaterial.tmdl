@@ -1,0 +1,82 @@
+table dimmaterial
+	lineageTag: 30000002-0001-0001-0001-000000000001
+
+	measure 'Material Count' = COUNTROWS(dimmaterial)
+		displayFolder: Measures
+		lineageTag: 30000002-0001-0001-0001-100000000001
+
+	measure 'Total Material Value' = SUMX(dimmaterial, dimmaterial[UnitCost] * dimmaterial[CurrentStock])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 30000002-0001-0001-0001-100000000002
+
+	column MaterialId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialId
+		lineageTag: 30000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaterialName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialName
+		lineageTag: 30000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaterialType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialType
+		lineageTag: 30000002-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Supplier
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Supplier
+		lineageTag: 30000002-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitCost
+		dataType: double
+		summarizeBy: none
+		sourceColumn: UnitCost
+		lineageTag: 30000002-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitOfMeasure
+		dataType: string
+		summarizeBy: none
+		sourceColumn: UnitOfMeasure
+		lineageTag: 30000002-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column MinStockLevel
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MinStockLevel
+		lineageTag: 30000002-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column CurrentStock
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CurrentStock
+		lineageTag: 30000002-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimmaterial = entity
+		mode: directLake
+		entityName: dimmaterial
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

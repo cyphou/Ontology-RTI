@@ -1,0 +1,93 @@
+table dimnetworkdevice
+	lineageTag: 40000005-0001-0001-0001-000000000001
+
+	measure 'Network Device Count' = COUNTROWS(dimnetworkdevice)
+		displayFolder: Measures
+		lineageTag: 40000005-0001-0001-0001-100000000001
+
+	column DeviceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceId
+		lineageTag: 40000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceName
+		lineageTag: 40000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataCenterId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DataCenterId
+		lineageTag: 40000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceType
+		lineageTag: 40000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 40000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 40000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Ports
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Ports
+		lineageTag: 40000005-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column IPAddress
+		dataType: string
+		summarizeBy: none
+		sourceColumn: IPAddress
+		lineageTag: 40000005-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Firmware
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Firmware
+		lineageTag: 40000005-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000005-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimnetworkdevice = entity
+		mode: directLake
+		entityName: dimnetworkdevice
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

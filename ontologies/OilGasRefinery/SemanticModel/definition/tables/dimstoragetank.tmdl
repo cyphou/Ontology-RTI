@@ -1,0 +1,124 @@
+table dimstoragetank
+	lineageTag: 10000007-0001-0001-0001-000000000001
+
+	measure 'Tank Count' = COUNTROWS(dimstoragetank)
+		displayFolder: Measures
+		lineageTag: 10000007-0001-0001-0001-100000000001
+
+	measure 'Total Tank Capacity' = SUM(dimstoragetank[CapacityBarrels])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 10000007-0001-0001-0001-100000000002
+
+	measure 'Total Current Level' = SUM(dimstoragetank[CurrentLevelBarrels])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 10000007-0001-0001-0001-100000000003
+
+	measure 'Tank Utilization %' = DIVIDE(SUM(dimstoragetank[CurrentLevelBarrels]), SUM(dimstoragetank[CapacityBarrels]), 0)
+		formatString: 0.00%
+		displayFolder: Measures
+		lineageTag: 10000007-0001-0001-0001-100000000004
+
+	column TankId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TankId
+		lineageTag: 10000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TankName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TankName
+		lineageTag: 10000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column RefineryId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RefineryId
+		lineageTag: 10000007-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductId
+		lineageTag: 10000007-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column TankType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TankType
+		lineageTag: 10000007-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityBarrels
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: CapacityBarrels
+		lineageTag: 10000007-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column CurrentLevelBarrels
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: CurrentLevelBarrels
+		lineageTag: 10000007-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column DiameterFeet
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DiameterFeet
+		lineageTag: 10000007-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column HeightFeet
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HeightFeet
+		lineageTag: 10000007-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Material
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Material
+		lineageTag: 10000007-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 10000007-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastInspectionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastInspectionDate
+		lineageTag: 10000007-0001-0001-0001-200000000012
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimstoragetank = entity
+		mode: directLake
+		entityName: dimstoragetank
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

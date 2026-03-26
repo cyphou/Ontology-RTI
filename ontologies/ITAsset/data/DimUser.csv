@@ -1,0 +1,11 @@
+UserId,FullName,Department,Role,Email,AccessLevel,Status
+USR-001,Alice Wang,Engineering,VP Engineering,alice.wang@corp.com,Admin,Active
+USR-002,Bob Taylor,SRE,Senior SRE,bob.taylor@corp.com,Admin,Active
+USR-003,Carol Nguyen,DevOps,DevOps Lead,carol.nguyen@corp.com,Admin,Active
+USR-004,David Patel,Engineering,Senior Developer,david.patel@corp.com,Developer,Active
+USR-005,Elena Rossi,Data Team,Data Engineer,elena.rossi@corp.com,Developer,Active
+USR-006,Frank Okafor,IT,IT Manager,frank.okafor@corp.com,Admin,Active
+USR-007,Grace Kim,Security,Security Analyst,grace.kim@corp.com,Security,Active
+USR-008,Henry Liu,Operations,Ops Manager,henry.liu@corp.com,Standard,Active
+USR-009,Irene Schmidt,Finance,Financial Analyst,irene.schmidt@corp.com,Standard,Active
+USR-010,James Brown,HR,HR Director,james.brown@corp.com,Standard,Active

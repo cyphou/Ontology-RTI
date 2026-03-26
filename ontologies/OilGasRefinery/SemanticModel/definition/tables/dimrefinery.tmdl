@@ -1,0 +1,111 @@
+table dimrefinery
+	lineageTag: 10000001-0001-0001-0001-000000000001
+
+	measure 'Total Capacity BPD' = SUM(dimrefinery[CapacityBPD])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 10000001-0001-0001-0001-100000000001
+
+	measure 'Refinery Count' = COUNTROWS(dimrefinery)
+		displayFolder: Measures
+		lineageTag: 10000001-0001-0001-0001-100000000002
+
+	column RefineryId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RefineryId
+		lineageTag: 10000001-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column RefineryName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RefineryName
+		lineageTag: 10000001-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Country
+		lineageTag: 10000001-0001-0001-0001-200000000003
+		dataCategory: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		summarizeBy: none
+		sourceColumn: State
+		lineageTag: 10000001-0001-0001-0001-200000000004
+		dataCategory: StateOrProvince
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		summarizeBy: none
+		sourceColumn: City
+		lineageTag: 10000001-0001-0001-0001-200000000005
+		dataCategory: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column Latitude
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Latitude
+		lineageTag: 10000001-0001-0001-0001-200000000006
+		dataCategory: Latitude
+
+		annotation SummarizationSetBy = Automatic
+
+	column Longitude
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Longitude
+		lineageTag: 10000001-0001-0001-0001-200000000007
+		dataCategory: Longitude
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityBPD
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: CapacityBPD
+		lineageTag: 10000001-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearBuilt
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: YearBuilt
+		lineageTag: 10000001-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 10000001-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Operator
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Operator
+		lineageTag: 10000001-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimrefinery = entity
+		mode: directLake
+		entityName: dimrefinery
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

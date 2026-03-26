@@ -1,0 +1,85 @@
+table dimapplication
+	lineageTag: 40000001-0001-0001-0001-000000000001
+
+	measure 'Application Count' = COUNTROWS(dimapplication)
+		displayFolder: Measures
+		lineageTag: 40000001-0001-0001-0001-100000000001
+
+	column AppId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AppId
+		lineageTag: 40000001-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column AppName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AppName
+		lineageTag: 40000001-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerId
+		lineageTag: 40000001-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column AppType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AppType
+		lineageTag: 40000001-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Version
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Version
+		lineageTag: 40000001-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Environment
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Environment
+		lineageTag: 40000001-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Owner
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Owner
+		lineageTag: 40000001-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column SLATier
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SLATier
+		lineageTag: 40000001-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000001-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimapplication = entity
+		mode: directLake
+		entityName: dimapplication
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

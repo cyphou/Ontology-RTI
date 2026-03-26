@@ -1,0 +1,100 @@
+table factproductionbatch
+	lineageTag: 30000010-0001-0001-0001-000000000001
+
+	measure 'Batch Count' = COUNTROWS(factproductionbatch)
+		displayFolder: Measures
+		lineageTag: 30000010-0001-0001-0001-100000000001
+
+	measure 'Total Quantity Produced' = SUM(factproductionbatch[QuantityProduced])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 30000010-0001-0001-0001-100000000002
+
+	measure 'Avg Defect Rate' = AVERAGE(factproductionbatch[DefectRate])
+		formatString: 0.00%
+		displayFolder: Measures
+		lineageTag: 30000010-0001-0001-0001-100000000003
+
+	measure 'Total Energy Used KWh' = SUM(factproductionbatch[EnergyUsedKWh])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 30000010-0001-0001-0001-100000000004
+
+	column BatchId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BatchId
+		lineageTag: 30000010-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineId
+		lineageTag: 30000010-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductId
+		lineageTag: 30000010-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column StartTime
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StartTime
+		lineageTag: 30000010-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column EndTime
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EndTime
+		lineageTag: 30000010-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuantityProduced
+		dataType: double
+		summarizeBy: none
+		sourceColumn: QuantityProduced
+		lineageTag: 30000010-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column DefectRate
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DefectRate
+		lineageTag: 30000010-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column EnergyUsedKWh
+		dataType: double
+		summarizeBy: none
+		sourceColumn: EnergyUsedKWh
+		lineageTag: 30000010-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000010-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factproductionbatch = entity
+		mode: directLake
+		entityName: factproductionbatch
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

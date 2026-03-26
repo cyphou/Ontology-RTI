@@ -1,0 +1,13 @@
+HVACId,HVACName,ZoneId,HVACType,CapacityBTU,Manufacturer,Model,InstallDate,Status,EnergyRating
+HVAC-001,Lobby AHU-1,ZN-001,Air Handling Unit,120000,Carrier,39M-080,2018-03-15,Active,A+
+HVAC-002,Conf Wing VAV-1,ZN-002,VAV Box,48000,Trane,BAMV-036,2018-03-15,Active,A
+HVAC-003,Office A RTU-1,ZN-005,Rooftop Unit,96000,Daikin,DPS-072,2018-04-01,Active,A+
+HVAC-004,Office B RTU-2,ZN-006,Rooftop Unit,84000,Daikin,DPS-060,2018-04-01,Active,A
+HVAC-005,Executive FCU-1,ZN-008,Fan Coil Unit,36000,Mitsubishi,PKFY-P36,2018-06-01,Active,A+
+HVAC-006,Sky Lounge AHU-2,ZN-009,Air Handling Unit,144000,Carrier,39M-100,2018-06-01,Active,A
+HVAC-007,Campus AHU-1,ZN-011,Air Handling Unit,200000,Johnson Controls,YK-150,2020-01-15,Active,A+
+HVAC-008,Cafeteria MAU-1,ZN-012,Makeup Air Unit,160000,Carrier,39M-120,2020-01-15,Active,A
+HVAC-009,Server Room CRAC-1,ZN-014,CRAC Unit,60000,Vertiv,Liebert-DS,2020-02-01,Active,A+
+HVAC-010,Lab Fume Hood,ZN-019,Fume Hood Exhaust,72000,Elta,EKC-050,2021-03-01,Active,B+
+HVAC-011,Patient Wing AHU,ZN-021,Air Handling Unit,108000,Trane,M-Series-80,2019-05-01,Active,A+
+HVAC-012,ER Suite AHU,ZN-023,Air Handling Unit,96000,Trane,M-Series-72,2019-05-01,Active,A+

@@ -1,0 +1,11 @@
+VMId,VMName,ServerId,vCPU,MemoryGB,DiskGB,OS,Status
+VM-001,vm-web-01,SRV-001,8,32,100,Ubuntu 22.04,Running
+VM-002,vm-web-02,SRV-001,8,32,100,Ubuntu 22.04,Running
+VM-003,vm-web-03,SRV-002,8,32,100,Ubuntu 22.04,Running
+VM-004,vm-app-01,SRV-003,16,64,200,RHEL 9,Running
+VM-005,vm-app-02,SRV-003,16,64,200,RHEL 9,Running
+VM-006,vm-app-03,SRV-004,16,64,200,RHEL 9,Running
+VM-007,vm-ci-01,SRV-004,8,32,500,Ubuntu 22.04,Running
+VM-008,vm-monitor-01,SRV-002,8,64,300,Ubuntu 22.04,Running
+VM-009,vm-web-west-01,SRV-008,8,32,100,Ubuntu 22.04,Running
+VM-010,vm-app-eu-01,SRV-011,16,64,200,RHEL 9,Running

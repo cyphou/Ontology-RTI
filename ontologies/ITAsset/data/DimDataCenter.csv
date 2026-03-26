@@ -1,0 +1,6 @@
+DataCenterId,DataCenterName,Location,City,Country,TotalRackCapacity,TierLevel,PowerCapacityKW,Status
+DC-001,US East Primary,Virginia,Ashburn,USA,2000,Tier 4,15000,Active
+DC-002,US West Secondary,Oregon,The Dalles,USA,1500,Tier 3,12000,Active
+DC-003,EU Central,Netherlands,Amsterdam,Netherlands,1200,Tier 4,10000,Active
+DC-004,APAC Hub,Singapore,Singapore,Singapore,800,Tier 3,8000,Active
+DC-005,UK Disaster Recovery,England,London,UK,600,Tier 3,5000,Active

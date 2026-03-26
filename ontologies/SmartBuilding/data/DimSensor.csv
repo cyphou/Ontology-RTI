@@ -1,0 +1,31 @@
+SensorId,SensorName,SensorType,ZoneId,MeasurementUnit,MinRange,MaxRange,InstallDate,Status,Manufacturer
+SNS-001,Lobby Temp Sensor,Temperature,ZN-001,Fahrenheit,32,120,2018-03-20,Active,Honeywell
+SNS-002,Lobby CO2 Sensor,CO2,ZN-001,PPM,0,5000,2018-03-20,Active,Siemens
+SNS-003,Lobby Motion Sensor,Occupancy,ZN-001,Count,0,100,2018-03-20,Active,Honeywell
+SNS-004,Conf Wing Temp,Temperature,ZN-002,Fahrenheit,32,120,2018-03-20,Active,Honeywell
+SNS-005,Office A Temp,Temperature,ZN-005,Fahrenheit,32,120,2018-04-05,Active,Johnson Controls
+SNS-006,Office A Humidity,Humidity,ZN-005,Percent,0,100,2018-04-05,Active,Johnson Controls
+SNS-007,Office A CO2,CO2,ZN-005,PPM,0,5000,2018-04-05,Active,Siemens
+SNS-008,Office A Occupancy,Occupancy,ZN-005,Count,0,80,2018-04-05,Active,Honeywell
+SNS-009,Office B Temp,Temperature,ZN-006,Fahrenheit,32,120,2018-04-05,Active,Johnson Controls
+SNS-010,Executive Temp,Temperature,ZN-008,Fahrenheit,32,120,2018-06-05,Active,Honeywell
+SNS-011,Executive Light Sensor,LightLevel,ZN-008,Lux,0,2000,2018-06-05,Active,Philips
+SNS-012,Sky Lounge Temp,Temperature,ZN-009,Fahrenheit,32,120,2018-06-05,Active,Honeywell
+SNS-013,Campus Workspace Temp,Temperature,ZN-011,Fahrenheit,32,120,2020-01-20,Active,Siemens
+SNS-014,Campus CO2,CO2,ZN-011,PPM,0,5000,2020-01-20,Active,Siemens
+SNS-015,Campus Occupancy,Occupancy,ZN-011,Count,0,120,2020-01-20,Active,Honeywell
+SNS-016,Cafeteria Temp,Temperature,ZN-012,Fahrenheit,32,120,2020-01-20,Active,Johnson Controls
+SNS-017,Server Room Temp,Temperature,ZN-014,Fahrenheit,32,120,2020-02-05,Active,Vertiv
+SNS-018,Server Room Humidity,Humidity,ZN-014,Percent,0,100,2020-02-05,Active,Vertiv
+SNS-019,Lab A Temp,Temperature,ZN-019,Fahrenheit,32,120,2021-03-10,Active,Siemens
+SNS-020,Lab A Air Quality,AirQuality,ZN-019,AQI,0,500,2021-03-10,Active,Honeywell
+SNS-021,Patient Wing Temp,Temperature,ZN-021,Fahrenheit,32,120,2019-05-10,Active,Honeywell
+SNS-022,Patient Wing Humidity,Humidity,ZN-021,Percent,0,100,2019-05-10,Active,Honeywell
+SNS-023,ER Suite Temp,Temperature,ZN-023,Fahrenheit,32,120,2019-05-10,Active,Honeywell
+SNS-024,Waiting Area Occupancy,Occupancy,ZN-022,Count,0,60,2019-05-10,Active,Honeywell
+SNS-025,Pharmacy Temp,Temperature,ZN-025,Fahrenheit,32,120,2019-06-05,Active,Siemens
+SNS-026,Lobby Light Sensor,LightLevel,ZN-001,Lux,0,2000,2018-03-20,Active,Philips
+SNS-027,Fitness Temp,Temperature,ZN-018,Fahrenheit,32,120,2020-02-01,Active,Johnson Controls
+SNS-028,Fitness CO2,CO2,ZN-018,PPM,0,5000,2020-02-01,Active,Siemens
+SNS-029,Board Room Temp,Temperature,ZN-010,Fahrenheit,32,120,2018-06-05,Active,Honeywell
+SNS-030,Board Room Occupancy,Occupancy,ZN-010,Count,0,40,2018-06-05,Active,Honeywell

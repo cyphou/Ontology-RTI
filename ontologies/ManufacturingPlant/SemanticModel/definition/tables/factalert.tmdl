@@ -1,0 +1,89 @@
+table factalert
+	lineageTag: 30000008-0001-0001-0001-000000000001
+
+	measure 'Alert Count' = COUNTROWS(factalert)
+		displayFolder: Measures
+		lineageTag: 30000008-0001-0001-0001-100000000001
+
+	measure 'Critical Alert Count' = CALCULATE(COUNTROWS(factalert), factalert[Severity] = "Critical")
+		displayFolder: Measures
+		lineageTag: 30000008-0001-0001-0001-100000000002
+
+	column AlertId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AlertId
+		lineageTag: 30000008-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 30000008-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column AlertType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AlertType
+		lineageTag: 30000008-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Severity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Severity
+		lineageTag: 30000008-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Timestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Timestamp
+		lineageTag: 30000008-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Value
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Value
+		lineageTag: 30000008-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Threshold
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Threshold
+		lineageTag: 30000008-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 30000008-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000008-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factalert = entity
+		mode: directLake
+		entityName: factalert
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

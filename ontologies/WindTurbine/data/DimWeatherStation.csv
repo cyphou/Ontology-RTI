@@ -1,0 +1,8 @@
+StationId,StationName,WindFarmId,Latitude,Longitude,ElevationM,InstallDate,Status
+WS-001,North Sea Met Alpha,WF-001,56.5100,2.0100,15,2018-12-01,Active
+WS-002,North Sea Met Beta,WF-001,56.4900,1.9900,15,2018-12-01,Active
+WS-003,Prairie Met Station,WF-002,38.5100,-98.7100,520,2020-03-01,Active
+WS-004,Highland Met Station,WF-003,57.5100,-5.0100,280,2018-06-01,Active
+WS-005,Atacama Met Station,WF-004,-24.5100,-69.2100,1200,2020-09-01,Active
+WS-006,Baltic Met Alpha,WF-005,55.0100,14.0100,12,2022-02-01,Active
+WS-007,Baltic Met Beta,WF-005,54.9900,13.9900,12,2022-02-01,Active

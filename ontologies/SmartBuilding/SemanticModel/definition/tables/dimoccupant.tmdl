@@ -1,0 +1,69 @@
+table dimoccupant
+	lineageTag: 20000008-0001-0001-0001-000000000001
+
+	measure 'Occupant Count' = COUNTROWS(dimoccupant)
+		displayFolder: Measures
+		lineageTag: 20000008-0001-0001-0001-100000000001
+
+	column OccupantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: OccupantId
+		lineageTag: 20000008-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column FullName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FullName
+		lineageTag: 20000008-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Department
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Department
+		lineageTag: 20000008-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ZoneId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ZoneId
+		lineageTag: 20000008-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column AccessLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AccessLevel
+		lineageTag: 20000008-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column BadgeId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BadgeId
+		lineageTag: 20000008-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000008-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimoccupant = entity
+		mode: directLake
+		entityName: dimoccupant
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

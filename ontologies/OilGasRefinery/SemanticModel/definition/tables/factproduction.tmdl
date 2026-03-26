@@ -1,0 +1,105 @@
+table factproduction
+	lineageTag: 10000012-0001-0001-0001-000000000001
+
+	measure 'Total Output Barrels' = SUM(factproduction[OutputBarrels])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 10000012-0001-0001-0001-100000000001
+
+	measure 'Avg Yield %' = AVERAGE(factproduction[YieldPercent])
+		formatString: 0.00%
+		displayFolder: Measures
+		lineageTag: 10000012-0001-0001-0001-100000000002
+
+	measure 'Total Energy Consumption' = SUM(factproduction[EnergyConsumptionMMBTU])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 10000012-0001-0001-0001-100000000003
+
+	measure 'Production Records' = COUNTROWS(factproduction)
+		displayFolder: Measures
+		lineageTag: 10000012-0001-0001-0001-100000000004
+
+	measure 'Energy Per Barrel' = DIVIDE(SUM(factproduction[EnergyConsumptionMMBTU]), SUM(factproduction[OutputBarrels]), 0)
+		formatString: #,0.0000
+		displayFolder: Measures
+		lineageTag: 10000012-0001-0001-0001-100000000005
+
+	column ProductionId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductionId
+		lineageTag: 10000012-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcessUnitId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcessUnitId
+		lineageTag: 10000012-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductId
+		lineageTag: 10000012-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductionDate
+		lineageTag: 10000012-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column OutputBarrels
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: OutputBarrels
+		lineageTag: 10000012-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column YieldPercent
+		dataType: double
+		summarizeBy: average
+		sourceColumn: YieldPercent
+		lineageTag: 10000012-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column QualityGrade
+		dataType: string
+		summarizeBy: none
+		sourceColumn: QualityGrade
+		lineageTag: 10000012-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column EnergyConsumptionMMBTU
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: EnergyConsumptionMMBTU
+		lineageTag: 10000012-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Notes
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Notes
+		lineageTag: 10000012-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factproduction = entity
+		mode: directLake
+		entityName: factproduction
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

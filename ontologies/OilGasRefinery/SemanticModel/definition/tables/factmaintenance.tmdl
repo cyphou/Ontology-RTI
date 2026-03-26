@@ -1,0 +1,129 @@
+table factmaintenance
+	lineageTag: 10000010-0001-0001-0001-000000000001
+
+	measure 'Total Maintenance Cost' = SUM(factmaintenance[CostUSD])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 10000010-0001-0001-0001-100000000001
+
+	measure 'Avg Maintenance Duration' = AVERAGE(factmaintenance[DurationHours])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 10000010-0001-0001-0001-100000000002
+
+	measure 'Maintenance Events' = COUNTROWS(factmaintenance)
+		displayFolder: Measures
+		lineageTag: 10000010-0001-0001-0001-100000000003
+
+	measure 'Corrective Maintenance Count' = CALCULATE(COUNTROWS(factmaintenance), factmaintenance[MaintenanceType] = "Corrective")
+		displayFolder: Measures
+		lineageTag: 10000010-0001-0001-0001-100000000004
+
+	measure 'Preventive Maintenance %' = DIVIDE(CALCULATE(COUNTROWS(factmaintenance), factmaintenance[MaintenanceType] = "Preventive"), COUNTROWS(factmaintenance), 0)
+		formatString: 0.00%
+		displayFolder: Measures
+		lineageTag: 10000010-0001-0001-0001-100000000005
+
+	column MaintenanceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaintenanceId
+		lineageTag: 10000010-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentId
+		lineageTag: 10000010-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaintenanceType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaintenanceType
+		lineageTag: 10000010-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Priority
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Priority
+		lineageTag: 10000010-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column PerformedByEmployeeId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PerformedByEmployeeId
+		lineageTag: 10000010-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column StartDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StartDate
+		lineageTag: 10000010-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column EndDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EndDate
+		lineageTag: 10000010-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column DurationHours
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: DurationHours
+		lineageTag: 10000010-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostUSD
+		dataType: double
+		formatString: $#,0.00
+		summarizeBy: sum
+		sourceColumn: CostUSD
+		lineageTag: 10000010-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 10000010-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WorkOrderNumber
+		lineageTag: 10000010-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 10000010-0001-0001-0001-200000000012
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factmaintenance = entity
+		mode: directLake
+		entityName: factmaintenance
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

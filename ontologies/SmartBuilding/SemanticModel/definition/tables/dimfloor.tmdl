@@ -1,0 +1,74 @@
+table dimfloor
+	lineageTag: 20000005-0001-0001-0001-000000000001
+
+	measure 'Floor Count' = COUNTROWS(dimfloor)
+		displayFolder: Measures
+		lineageTag: 20000005-0001-0001-0001-100000000001
+
+	measure 'Total Floor Area SqFt' = SUM(dimfloor[AreaSqFt])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 20000005-0001-0001-0001-100000000002
+
+	column FloorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FloorId
+		lineageTag: 20000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column FloorName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FloorName
+		lineageTag: 20000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column BuildingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingId
+		lineageTag: 20000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column FloorNumber
+		dataType: double
+		summarizeBy: none
+		sourceColumn: FloorNumber
+		lineageTag: 20000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column AreaSqFt
+		dataType: double
+		summarizeBy: none
+		sourceColumn: AreaSqFt
+		lineageTag: 20000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column ZoneCount
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ZoneCount
+		lineageTag: 20000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000005-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimfloor = entity
+		mode: directLake
+		entityName: dimfloor
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

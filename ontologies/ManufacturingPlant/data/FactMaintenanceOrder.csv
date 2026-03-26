@@ -1,0 +1,16 @@
+OrderId,MachineId,OrderType,Priority,AssignedToOperatorId,StartDate,EndDate,DurationHours,CostUSD,Description,Status
+MO-001,MCH-001,Preventive,Medium,OPR-011,2024-01-15,2024-01-15,4.0,850,Quarterly robot calibration and joint lubrication,Completed
+MO-002,MCH-008,Corrective,Critical,OPR-010,2024-01-22,2024-01-23,12.0,5200,Spindle bearing replacement after vibration alarm,Completed
+MO-003,MCH-006,Preventive,Medium,OPR-009,2024-02-01,2024-02-01,3.0,420,Paint booth filter replacement and nozzle cleaning,Completed
+MO-004,MCH-011,Corrective,High,OPR-005,2024-02-15,2024-02-16,8.0,3800,Pick and place head calibration drift repair,Completed
+MO-005,MCH-015,Preventive,Medium,OPR-007,2024-03-01,2024-03-01,2.5,350,Injection mold cleaning and hydraulic fluid check,Completed
+MO-006,MCH-004,Emergency,Critical,OPR-011,2024-03-10,2024-03-12,16.0,8500,Hydraulic press cylinder seal failure - full rebuild,Completed
+MO-007,MCH-012,Preventive,Low,OPR-005,2024-04-01,2024-04-01,2.0,280,Reflow oven thermocouple calibration,Completed
+MO-008,MCH-003,Corrective,High,OPR-001,2024-04-15,2024-04-15,4.0,1200,Conveyor belt tracking adjustment and tensioner repair,Completed
+MO-009,MCH-009,Preventive,Medium,OPR-010,2024-05-01,2024-05-01,3.5,650,CNC lathe chuck alignment and coolant system flush,Completed
+MO-010,MCH-016,Corrective,High,OPR-007,2024-05-20,2024-05-21,10.0,4200,Injection molder barrel heater band replacement,Completed
+MO-011,MCH-002,Preventive,Medium,OPR-002,2024-06-01,2024-06-01,4.0,900,Robot welder torch tip replacement and wire feed calibration,Completed
+MO-012,MCH-019,Corrective,High,OPR-008,2024-06-15,2024-06-16,6.0,2800,Stencil printer squeegee alignment and stencil replacement,Completed
+MO-013,MCH-007,Preventive,Low,OPR-009,2024-07-01,2024-07-01,2.0,200,Drying oven element inspection and airflow check,Completed
+MO-014,MCH-013,Emergency,Critical,OPR-006,2024-07-10,2024-07-12,14.0,7200,SMT nozzle clogging causing placement failure - full head rebuild,Completed
+MO-015,MCH-017,Preventive,Medium,OPR-012,2024-08-01,2024-08-01,3.0,500,Assembly robot gripper replacement and teach point update,Completed

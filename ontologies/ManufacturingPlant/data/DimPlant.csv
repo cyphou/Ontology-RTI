@@ -1,0 +1,6 @@
+PlantId,PlantName,Country,State,City,TotalAreaSqFt,YearBuilt,ProductionCapacity,Status,Manager
+PLT-001,Detroit Assembly,USA,Michigan,Detroit,850000,2005,1200,Active,Robert Chen
+PLT-002,Stuttgart Precision,Germany,Baden-Wurttemberg,Stuttgart,420000,2012,800,Active,Hans Mueller
+PLT-003,Nagoya Electronics,Japan,Aichi,Nagoya,380000,2015,2000,Active,Yuki Tanaka
+PLT-004,Guadalajara Components,Mexico,Jalisco,Guadalajara,290000,2018,1500,Active,Maria Lopez
+PLT-005,Chennai Tech Works,India,Tamil Nadu,Chennai,310000,2020,1800,Active,Raj Patel

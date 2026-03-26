@@ -1,0 +1,87 @@
+table dimcrudeoil
+	lineageTag: 10000005-0001-0001-0001-000000000001
+
+	measure 'Crude Grade Count' = COUNTROWS(dimcrudeoil)
+		displayFolder: Measures
+		lineageTag: 10000005-0001-0001-0001-100000000001
+
+	measure 'Avg API Gravity' = AVERAGE(dimcrudeoil[APIGravity])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 10000005-0001-0001-0001-100000000002
+
+	measure 'Avg Price Per Barrel' = AVERAGE(dimcrudeoil[PricePerBarrelUSD])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 10000005-0001-0001-0001-100000000003
+
+	column CrudeOilId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CrudeOilId
+		lineageTag: 10000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column CrudeGradeName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CrudeGradeName
+		lineageTag: 10000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column APIGravity
+		dataType: double
+		summarizeBy: none
+		sourceColumn: APIGravity
+		lineageTag: 10000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column SulfurContentPct
+		dataType: double
+		summarizeBy: none
+		sourceColumn: SulfurContentPct
+		lineageTag: 10000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Origin
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Origin
+		lineageTag: 10000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Classification
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Classification
+		lineageTag: 10000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column PricePerBarrelUSD
+		dataType: double
+		summarizeBy: none
+		sourceColumn: PricePerBarrelUSD
+		lineageTag: 10000005-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 10000005-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimcrudeoil = entity
+		mode: directLake
+		entityName: dimcrudeoil
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

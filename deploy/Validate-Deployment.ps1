@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Validates that the Oil & Gas Refinery Ontology deployment completed successfully.
+    Validates that an IQ Ontology deployment completed successfully.
 
 .DESCRIPTION
     Checks that all expected Fabric items exist in the target workspace:
@@ -9,11 +9,18 @@
     - Semantic model
     - Ontology item
 
+    Supports all 5 industry domains. Uses -OntologyType to auto-resolve
+    item names and expected tables, or accepts explicit overrides.
+
 .PARAMETER WorkspaceId
     The GUID of the Fabric workspace to validate.
 
+.PARAMETER OntologyType
+    Domain key: OilGasRefinery, SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine.
+    Defaults to OilGasRefinery for backward compatibility.
+
 .EXAMPLE
-    .\Validate-Deployment.ps1 -WorkspaceId "your-workspace-guid"
+    .\Validate-Deployment.ps1 -WorkspaceId "guid" -OntologyType SmartBuilding
 #>
 
 [CmdletBinding()]
@@ -21,11 +28,60 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$WorkspaceId,
 
-    [string]$LakehouseName = "OilGasRefineryLH",
-    [string]$EventhouseName = "RefineryTelemetryEH",
-    [string]$SemanticModelName = "OilGasRefineryModel",
-    [string]$OntologyName = "OilGasRefineryOntology"
+    [ValidateSet("OilGasRefinery","SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine")]
+    [string]$OntologyType = "OilGasRefinery",
+
+    [string]$LakehouseName,
+    [string]$EventhouseName,
+    [string]$SemanticModelName,
+    [string]$OntologyName
 )
+
+# ── Domain registry ──
+$domainDefaults = @{
+    OilGasRefinery = @{
+        Lakehouse     = "OilGasRefineryLH"
+        Eventhouse    = "RefineryTelemetryEH"
+        SemanticModel = "OilGasRefineryModel"
+        Ontology      = "OilGasRefineryOntology"
+        Tables        = @("dimrefinery","dimprocessunit","dimequipment","dimpipeline","dimcrudeoil","dimrefinedproduct","dimstoragetank","dimsensor","dimemployee","factmaintenance","factsafetyalarm","factproduction","bridgecrudeoilprocessunit")
+    }
+    SmartBuilding = @{
+        Lakehouse     = "SmartBuildingLH"
+        Eventhouse    = "BuildingTelemetryEH"
+        SemanticModel = "SmartBuildingModel"
+        Ontology      = "SmartBuildingOntology"
+        Tables        = @("dimbuilding","dimfloor","dimzone","dimhvacsystem","dimlightingsystem","dimelevator","dimsensor","dimemployee","factoccupancy","factenergyconsumption","factmaintenance","factsafetyalarm","bridgezonesensor")
+    }
+    ManufacturingPlant = @{
+        Lakehouse     = "ManufacturingPlantLH"
+        Eventhouse    = "PlantTelemetryEH"
+        SemanticModel = "ManufacturingPlantModel"
+        Ontology      = "ManufacturingPlantOntology"
+        Tables        = @("dimplant","dimproductionline","dimmachine","dimmaterial","dimproduct","dimsensor","dimemployee","factproductionbatch","factqualitycheck","factmaintenance","factsafetyincident","bridgemachinesensor")
+    }
+    ITAsset = @{
+        Lakehouse     = "ITAssetLH"
+        Eventhouse    = "ITTelemetryEH"
+        SemanticModel = "ITAssetModel"
+        Ontology      = "ITAssetOntology"
+        Tables        = @("dimdatacenter","dimrack","dimserver","dimvirtualmachine","dimapplication","dimnetworkdevice","dimsensor","dimemployee","factincident","factpatch","factmaintenance","bridgeapplicationserver")
+    }
+    WindTurbine = @{
+        Lakehouse     = "WindTurbineLH"
+        Eventhouse    = "WindTelemetryEH"
+        SemanticModel = "WindTurbineModel"
+        Ontology      = "WindTurbineOntology"
+        Tables        = @("dimwindfarm","dimturbine","dimnacelle","dimblade","dimtower","dimgenerator","dimtransformer","dimsensor","dimemployee","factpoweroutput","factmaintenance","factsafetyalarm","bridgeturbinesensor")
+    }
+}
+
+$dd = $domainDefaults[$OntologyType]
+if (-not $LakehouseName)     { $LakehouseName     = $dd.Lakehouse }
+if (-not $EventhouseName)    { $EventhouseName    = $dd.Eventhouse }
+if (-not $SemanticModelName) { $SemanticModelName = $dd.SemanticModel }
+if (-not $OntologyName)      { $OntologyName      = $dd.Ontology }
+$expectedTables = $dd.Tables
 
 $FabricApiBase = "https://api.fabric.microsoft.com/v1"
 
@@ -66,10 +122,11 @@ function Check-Item {
 # ── Validation ──
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host "  Deployment Validation - Oil & Gas Ontology" -ForegroundColor Cyan
+Write-Host "  Deployment Validation - $OntologyType" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Workspace: $WorkspaceId" -ForegroundColor Gray
+Write-Host "  Domain:    $OntologyType" -ForegroundColor Gray
 Write-Host ""
 
 $results = @()
@@ -98,13 +155,6 @@ catch {
 # ── Check Lakehouse Tables ──
 Write-Host ""
 Write-Host "  Checking Lakehouse Tables..." -ForegroundColor Cyan
-
-$expectedTables = @(
-    "dimrefinery", "dimprocessunit", "dimequipment", "dimpipeline",
-    "dimcrudeoil", "dimrefinedproduct", "dimstoragetank", "dimsensor",
-    "dimemployee", "factmaintenance", "factsafetyalarm", "factproduction",
-    "bridgecrudeoilprocessunit"
-)
 
 try {
     $lakehouses = Invoke-RestMethod -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/lakehouses" -Headers $headers

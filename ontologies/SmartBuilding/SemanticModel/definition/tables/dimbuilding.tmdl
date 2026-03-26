@@ -1,0 +1,106 @@
+table dimbuilding
+	lineageTag: 20000002-0001-0001-0001-000000000001
+
+	measure 'Building Count' = COUNTROWS(dimbuilding)
+		displayFolder: Measures
+		lineageTag: 20000002-0001-0001-0001-100000000001
+
+	measure 'Total Building Area SqFt' = SUM(dimbuilding[TotalAreaSqFt])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 20000002-0001-0001-0001-100000000002
+
+	column BuildingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingId
+		lineageTag: 20000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column BuildingName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingName
+		lineageTag: 20000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Address
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Address
+		lineageTag: 20000002-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		summarizeBy: none
+		sourceColumn: City
+		lineageTag: 20000002-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Country
+		lineageTag: 20000002-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Floors
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Floors
+		lineageTag: 20000002-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalAreaSqFt
+		dataType: double
+		summarizeBy: none
+		sourceColumn: TotalAreaSqFt
+		lineageTag: 20000002-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearBuilt
+		dataType: string
+		summarizeBy: none
+		sourceColumn: YearBuilt
+		lineageTag: 20000002-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column BuildingType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingType
+		lineageTag: 20000002-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000002-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Owner
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Owner
+		lineageTag: 20000002-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimbuilding = entity
+		mode: directLake
+		entityName: dimbuilding
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

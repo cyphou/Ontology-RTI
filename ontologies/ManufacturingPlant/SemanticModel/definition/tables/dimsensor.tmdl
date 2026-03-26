@@ -1,0 +1,85 @@
+table dimsensor
+	lineageTag: 30000007-0001-0001-0001-000000000001
+
+	measure 'Sensor Count' = COUNTROWS(dimsensor)
+		displayFolder: Measures
+		lineageTag: 30000007-0001-0001-0001-100000000001
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 30000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorName
+		lineageTag: 30000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorType
+		lineageTag: 30000007-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column MachineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MachineId
+		lineageTag: 30000007-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeasurementUnit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MeasurementUnit
+		lineageTag: 30000007-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column MinRange
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MinRange
+		lineageTag: 30000007-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxRange
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MaxRange
+		lineageTag: 30000007-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 30000007-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000007-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimsensor = entity
+		mode: directLake
+		entityName: dimsensor
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,36 +1,57 @@
 <#
 .SYNOPSIS
-    Deploy a Graph Query Set for the Oil & Gas Refinery Ontology.
+    Deploy a Graph Query Set for any IQ Ontology domain.
 .DESCRIPTION
     Creates a GraphQuerySet item in Microsoft Fabric and provides instructions
-    for adding 10 example GQL queries covering refinery topology, equipment sensors,
-    maintenance, production, safety, and supply chain traversals.
+    for adding GQL queries from the domain's GraphQueries.gql file.
 
     KNOWN PLATFORM LIMITATION (as of 2025):
     The Fabric REST API does not fully support pushing queries into a Graph Query Set
     via the updateDefinition endpoint. The API accepts the call and returns Succeeded,
-    but the queries are not persisted. Creating a GQS with an inline definition also
-    fails (LRO returns "unknown error").
+    but the queries are not persisted.
 
     As a result, this script:
     1. Creates the bare Graph Query Set item in the workspace.
-    2. Displays instructions for manually adding queries from RefineryGraphQueries.gql.
-
-    Graph Query Language (GQL) is the ISO standard (ISO/IEC 39075:2024),
-    syntactically close to Cypher, using ASCII-art pattern matching.
+    2. Displays instructions for manually adding queries from the domain's GraphQueries.gql.
 
 .PARAMETER WorkspaceId
     The Fabric workspace GUID.
+.PARAMETER OntologyType
+    Domain key: OilGasRefinery, SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine.
+.PARAMETER OntologyFolder
+    Path to the domain ontology folder (auto-detected if omitted).
 .PARAMETER GraphModelId
     The GraphModel item GUID (auto-detected from ontology if omitted).
 .PARAMETER QuerySetName
-    Display name for the Graph Query Set (default: OilGasRefineryQueries).
+    Display name for the Graph Query Set (auto-derived from OntologyType if omitted).
 #>
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
+    [Parameter(Mandatory=$false)] [string]$OntologyType = "OilGasRefinery",
+    [Parameter(Mandatory=$false)] [string]$OntologyFolder,
     [Parameter(Mandatory=$false)] [string]$GraphModelId,
-    [Parameter(Mandatory=$false)] [string]$QuerySetName = "OilGasRefineryQueries"
+    [Parameter(Mandatory=$false)] [string]$QuerySetName
 )
+
+# ── Domain defaults ──────────────────────────────────────────────────────────
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$rootDir = Split-Path -Parent $scriptDir
+
+$querySetDefaults = @{
+    OilGasRefinery     = "OilGasRefineryQueries"
+    SmartBuilding      = "SmartBuildingQueries"
+    ManufacturingPlant = "ManufacturingPlantQueries"
+    ITAsset            = "ITAssetQueries"
+    WindTurbine        = "WindTurbineQueries"
+}
+
+if (-not $QuerySetName) { $QuerySetName = $querySetDefaults[$OntologyType] }
+if (-not $QuerySetName) { $QuerySetName = "${OntologyType}Queries" }
+
+# Resolve GQL file: domain-first, fallback to deploy/
+if (-not $OntologyFolder) { $OntologyFolder = Join-Path $rootDir "ontologies\$OntologyType" }
+$gqlFile = Join-Path $OntologyFolder "GraphQueries.gql"
+if (-not (Test-Path $gqlFile)) { $gqlFile = Join-Path $scriptDir "RefineryGraphQueries.gql" }
 
 # ── Authentication ──────────────────────────────────────────────────────────
 $token = (Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com").Token
@@ -290,7 +311,7 @@ Write-Host "Creating Graph Query Set '$QuerySetName'..." -ForegroundColor Yellow
 
 $createBody = @{
     displayName = $QuerySetName
-    description = "Example GQL queries for the Oil and Gas Refinery Ontology graph - covers topology, sensors, maintenance, production, safety, and supply chain"
+    description = "GQL queries for the $OntologyType ontology graph"
 } | ConvertTo-Json -Depth 10
 
 $gqsId = $null
@@ -360,9 +381,9 @@ if ($gqsId) {
     Write-Host "The REST API does not yet support pushing queries into a Graph Query Set." -ForegroundColor Yellow
     Write-Host "" -ForegroundColor White
     Write-Host "To add queries:" -ForegroundColor Cyan
-    Write-Host "  1. Open the Graph Query Set 'OilGasRefineryQueries' in Fabric" -ForegroundColor White
+    Write-Host "  1. Open the Graph Query Set '$QuerySetName' in Fabric" -ForegroundColor White
     Write-Host "  2. Select the graph model from the ontology" -ForegroundColor White
-    Write-Host "  3. Copy queries from: deploy/RefineryGraphQueries.gql" -ForegroundColor White
+    Write-Host "  3. Copy queries from: $gqlFile" -ForegroundColor White
     Write-Host "  4. Paste each query, give it a name, and save" -ForegroundColor White
 }
 
@@ -381,7 +402,7 @@ foreach ($q in $queries) {
 Write-Host ""
 Write-Host "MANUAL STEP REQUIRED: Add queries to the Graph Query Set via Fabric UI." -ForegroundColor Yellow
 Write-Host "  The REST API does not persist queries (known platform limitation)." -ForegroundColor Yellow
-Write-Host "  Copy queries from: deploy/RefineryGraphQueries.gql" -ForegroundColor Cyan
+Write-Host "  Copy queries from: $gqlFile" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Open the Graph Query Set in Fabric to run queries visually." -ForegroundColor White
 Write-Host ""

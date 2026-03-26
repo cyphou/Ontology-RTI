@@ -1,0 +1,62 @@
+table bridgecrudeoilprocessunit
+	lineageTag: 10000013-0001-0001-0001-000000000001
+
+	measure 'Total Feed Rate BPD' = SUM(bridgecrudeoilprocessunit[FeedRateBPD])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 10000013-0001-0001-0001-100000000001
+
+	column BridgeId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BridgeId
+		lineageTag: 10000013-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column CrudeOilId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CrudeOilId
+		lineageTag: 10000013-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcessUnitId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcessUnitId
+		lineageTag: 10000013-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column FeedRateBPD
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: FeedRateBPD
+		lineageTag: 10000013-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column EffectiveDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EffectiveDate
+		lineageTag: 10000013-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Notes
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Notes
+		lineageTag: 10000013-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgecrudeoilprocessunit = entity
+		mode: directLake
+		entityName: bridgecrudeoilprocessunit
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

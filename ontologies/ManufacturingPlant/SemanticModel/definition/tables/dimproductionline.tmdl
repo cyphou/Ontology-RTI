@@ -1,0 +1,74 @@
+table dimproductionline
+	lineageTag: 30000006-0001-0001-0001-000000000001
+
+	measure 'Production Line Count' = COUNTROWS(dimproductionline)
+		displayFolder: Measures
+		lineageTag: 30000006-0001-0001-0001-100000000001
+
+	measure 'Total Line Capacity' = SUM(dimproductionline[CapacityUnitsPerHour])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 30000006-0001-0001-0001-100000000002
+
+	column LineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineId
+		lineageTag: 30000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineName
+		lineageTag: 30000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column PlantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantId
+		lineageTag: 30000006-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineType
+		lineageTag: 30000006-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityUnitsPerHour
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CapacityUnitsPerHour
+		lineageTag: 30000006-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 30000006-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000006-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimproductionline = entity
+		mode: directLake
+		entityName: dimproductionline
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

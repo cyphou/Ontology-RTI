@@ -1,0 +1,13 @@
+OperatorId,FullName,Role,Shift,LineId,HireDate,CertificationLevel,Status
+OPR-001,Mike Thompson,Line Operator,Day,LN-001,2006-03-15,Level 3,Active
+OPR-002,Sarah Kim,Robot Technician,Day,LN-001,2010-06-01,Level 4,Active
+OPR-003,Carlos Rivera,Line Operator,Night,LN-002,2011-01-10,Level 2,Active
+OPR-004,Anna Weber,QC Inspector,Day,LN-005,2013-04-01,Level 4,Active
+OPR-005,Kenji Yamamoto,SMT Operator,Day,LN-006,2015-05-01,Level 3,Active
+OPR-006,Lisa Park,SMT Operator,Night,LN-007,2018-03-01,Level 2,Active
+OPR-007,Juan Hernandez,Mold Operator,Day,LN-008,2018-09-01,Level 3,Active
+OPR-008,Priya Sharma,Line Operator,Day,LN-010,2020-04-01,Level 2,Active
+OPR-009,Tom Wilson,Paint Specialist,Day,LN-003,2007-08-15,Level 4,Active
+OPR-010,Elena Volkov,CNC Operator,Day,LN-004,2013-02-01,Level 4,Active
+OPR-011,James Davis,Maintenance Tech,Day,LN-001,2008-11-01,Level 4,Active
+OPR-012,Aiko Sato,Assembly Tech,Night,LN-009,2019-01-15,Level 2,Active

@@ -1,0 +1,93 @@
+table dimprocessunit
+	lineageTag: 10000002-0001-0001-0001-000000000001
+
+	measure 'Process Unit Count' = COUNTROWS(dimprocessunit)
+		displayFolder: Measures
+		lineageTag: 10000002-0001-0001-0001-100000000001
+
+	column ProcessUnitId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcessUnitId
+		lineageTag: 10000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcessUnitName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcessUnitName
+		lineageTag: 10000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcessUnitType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcessUnitType
+		lineageTag: 10000002-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column RefineryId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RefineryId
+		lineageTag: 10000002-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityBPD
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: CapacityBPD
+		lineageTag: 10000002-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column DesignTemperatureF
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DesignTemperatureF
+		lineageTag: 10000002-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column DesignPressurePSI
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DesignPressurePSI
+		lineageTag: 10000002-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearInstalled
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: YearInstalled
+		lineageTag: 10000002-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 10000002-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 10000002-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimprocessunit = entity
+		mode: directLake
+		entityName: dimprocessunit
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

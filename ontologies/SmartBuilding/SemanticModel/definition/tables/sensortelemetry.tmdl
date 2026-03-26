@@ -1,0 +1,66 @@
+table sensortelemetry
+	lineageTag: 20000013-0001-0001-0001-000000000001
+
+	measure 'Reading Count' = COUNTROWS(sensortelemetry)
+		displayFolder: Measures
+		lineageTag: 20000013-0001-0001-0001-100000000001
+
+	measure 'Avg Reading Value' = AVERAGE(sensortelemetry[ReadingValue])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 20000013-0001-0001-0001-100000000002
+
+	column ReadingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ReadingId
+		lineageTag: 20000013-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 20000013-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Timestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Timestamp
+		lineageTag: 20000013-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReadingValue
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ReadingValue
+		lineageTag: 20000013-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column QualityFlag
+		dataType: string
+		summarizeBy: none
+		sourceColumn: QualityFlag
+		lineageTag: 20000013-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsAnomaly
+		dataType: string
+		summarizeBy: none
+		sourceColumn: IsAnomaly
+		lineageTag: 20000013-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	partition sensortelemetry = entity
+		mode: directLake
+		entityName: sensortelemetry
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

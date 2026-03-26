@@ -1,0 +1,67 @@
+relationship dimfloor_BuildingId_dimbuilding
+	fromColumn: dimfloor.BuildingId
+	toColumn: dimbuilding.BuildingId
+	crossFilteringBehavior: oneDirection
+
+relationship dimzone_FloorId_dimfloor
+	fromColumn: dimzone.FloorId
+	toColumn: dimfloor.FloorId
+	crossFilteringBehavior: oneDirection
+
+relationship dimsensor_ZoneId_dimzone
+	fromColumn: dimsensor.ZoneId
+	toColumn: dimzone.ZoneId
+	crossFilteringBehavior: oneDirection
+
+relationship dimhvacsystem_ZoneId_dimzone
+	isActive: false
+	fromColumn: dimhvacsystem.ZoneId
+	toColumn: dimzone.ZoneId
+	crossFilteringBehavior: oneDirection
+
+relationship dimlightingsystem_ZoneId_dimzone
+	isActive: false
+	fromColumn: dimlightingsystem.ZoneId
+	toColumn: dimzone.ZoneId
+	crossFilteringBehavior: oneDirection
+
+relationship dimaccesspoint_ZoneId_dimzone
+	isActive: false
+	fromColumn: dimaccesspoint.ZoneId
+	toColumn: dimzone.ZoneId
+	crossFilteringBehavior: oneDirection
+
+relationship dimoccupant_ZoneId_dimzone
+	isActive: false
+	fromColumn: dimoccupant.ZoneId
+	toColumn: dimzone.ZoneId
+	crossFilteringBehavior: oneDirection
+
+relationship dimelevator_BuildingId_dimbuilding
+	isActive: false
+	fromColumn: dimelevator.BuildingId
+	toColumn: dimbuilding.BuildingId
+	crossFilteringBehavior: oneDirection
+
+relationship dimenergymeter_BuildingId_dimbuilding
+	isActive: false
+	fromColumn: dimenergymeter.BuildingId
+	toColumn: dimbuilding.BuildingId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_SensorId_dimsensor
+	fromColumn: factalert.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceticket_AssignedToOccupantId_dimoccupant
+	fromColumn: factmaintenanceticket.AssignedToOccupantId
+	toColumn: dimoccupant.OccupantId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_SensorId_dimsensor
+	isActive: false
+	fromColumn: sensortelemetry.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+

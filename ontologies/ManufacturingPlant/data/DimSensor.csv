@@ -1,0 +1,21 @@
+SensorId,SensorName,SensorType,MachineId,MeasurementUnit,MinRange,MaxRange,InstallDate,Status
+SNS-001,Welder A1 Temp,Temperature,MCH-001,Celsius,0,1500,2005-07-01,Active
+SNS-002,Welder A1 Current,Current,MCH-001,Amps,0,500,2005-07-01,Active
+SNS-003,Welder A2 Temp,Temperature,MCH-002,Celsius,0,1500,2005-07-01,Active
+SNS-004,Conveyor A1 Speed,Speed,MCH-003,MetersPerMin,0,50,2005-07-01,Active
+SNS-005,Press B1 Force,Force,MCH-004,Tons,0,2000,2010-04-15,Active
+SNS-006,Press B1 Temp,Temperature,MCH-004,Celsius,0,300,2010-04-15,Active
+SNS-007,Paint Booth Humidity,Humidity,MCH-006,Percent,0,100,2005-07-15,Active
+SNS-008,Paint Booth Temp,Temperature,MCH-006,Celsius,0,80,2005-07-15,Active
+SNS-009,CNC Mill Vibration,Vibration,MCH-008,G,0,20,2012-10-15,Active
+SNS-010,CNC Mill Spindle Temp,Temperature,MCH-008,Celsius,0,200,2012-10-15,Active
+SNS-011,CNC Lathe Vibration,Vibration,MCH-009,G,0,20,2012-10-15,Active
+SNS-012,SMT E1 Placement Accuracy,Accuracy,MCH-011,Microns,0,100,2015-05-01,Active
+SNS-013,Reflow Oven Temp Zone1,Temperature,MCH-012,Celsius,0,350,2015-05-01,Active
+SNS-014,Reflow Oven Temp Zone2,Temperature,MCH-012,Celsius,0,350,2015-05-01,Active
+SNS-015,Molder M1 Pressure,Pressure,MCH-015,Bar,0,2500,2018-09-01,Active
+SNS-016,Molder M1 Temp,Temperature,MCH-015,Celsius,0,400,2018-09-01,Active
+SNS-017,Molder M2 Pressure,Pressure,MCH-016,Bar,0,2500,2018-09-01,Active
+SNS-018,Wave Solder Temp,Temperature,MCH-020,Celsius,0,350,2020-04-01,Active
+SNS-019,Drying Oven Temp,Temperature,MCH-007,Celsius,0,250,2005-07-15,Active
+SNS-020,Assembly Robot C1 Torque,Torque,MCH-017,Nm,0,50,2018-09-01,Active

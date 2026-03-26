@@ -1,0 +1,69 @@
+table dimenergymeter
+	lineageTag: 20000004-0001-0001-0001-000000000001
+
+	measure 'Energy Meter Count' = COUNTROWS(dimenergymeter)
+		displayFolder: Measures
+		lineageTag: 20000004-0001-0001-0001-100000000001
+
+	column MeterId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MeterId
+		lineageTag: 20000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeterName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MeterName
+		lineageTag: 20000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column BuildingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingId
+		lineageTag: 20000004-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeterType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MeterType
+		lineageTag: 20000004-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeasurementUnit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MeasurementUnit
+		lineageTag: 20000004-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 20000004-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000004-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimenergymeter = entity
+		mode: directLake
+		entityName: dimenergymeter
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

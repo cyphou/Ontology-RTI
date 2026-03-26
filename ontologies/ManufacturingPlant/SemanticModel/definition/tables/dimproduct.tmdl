@@ -1,0 +1,61 @@
+table dimproduct
+	lineageTag: 30000005-0001-0001-0001-000000000001
+
+	measure 'Product Count' = COUNTROWS(dimproduct)
+		displayFolder: Measures
+		lineageTag: 30000005-0001-0001-0001-100000000001
+
+	column ProductId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductId
+		lineageTag: 30000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductName
+		lineageTag: 30000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductCategory
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductCategory
+		lineageTag: 30000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitOfMeasure
+		dataType: string
+		summarizeBy: none
+		sourceColumn: UnitOfMeasure
+		lineageTag: 30000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column WeightKg
+		dataType: double
+		summarizeBy: none
+		sourceColumn: WeightKg
+		lineageTag: 30000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 30000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimproduct = entity
+		mode: directLake
+		entityName: dimproduct
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

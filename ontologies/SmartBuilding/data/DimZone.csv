@@ -1,0 +1,26 @@
+ZoneId,ZoneName,FloorId,ZoneType,AreaSqFt,MaxOccupancy,Status
+ZN-001,Main Lobby,FLR-001,Lobby,3000,50,Active
+ZN-002,Conference Wing A,FLR-001,Meeting,2500,40,Active
+ZN-003,Retail Area,FLR-001,Retail,4000,80,Active
+ZN-004,Security Office,FLR-001,Utility,1000,10,Active
+ZN-005,Open Office A,FLR-002,Office,5000,60,Active
+ZN-006,Open Office B,FLR-002,Office,4500,55,Active
+ZN-007,Break Room,FLR-002,Amenity,2000,30,Active
+ZN-008,Executive Suite,FLR-005,Office,4000,20,Active
+ZN-009,Sky Lounge,FLR-005,Amenity,5000,60,Active
+ZN-010,Board Room,FLR-005,Meeting,2500,30,Active
+ZN-011,Open Workspace,FLR-006,Office,8000,100,Active
+ZN-012,Cafeteria,FLR-006,Amenity,4000,120,Active
+ZN-013,Innovation Lab,FLR-006,Lab,3500,25,Active
+ZN-014,Server Room,FLR-006,Utility,2000,5,Active
+ZN-015,Training Center,FLR-006,Meeting,3000,50,Active
+ZN-016,Collaboration Hub,FLR-007,Office,7000,80,Active
+ZN-017,Quiet Zone,FLR-007,Office,3000,20,Active
+ZN-018,Fitness Center,FLR-007,Amenity,4000,40,Active
+ZN-019,Research Lab A,FLR-012,Lab,3000,15,Active
+ZN-020,Research Lab B,FLR-013,Lab,3000,15,Active
+ZN-021,Patient Wing A,FLR-014,Healthcare,5000,30,Active
+ZN-022,Waiting Area,FLR-014,Lobby,2000,40,Active
+ZN-023,ER Suite,FLR-014,Healthcare,3000,20,Active
+ZN-024,Admin Office,FLR-015,Office,4000,25,Active
+ZN-025,Pharmacy,FLR-015,Retail,1500,10,Active

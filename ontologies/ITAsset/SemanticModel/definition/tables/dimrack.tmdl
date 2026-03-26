@@ -1,0 +1,87 @@
+table dimrack
+	lineageTag: 40000006-0001-0001-0001-000000000001
+
+	measure 'Rack Count' = COUNTROWS(dimrack)
+		displayFolder: Measures
+		lineageTag: 40000006-0001-0001-0001-100000000001
+
+	measure 'Total Max Power W' = SUM(dimrack[MaxPowerW])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000006-0001-0001-0001-100000000002
+
+	measure 'Total Current Power W' = SUM(dimrack[CurrentPowerW])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000006-0001-0001-0001-100000000003
+
+	column RackId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RackId
+		lineageTag: 40000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column RackName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RackName
+		lineageTag: 40000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataCenterId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DataCenterId
+		lineageTag: 40000006-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column RackSize
+		dataType: double
+		summarizeBy: none
+		sourceColumn: RackSize
+		lineageTag: 40000006-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxPowerW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MaxPowerW
+		lineageTag: 40000006-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column CurrentPowerW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CurrentPowerW
+		lineageTag: 40000006-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column TemperatureZone
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TemperatureZone
+		lineageTag: 40000006-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000006-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimrack = entity
+		mode: directLake
+		entityName: dimrack
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

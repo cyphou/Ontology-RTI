@@ -1,217 +1,288 @@
-# Semantic Model Configuration Guide
+<p align="center">
+  <img src="https://img.shields.io/badge/Power%20BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI"/>
+  <img src="https://img.shields.io/badge/Direct%20Lake-0078D4?style=for-the-badge" alt="Direct Lake"/>
+  <img src="https://img.shields.io/badge/TMDL-742774?style=for-the-badge" alt="TMDL"/>
+</p>
 
-This guide details how to create and configure the Power BI semantic model that drives the Oil & Gas Refinery ontology.
+<h1 align="center">:triangular_ruler: Semantic Model Guide</h1>
 
-> **Automated Deployment**: If you used the `Deploy-OilGasOntology.ps1` script, the semantic model is already created in **TMDL format** (Direct Lake mode, 13 tables, 17 relationships) and you can skip this manual guide. The model definition files are in `deploy/SemanticModel/`.
+<p align="center">
+  <b>Power BI semantic model configuration for all 5 ontology domains</b>
+</p>
+
+> [!TIP]
+> **Automated Deployment:** If you used `Deploy-Ontology.ps1`, the semantic model is already created in **TMDL format** (Direct Lake mode) and you can skip this manual guide. The model definition files are in `deploy/SemanticModel/`.
 
 ---
 
-## Step 1: Create the Semantic Model
+## :globe_with_meridians: Overview
 
-1. Open the `OilGasRefineryLH` lakehouse in your Fabric workspace.
-2. From the lakehouse ribbon, select **New semantic model**.
+Each domain creates a **Direct Lake** semantic model that connects directly to the Lakehouse delta tables. The model follows a **star/snowflake schema** with dimension and fact tables.
+
+```mermaid
+flowchart TB
+    subgraph Lakehouse["Lakehouse (Delta Tables)"]
+        DIM["Dimension Tables\nDim*"]
+        FACT["Fact Tables\nFact*"]
+        BRIDGE["Bridge Tables\nBridge*"]
+    end
+
+    subgraph SemanticModel["Semantic Model (Direct Lake)"]
+        RELS["Relationships\n13-17 per domain"]
+        MEASURES["DAX Measures\nOptional analytics"]
+    end
+
+    Lakehouse --> SemanticModel --> ONT["Ontology\nGenerate from model"]
+
+    style Lakehouse fill:#0078D4,color:#fff
+    style SemanticModel fill:#F2C811,color:#000
+    style ONT fill:#742774,color:#fff
+```
+
+---
+
+## :oil_drum: Oil & Gas Refinery Model
+
+<details open>
+<summary><h3>Step 1 - Create the Semantic Model</h3></summary>
+
+1. Open the `OilGasRefineryLH` lakehouse
+2. From the ribbon, select **New semantic model**
 3. Configure:
    - **Name**: `OilGasRefineryModel`
-   - **Workspace**: Your workspace (default)
-4. Select **all 13 tables**:
-   - `dimrefinery`
-   - `dimprocessunit`
-   - `dimequipment`
-   - `dimpipeline`
-   - `dimcrudeoil`
-   - `dimrefinedproduct`
-   - `dimstoragetank`
-   - `dimsensor`
-   - `dimemployee`
-   - `factmaintenance`
-   - `factsafetyalarm`
-   - `factproduction`
-   - `bridgecrudeoilprocessunit`
-5. Click **Confirm**.
+   - **Workspace**: Your workspace
+4. Select **all 13 tables** and click **Confirm**
 
----
+</details>
 
-## Step 2: Define Relationships
+<details>
+<summary><h3>Step 2 - Define Relationships (17 total)</h3></summary>
 
-Open the semantic model in **Editing mode**. From the ribbon, select **Manage relationships** > **+ New relationship**.
+Open the model in **Editing mode** > **Manage relationships** > **+ New relationship**
 
-Create the following relationships:
+#### :building_construction: Core Asset Hierarchy
 
-### Core Asset Hierarchy
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `dimprocessunit` | `RefineryId` | `dimrefinery` | `RefineryId` | *:1 |
+| `dimequipment` | `ProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `dimprocessunit` | `RefineryId` | `dimrefinery` | `RefineryId` | Many-to-one (*:1) | Single |
-| `dimequipment` | `ProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | Many-to-one (*:1) | Single |
+#### :link: Pipeline Connections
 
-### Pipeline Connections
+| From Table | From Column | To Table | To Column | Cardinality | Active |
+|---|---|---|---|---|:---:|
+| `dimpipeline` | `FromProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | *:1 | :white_check_mark: |
+| `dimpipeline` | `ToProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | *:1 | :x: (inactive) |
+| `dimpipeline` | `RefineryId` | `dimrefinery` | `RefineryId` | *:1 | :white_check_mark: |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter | Active |
-|---|---|---|---|---|---|---|
-| `dimpipeline` | `FromProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | Many-to-one (*:1) | Single | Yes |
-| `dimpipeline` | `ToProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | Many-to-one (*:1) | Single | No (inactive) |
-| `dimpipeline` | `RefineryId` | `dimrefinery` | `RefineryId` | Many-to-one (*:1) | Single | Yes |
+> :bulb: Two relationships from `dimpipeline` reference `dimprocessunit`. Only one can be active. Use DAX `USERELATIONSHIP()` for the inactive one.
 
-> **Note:** Two relationships from `dimpipeline` reference `dimprocessunit`. Only one can be active. Use DAX `USERELATIONSHIP()` for the inactive one.
+#### :file_cabinet: Storage
 
-### Storage
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `dimstoragetank` | `RefineryId` | `dimrefinery` | `RefineryId` | *:1 |
+| `dimstoragetank` | `ProductId` | `dimrefinedproduct` | `ProductId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `dimstoragetank` | `RefineryId` | `dimrefinery` | `RefineryId` | Many-to-one (*:1) | Single |
-| `dimstoragetank` | `ProductId` | `dimrefinedproduct` | `ProductId` | Many-to-one (*:1) | Single |
+#### :satellite: Monitoring
 
-### Monitoring
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `dimsensor` | `EquipmentId` | `dimequipment` | `EquipmentId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `dimsensor` | `EquipmentId` | `dimequipment` | `EquipmentId` | Many-to-one (*:1) | Single |
+#### :wrench: Maintenance
 
-### Operations - Maintenance
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `factmaintenance` | `EquipmentId` | `dimequipment` | `EquipmentId` | *:1 |
+| `factmaintenance` | `PerformedByEmployeeId` | `dimemployee` | `EmployeeId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `factmaintenance` | `EquipmentId` | `dimequipment` | `EquipmentId` | Many-to-one (*:1) | Single |
-| `factmaintenance` | `PerformedByEmployeeId` | `dimemployee` | `EmployeeId` | Many-to-one (*:1) | Single |
+#### :rotating_light: Safety
 
-### Operations - Safety
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `factsafetyalarm` | `SensorId` | `dimsensor` | `SensorId` | *:1 |
+| `factsafetyalarm` | `AcknowledgedByEmployeeId` | `dimemployee` | `EmployeeId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `factsafetyalarm` | `SensorId` | `dimsensor` | `SensorId` | Many-to-one (*:1) | Single |
-| `factsafetyalarm` | `AcknowledgedByEmployeeId` | `dimemployee` | `EmployeeId` | Many-to-one (*:1) | Single |
+#### :chart_with_upwards_trend: Production
 
-### Operations - Production
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `factproduction` | `ProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | *:1 |
+| `factproduction` | `ProductId` | `dimrefinedproduct` | `ProductId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `factproduction` | `ProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | Many-to-one (*:1) | Single |
-| `factproduction` | `ProductId` | `dimrefinedproduct` | `ProductId` | Many-to-one (*:1) | Single |
+#### :bust_in_silhouette: Employee & Bridge
 
-### Operations - Employee
+| From Table | From Column | To Table | To Column | Cardinality |
+|---|---|---|---|---|
+| `dimemployee` | `RefineryId` | `dimrefinery` | `RefineryId` | *:1 |
+| `bridgecrudeoilprocessunit` | `CrudeOilId` | `dimcrudeoil` | `CrudeOilId` | *:1 |
+| `bridgecrudeoilprocessunit` | `ProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | *:1 |
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `dimemployee` | `RefineryId` | `dimrefinery` | `RefineryId` | Many-to-one (*:1) | Single |
+</details>
 
-### Crude Oil Feed (Bridge Table)
+<details>
+<summary><h3>Step 3 - Relationship Diagram</h3></summary>
 
-| From Table | From Column | To Table | To Column | Cardinality | Cross-filter |
-|---|---|---|---|---|---|
-| `bridgecrudeoilprocessunit` | `CrudeOilId` | `dimcrudeoil` | `CrudeOilId` | Many-to-one (*:1) | Single |
-| `bridgecrudeoilprocessunit` | `ProcessUnitId` | `dimprocessunit` | `ProcessUnitId` | Many-to-one (*:1) | Single |
+```mermaid
+graph TB
+    REF["dimrefinery"]
+    PU["dimprocessunit"]
+    EQ["dimequipment"]
+    PL["dimpipeline"]
+    SN["dimsensor"]
+    TK["dimstoragetank"]
+    EM["dimemployee"]
+    CO["dimcrudeoil"]
+    RP["dimrefinedproduct"]
+    BR["bridgecrudeoilprocessunit"]
+    FM["factmaintenance"]
+    FA["factsafetyalarm"]
+    FP["factproduction"]
 
-**Total: 17 relationships**
+    PU -->|RefineryId| REF
+    EQ -->|ProcessUnitId| PU
+    PL -->|FromProcessUnitId| PU
+    PL -.->|ToProcessUnitId| PU
+    PL -->|RefineryId| REF
+    TK -->|RefineryId| REF
+    TK -->|ProductId| RP
+    SN -->|EquipmentId| EQ
+    FM -->|EquipmentId| EQ
+    FM -->|EmployeeId| EM
+    FA -->|SensorId| SN
+    FA -->|EmployeeId| EM
+    FP -->|ProcessUnitId| PU
+    FP -->|ProductId| RP
+    EM -->|RefineryId| REF
+    BR -->|CrudeOilId| CO
+    BR -->|ProcessUnitId| PU
 
----
-
-## Step 3: Relationship Diagram Overview
-
-After creating all relationships, your model diagram should show a **star/snowflake** schema:
-
+    style REF fill:#742774,color:#fff
+    style PU fill:#742774,color:#fff
+    style EQ fill:#742774,color:#fff
+    style FM fill:#0078D4,color:#fff
+    style FA fill:#0078D4,color:#fff
+    style FP fill:#0078D4,color:#fff
 ```
-                            dimcrudeoil
-                                |
-                    bridgecrudeoilprocessunit
-                                |
-dimrefinery ←── dimprocessunit ←── factproduction ──→ dimrefinedproduct
-    ↑               ↑     ↑                              ↑
-    |               |     |                               |
-dimemployee    dimpipeline |                        dimstoragetank
-    ↑               dimequipment
-    |                   ↑     ↑
-factsafetyalarm     dimsensor  factmaintenance
-(via dimemployee)       ↑
-                   factsafetyalarm
-```
 
----
+</details>
 
-## Step 4: Suggested Measures (Optional)
+<details>
+<summary><h3>Step 4 - Suggested DAX Measures (Optional)</h3></summary>
 
-Add these DAX measures for richer analytics:
-
-### Total Refining Capacity
 ```dax
-Total Refining Capacity = 
-SUM(dimrefinery[CapacityBPD])
-```
+// Total Refining Capacity
+Total Refining Capacity = SUM(dimrefinery[CapacityBPD])
 
-### Total Production Output
-```dax
-Total Production = 
-SUM(factproduction[OutputBarrels])
-```
+// Total Production Output
+Total Production = SUM(factproduction[OutputBarrels])
 
-### Average Yield
-```dax
-Avg Yield Pct = 
-AVERAGE(factproduction[YieldPercent])
-```
+// Average Yield
+Avg Yield Pct = AVERAGE(factproduction[YieldPercent])
 
-### Total Maintenance Cost
-```dax
-Total Maintenance Cost = 
-SUM(factmaintenance[CostUSD])
-```
+// Total Maintenance Cost
+Total Maintenance Cost = SUM(factmaintenance[CostUSD])
 
-### Critical Alarm Count
-```dax
+// Critical Alarm Count
 Critical Alarms = 
-CALCULATE(
-    COUNTROWS(factsafetyalarm),
-    factsafetyalarm[Severity] = "Critical"
-)
-```
+    CALCULATE(COUNTROWS(factsafetyalarm), factsafetyalarm[Severity] = "Critical")
 
-### Tank Utilization
-```dax
+// Tank Utilization
 Avg Tank Utilization = 
-DIVIDE(
-    SUM(dimstoragetank[CurrentLevelBarrels]),
-    SUM(dimstoragetank[CapacityBarrels]),
-    0
-)
-```
+    DIVIDE(SUM(dimstoragetank[CurrentLevelBarrels]), SUM(dimstoragetank[CapacityBarrels]), 0)
 
-### Equipment Availability
-```dax
+// Equipment Availability
 Equipment Availability = 
-DIVIDE(
-    CALCULATE(COUNTROWS(dimequipment), dimequipment[Status] = "Active"),
-    COUNTROWS(dimequipment),
-    0
-)
+    DIVIDE(
+        CALCULATE(COUNTROWS(dimequipment), dimequipment[Status] = "Active"),
+        COUNTROWS(dimequipment), 0)
 ```
 
-### Mean Time Between Failures (simplified)
-```dax
-Avg Maintenance Duration = 
-AVERAGE(factmaintenance[DurationHours])
-```
+</details>
 
 ---
 
-## Step 5: Verify and Publish
+## :office: Smart Building Model
 
-1. **Verify** all relationships show green checkmarks.
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**12 entity types** | **~15 relationships** | **Star schema**
+
+Key relationships:
+- `dimfloor.BuildingId` :arrow_right: `dimbuilding.BuildingId`
+- `dimzone.FloorId` :arrow_right: `dimfloor.FloorId`
+- `dimsensor.ZoneId` :arrow_right: `dimzone.ZoneId`
+- `dimhvacsystem.ZoneId` :arrow_right: `dimzone.ZoneId`
+- `factalert.SensorId` :arrow_right: `dimsensor.SensorId`
+- `factmaintenanceticket.ZoneId` :arrow_right: `dimzone.ZoneId`
+
+</details>
+
+## :factory: Manufacturing Plant Model
+
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**11 entity types** | **~13 relationships** | **Star schema**
+
+Key relationships:
+- `dimproductionline.PlantId` :arrow_right: `dimplant.PlantId`
+- `dimmachine.LineId` :arrow_right: `dimproductionline.LineId`
+- `dimsensor.MachineId` :arrow_right: `dimmachine.MachineId`
+- `factproductionbatch.ProductId` :arrow_right: `dimproduct.ProductId`
+- `factqualitycheck.BatchId` :arrow_right: `factproductionbatch.BatchId`
+
+</details>
+
+## :desktop_computer: IT Asset Model
+
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**11 entity types** | **~12 relationships** | **Star schema**
+
+Key relationships:
+- `dimrack.DataCenterId` :arrow_right: `dimdatacenter.DataCenterId`
+- `dimserver.RackId` :arrow_right: `dimrack.RackId`
+- `dimvirtualmachine.ServerId` :arrow_right: `dimserver.ServerId`
+- `dimapplication.VMId` :arrow_right: `dimvirtualmachine.VMId`
+- `factincident.ServerId` :arrow_right: `dimserver.ServerId`
+
+</details>
+
+## :wind_face: Wind Turbine Model
+
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**12 entity types** | **~14 relationships** | **Star schema**
+
+Key relationships:
+- `dimturbine.FarmId` :arrow_right: `dimwindfarm.FarmId`
+- `dimnacelle.TurbineId` :arrow_right: `dimturbine.TurbineId`
+- `dimblade.TurbineId` :arrow_right: `dimturbine.TurbineId`
+- `dimtower.TurbineId` :arrow_right: `dimturbine.TurbineId`
+- `dimsensor.TurbineId` :arrow_right: `dimturbine.TurbineId`
+- `factpoweroutput.TurbineId` :arrow_right: `dimturbine.TurbineId`
+- `factmaintenanceevent.TurbineId` :arrow_right: `dimturbine.TurbineId`
+
+</details>
+
+---
+
+## :white_check_mark: Verify and Publish
+
+1. **Verify** all relationships show green checkmarks in the model diagram
 2. **Test** by creating a quick visual:
-   - Bar chart: `dimrefinery[RefineryName]` vs `factproduction[OutputBarrels]`
-   - This validates the relationship chain works end-to-end.
-3. The semantic model is now ready to **generate the ontology** (see [SETUP_GUIDE.md](SETUP_GUIDE.md), Step 4).
+   - Bar chart: primary dimension key vs a fact table measure
+   - This validates the relationship chain works end-to-end
+3. **Publish** (if using Power BI Desktop) or save (if editing in service)
 
 ---
 
-## Data Refresh
-
-The semantic model uses **Direct Lake** mode, reading directly from the lakehouse Delta tables. No scheduled refresh is needed for the initial setup; data updates in the lakehouse tables are reflected automatically after a short sync period.
-
-For the ontology graph, you need to manually **Refresh graph model** in the ontology preview experience after upstream data changes.
-
----
-
-## TMDL vs BIM Format
-
-The automated deployment uses **TMDL** (Tabular Model Definition Language) format, which is the modern standard for Fabric semantic models. The TMDL files are located in `deploy/SemanticModel/definition/` and include individual `.tmdl` files for each table and relationship.
-
-A legacy `deploy/SemanticModel.bim` file is also provided for reference but is not used by the deployment script.
+<p align="center">
+  <a href="SETUP_GUIDE.md">:arrow_left: Setup Guide</a> ---
+  <a href="AGENTS.md">Agents Guide :arrow_right:</a>
+</p>

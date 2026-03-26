@@ -1,0 +1,85 @@
+table dimnacelle
+	lineageTag: 50000002-0001-0001-0001-000000000001
+
+	measure 'Nacelle Count' = COUNTROWS(dimnacelle)
+		displayFolder: Measures
+		lineageTag: 50000002-0001-0001-0001-100000000001
+
+	column NacelleId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: NacelleId
+		lineageTag: 50000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column NacelleName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: NacelleName
+		lineageTag: 50000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column TurbineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TurbineId
+		lineageTag: 50000002-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column GeneratorType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: GeneratorType
+		lineageTag: 50000002-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column GearboxType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: GearboxType
+		lineageTag: 50000002-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column CoolingSystem
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CoolingSystem
+		lineageTag: 50000002-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column WeightTons
+		dataType: double
+		summarizeBy: none
+		sourceColumn: WeightTons
+		lineageTag: 50000002-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastInspectionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastInspectionDate
+		lineageTag: 50000002-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000002-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimnacelle = entity
+		mode: directLake
+		entityName: dimnacelle
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

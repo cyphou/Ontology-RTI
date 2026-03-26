@@ -1,0 +1,85 @@
+table dimelevator
+	lineageTag: 20000003-0001-0001-0001-000000000001
+
+	measure 'Elevator Count' = COUNTROWS(dimelevator)
+		displayFolder: Measures
+		lineageTag: 20000003-0001-0001-0001-100000000001
+
+	column ElevatorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ElevatorId
+		lineageTag: 20000003-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ElevatorName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ElevatorName
+		lineageTag: 20000003-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column BuildingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingId
+		lineageTag: 20000003-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ElevatorType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ElevatorType
+		lineageTag: 20000003-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityLbs
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CapacityLbs
+		lineageTag: 20000003-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxFloors
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MaxFloors
+		lineageTag: 20000003-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 20000003-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 20000003-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000003-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimelevator = entity
+		mode: directLake
+		entityName: dimelevator
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

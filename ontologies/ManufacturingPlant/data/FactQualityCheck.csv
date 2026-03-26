@@ -1,0 +1,45 @@
+QCId,ProductId,LineId,InspectorId,CheckDate,CheckType,Result,DefectCount,Notes
+QC-001,PRD-002,LN-001,OPR-004,2024-01-10,Visual Inspection,Pass,0,No defects found
+QC-002,PRD-002,LN-001,OPR-004,2024-01-12,Dimensional,Pass,0,All dimensions within tolerance
+QC-003,PRD-001,LN-002,OPR-004,2024-01-15,Functional Test,Pass,0,Battery module passed charge/discharge cycle
+QC-004,PRD-003,LN-004,OPR-004,2024-01-20,Dimensional,Fail,2,Two gears out of tolerance - rework needed
+QC-005,PRD-004,LN-006,OPR-005,2024-02-01,AOI Inspection,Pass,0,Automated optical inspection passed
+QC-006,PRD-004,LN-006,OPR-005,2024-02-05,Functional Test,Fail,1,One board failed power-on self-test
+QC-007,PRD-005,LN-008,OPR-007,2024-02-10,Visual Inspection,Pass,0,No flash or sink marks
+QC-008,PRD-006,LN-010,OPR-008,2024-02-15,Functional Test,Pass,0,All power output channels verified
+QC-009,PRD-007,LN-004,OPR-004,2024-03-01,Dimensional,Pass,0,Bore and surface finish within spec
+QC-010,PRD-002,LN-001,OPR-004,2024-03-05,Weld Integrity,Pass,0,Ultrasonic weld test passed
+QC-011,PRD-008,LN-007,OPR-006,2024-03-10,AOI Inspection,Pass,0,All solder joints acceptable
+QC-012,PRD-005,LN-008,OPR-007,2024-03-15,Dimensional,Fail,3,Batch with wall thickness variation
+QC-013,PRD-001,LN-002,OPR-004,2024-04-01,Functional Test,Pass,0,Full module stress test passed
+QC-014,PRD-003,LN-004,OPR-010,2024-04-10,Surface Finish,Pass,0,Ra within specification
+QC-015,PRD-006,LN-010,OPR-008,2024-04-15,Burn-In Test,Pass,0,72-hour burn-in completed successfully
+,,,"OP-006",,,"Pass",,
+,,,"OP-007",,,"Fail",,
+,,,"OP-012",,,"Fail",,
+,,,"OP-005",,,"Pass",,
+,,,"OP-002",,,"Fail",,
+,,,"OP-006",,,"Fail",,
+,,,"OP-001",,,"Marginal",,
+,,,"OP-010",,,"Pass",,
+,,,"OP-006",,,"Fail",,
+,,,"OP-012",,,"Marginal",,
+,,,"OP-010",,,"Pass",,
+,,,"OP-005",,,"Pass",,
+,,,"OP-010",,,"Marginal",,
+,,,"OP-002",,,"Pass",,
+,,,"OP-003",,,"Pass",,
+,,,"OP-010",,,"Fail",,
+,,,"OP-005",,,"Pass",,
+,,,"OP-011",,,"Pass",,
+,,,"OP-002",,,"Fail",,
+,,,"OP-009",,,"Pass",,
+,,,"OP-002",,,"Pass",,
+,,,"OP-003",,,"Pass",,
+,,,"OP-007",,,"Pass",,
+,,,"OP-011",,,"Pass",,
+,,,"OP-009",,,"Pass",,
+,,,"OP-002",,,"Fail",,
+,,,"OP-006",,,"Fail",,
+,,,"OP-007",,,"Pass",,
+,,,"OP-005",,,"Pass",,

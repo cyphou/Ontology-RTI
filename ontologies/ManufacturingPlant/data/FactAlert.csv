@@ -1,0 +1,32 @@
+AlertId,SensorId,AlertType,Severity,Timestamp,Value,Threshold,Description,Status
+ALR-001,SNS-009,HighVibration,Critical,2024-01-22T10:30:00,15.2,10.0,CNC mill vibration exceeded critical threshold - spindle bearing,Acknowledged
+ALR-002,SNS-001,HighTemperature,Medium,2024-02-05T14:15:00,1350,1200,Welder torch tip temperature elevated,Active
+ALR-003,SNS-012,AccuracyDrift,High,2024-02-15T09:00:00,65,50,SMT placement accuracy degraded beyond tolerance,Acknowledged
+ALR-004,SNS-015,HighPressure,Critical,2024-03-10T07:45:00,2300,2000,Injection molder pressure spike - possible blockage,Acknowledged
+ALR-005,SNS-007,HighHumidity,Medium,2024-03-20T11:00:00,78,70,Paint booth humidity too high for coating adhesion,Active
+ALR-006,SNS-013,TemperatureDeviation,High,2024-04-01T12:30:00,268,260,Reflow zone 1 temperature 8C above setpoint,Acknowledged
+ALR-007,SNS-004,LowSpeed,High,2024-04-15T08:20:00,12,20,Conveyor belt speed drop - motor or belt issue,Acknowledged
+ALR-008,SNS-016,HighTemperature,Critical,2024-05-20T15:00:00,385,350,Injection molder barrel overheating,Acknowledged
+ALR-009,SNS-011,HighVibration,High,2024-06-10T09:45:00,12.5,10.0,CNC lathe chuck imbalance detected,Acknowledged
+ALR-010,SNS-018,TemperatureDeviation,Medium,2024-07-05T14:00:00,258,250,Wave solder pot temperature slightly high,Active
+"ALT-001","SNS-003","EmergencyStop","Critical","2024-10-02T11:00:00",,,,
+"ALT-002","SNS-011","ExcessiveVibration","High","2024-10-02T09:00:00",,,,
+"ALT-003","SNS-004","SpeedDeviation","Low","2024-10-02T08:00:00",,,,
+"ALT-004","SNS-007","EmergencyStop","High","2024-10-03T17:00:00",,,,
+"ALT-005","SNS-003","OilLevelLow","High","2024-10-04T14:00:00",,,,
+"ALT-006","SNS-004","ExcessiveVibration","High","2024-10-04T07:00:00",,,,
+"ALT-007","SNS-020","PowerSurge","Critical","2024-10-05T20:00:00",,,,
+"ALT-008","SNS-005","PowerSurge","High","2024-10-06T09:00:00",,,,
+"ALT-009","SNS-002","ExcessiveVibration","Low","2024-10-06T14:00:00",,,,
+"ALT-010","SNS-019","EmergencyStop","High","2024-10-06T07:00:00",,,,
+"ALT-011","SNS-011","OilLevelLow","Low","2024-10-07T17:00:00",,,,
+"ALT-012","SNS-004","HighTemperature","Low","2024-10-07T06:00:00",,,,
+"ALT-013","SNS-010","SpeedDeviation","High","2024-10-07T11:00:00",,,,
+"ALT-014","SNS-010","OilLevelLow","Low","2024-10-08T07:00:00",,,,
+"ALT-015","SNS-018","HighTemperature","Medium","2024-10-08T13:00:00",,,,
+"ALT-016","SNS-014","OilLevelLow","High","2024-10-09T21:00:00",,,,
+"ALT-017","SNS-014","HighTemperature","Medium","2024-10-09T17:00:00",,,,
+"ALT-018","SNS-013","PressureDrop","Medium","2024-10-09T11:00:00",,,,
+"ALT-019","SNS-002","PowerSurge","Critical","2024-10-10T18:00:00",,,,
+"ALT-020","SNS-016","PowerSurge","Medium","2024-10-10T12:00:00",,,,
+"ALT-021","SNS-001","SpeedDeviation","Critical","2024-10-10T15:00:00",,,,

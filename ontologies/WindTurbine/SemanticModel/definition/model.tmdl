@@ -1,0 +1,26 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["dimblade","dimnacelle","dimsensor","dimtechnician","dimtower","dimtransformer","dimturbine","dimweatherstation","dimwindfarm","factalert","factmaintenanceevent","factpoweroutput","sensortelemetry"]
+
+ref table dimblade
+ref table dimnacelle
+ref table dimsensor
+ref table dimtechnician
+ref table dimtower
+ref table dimtransformer
+ref table dimturbine
+ref table dimweatherstation
+ref table dimwindfarm
+ref table factalert
+ref table factmaintenanceevent
+ref table factpoweroutput
+ref table sensortelemetry
+
+ref expression DatabaseQuery
+
+annotation PBI_QueryRelationships = []

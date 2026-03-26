@@ -1,0 +1,13 @@
+TechnicianId,TechnicianName,Specialization,CertificationLevel,WindFarmId,Shift,YearsExperience,Status
+TECH-001,Lars Andersen,Electrical Systems,Senior,WF-001,Day,12,Active
+TECH-002,Emma Johansson,Mechanical Systems,Senior,WF-001,Night,10,Active
+TECH-003,James Miller,Blade Repair,Certified,WF-002,Day,7,Active
+TECH-004,Maria Garcia,Blade Repair,Senior,WF-002,Day,15,Active
+TECH-005,Robert Chen,Electrical Systems,Certified,WF-002,Night,5,Active
+TECH-006,Callum MacLeod,Mechanical Systems,Senior,WF-003,Day,11,Active
+TECH-007,Fiona Stewart,Controls & SCADA,Certified,WF-003,Night,6,Active
+TECH-008,Diego Rojas,Electrical Systems,Certified,WF-004,Day,4,Active
+TECH-009,Sofia Morales,Mechanical Systems,Senior,WF-004,Day,9,Active
+TECH-010,Henrik Larsen,Blade Repair,Senior,WF-005,Day,14,Active
+TECH-011,Anna Kowalski,Controls & SCADA,Certified,WF-005,Night,5,Active
+TECH-012,Markus Fischer,Electrical Systems,Lead,WF-005,Day,18,Active

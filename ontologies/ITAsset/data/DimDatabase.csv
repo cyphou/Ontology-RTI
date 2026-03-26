@@ -1,0 +1,9 @@
+DatabaseId,DatabaseName,ServerId,DBType,SizeGB,Engine,Version,Status
+DB-001,CustomerDB,SRV-005,OLTP,450,SQL Server,2022,Active
+DB-002,OrderDB,SRV-005,OLTP,280,PostgreSQL,16.1,Active
+DB-003,AnalyticsWarehouse,SRV-006,OLAP,2400,SQL Server,2022,Active
+DB-004,SessionStore,SRV-005,Cache,15,Redis,7.2,Active
+DB-005,DocumentStore,SRV-006,Document,180,MongoDB,7.0,Active
+DB-006,HRDB,SRV-010,OLTP,45,PostgreSQL,16.1,Active
+DB-007,AuditLog,SRV-006,Log,350,Elasticsearch,8.11,Active
+DB-008,DR_CustomerDB,SRV-013,OLTP,450,SQL Server,2022,Standby

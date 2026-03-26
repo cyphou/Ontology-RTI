@@ -13,4 +13,20 @@ ALM011,SN013,HighTemperature,Warning,2025-11-28T20:10:00,2025-11-28T20:12:00,202
 ALM012,SN021,HighVibration,Warning,2025-12-10T07:30:00,2025-12-10T07:32:00,2025-12-10T08:15:00,1.05,1.00,FCC air blower vibration above baseline,Monitored trend and planned bearing inspection,EMP004
 ALM013,SN034,HighTemperature,Warning,2025-08-05T16:40:00,2025-08-05T16:42:00,2025-08-05T17:20:00,1042,1030,Baytown FCC reactor temperature high,Adjusted catalyst cooler operation,EMP014
 ALM014,SN037,HighTemperature,Critical,2025-06-15T02:55:00,2025-06-15T02:56:00,2025-06-15T03:30:00,945,930,Alberta coker drum A temperature approaching limit,Initiated drum switch sequence,EMP022
-ALM015,SN039,HighTemperature,Warning,2025-08-06T10:20:00,2025-08-06T10:22:00,2025-08-06T11:00:00,1775,1750,ME Hub CDU heater firebox temperature high,Reduced fuel gas flow and adjusted air registers,EMP024
+ALM015,SN039,HighTemperature,Warning,2025-08-06T10:20:00,2025-08-06T10:22:00,2025-08-06T11:00:00,1775,1750,ME Hub CDU heater firebox temperature high,Reduced fuel gas flow and adjusted air registers,EMP024"SA-001","S-005","EmergencyShutdown","High",,,,,,,,
+"SA-002","S-014","Vibration","Low",,,,,,,,
+"SA-003","S-010","HighTemperature","Medium",,,,,,,,
+"SA-004","S-005","Vibration","Low",,,,,,,,
+"SA-005","S-002","HighLevel","Low",,,,,,,,
+"SA-006","S-017","HighTemperature","Medium",,,,,,,,
+"SA-007","S-013","LowPressure","Low",,,,,,,,
+"SA-008","S-007","LowFlow","Low",,,,,,,,
+"SA-009","S-017","Vibration","Low",,,,,,,,
+"SA-010","S-009","EmergencyShutdown","Low",,,,,,,,
+"SA-011","S-003","LowLevel","Low",,,,,,,,
+"SA-012","S-009","Overspeed","Low",,,,,,,,
+"SA-013","S-001","HighTemperature","Low",,,,,,,,
+"SA-014","S-009","HighPressure","Medium",,,,,,,,
+"SA-015","S-013","HighPressure","Low",,,,,,,,
+"SA-016","S-016","LowPressure","Medium",,,,,,,,
+"SA-017","S-001","LowFlow","Critical",,,,,,,,

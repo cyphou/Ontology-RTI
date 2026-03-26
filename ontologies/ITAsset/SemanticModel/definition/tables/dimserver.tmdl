@@ -1,0 +1,124 @@
+table dimserver
+	lineageTag: 40000007-0001-0001-0001-000000000001
+
+	measure 'Server Count' = COUNTROWS(dimserver)
+		displayFolder: Measures
+		lineageTag: 40000007-0001-0001-0001-100000000001
+
+	measure 'Total CPU Cores' = SUM(dimserver[CPUCores])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000007-0001-0001-0001-100000000002
+
+	measure 'Total Memory GB' = SUM(dimserver[MemoryGB])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000007-0001-0001-0001-100000000003
+
+	measure 'Total Storage TB' = SUM(dimserver[StorageTB])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 40000007-0001-0001-0001-100000000004
+
+	column ServerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerId
+		lineageTag: 40000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerName
+		lineageTag: 40000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column RackId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RackId
+		lineageTag: 40000007-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerType
+		lineageTag: 40000007-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 40000007-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 40000007-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column CPUCores
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CPUCores
+		lineageTag: 40000007-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column MemoryGB
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MemoryGB
+		lineageTag: 40000007-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column StorageTB
+		dataType: double
+		summarizeBy: none
+		sourceColumn: StorageTB
+		lineageTag: 40000007-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column OS
+		dataType: string
+		summarizeBy: none
+		sourceColumn: OS
+		lineageTag: 40000007-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column IPAddress
+		dataType: string
+		summarizeBy: none
+		sourceColumn: IPAddress
+		lineageTag: 40000007-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000007-0001-0001-0001-200000000012
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimserver = entity
+		mode: directLake
+		entityName: dimserver
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

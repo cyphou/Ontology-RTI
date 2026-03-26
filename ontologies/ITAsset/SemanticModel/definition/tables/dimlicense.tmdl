@@ -1,0 +1,95 @@
+table dimlicense
+	lineageTag: 40000004-0001-0001-0001-000000000001
+
+	measure 'License Count' = COUNTROWS(dimlicense)
+		displayFolder: Measures
+		lineageTag: 40000004-0001-0001-0001-100000000001
+
+	measure 'Total License Cost' = SUM(dimlicense[CostUSD])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 40000004-0001-0001-0001-100000000002
+
+	measure 'License Utilization' = DIVIDE(SUM(dimlicense[AssignedSeats]), SUM(dimlicense[Seats]), 0)
+		formatString: 0.00%
+		displayFolder: Measures
+		lineageTag: 40000004-0001-0001-0001-100000000003
+
+	column LicenseId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LicenseId
+		lineageTag: 40000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column AppId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AppId
+		lineageTag: 40000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column LicenseType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LicenseType
+		lineageTag: 40000004-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Vendor
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Vendor
+		lineageTag: 40000004-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExpirationDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ExpirationDate
+		lineageTag: 40000004-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Seats
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Seats
+		lineageTag: 40000004-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column AssignedSeats
+		dataType: double
+		summarizeBy: none
+		sourceColumn: AssignedSeats
+		lineageTag: 40000004-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostUSD
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CostUSD
+		lineageTag: 40000004-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000004-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimlicense = entity
+		mode: directLake
+		entityName: dimlicense
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

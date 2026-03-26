@@ -1,0 +1,11 @@
+MaterialId,MaterialName,MaterialType,Supplier,UnitCost,UnitOfMeasure,MinStockLevel,CurrentStock
+MAT-001,Steel Sheet 2mm,Raw Material,ArcelorMittal,45.00,Sheet,500,1200
+MAT-002,Aluminum Billet,Raw Material,Alcoa,82.00,Kg,200,650
+MAT-003,Lithium Cells 21700,Component,Samsung SDI,3.50,Cell,10000,28000
+MAT-004,FR4 PCB Blank,Component,TTM Technologies,1.20,Unit,5000,12000
+MAT-005,ABS Pellets,Raw Material,BASF,2.80,Kg,1000,3500
+MAT-006,Solder Paste SAC305,Consumable,Indium Corp,120.00,Jar,50,180
+MAT-007,Copper Wire 0.5mm,Raw Material,Aurubis,28.00,Kg,300,900
+MAT-008,Epoxy Resin,Chemical,Huntsman,55.00,Liter,100,320
+MAT-009,Nylon 66 Pellets,Raw Material,DuPont,4.50,Kg,800,2200
+MAT-010,Thermal Paste,Consumable,Arctic,15.00,Tube,200,550

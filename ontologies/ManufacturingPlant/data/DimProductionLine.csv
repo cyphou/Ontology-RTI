@@ -1,0 +1,11 @@
+LineId,LineName,PlantId,LineType,CapacityUnitsPerHour,InstallDate,Status
+LN-001,Assembly Line Alpha,PLT-001,Assembly,120,2005-06-01,Active
+LN-002,Assembly Line Beta,PLT-001,Assembly,100,2010-03-15,Active
+LN-003,Paint & Finish,PLT-001,Finishing,80,2005-06-01,Active
+LN-004,CNC Precision Line,PLT-002,Machining,200,2012-09-01,Active
+LN-005,Quality Control Line,PLT-002,Inspection,300,2012-09-01,Active
+LN-006,SMT Line 1,PLT-003,Electronics,500,2015-04-01,Active
+LN-007,SMT Line 2,PLT-003,Electronics,500,2018-01-15,Active
+LN-008,Injection Molding,PLT-004,Molding,350,2018-07-01,Active
+LN-009,Component Assembly,PLT-004,Assembly,250,2018-07-01,Active
+LN-010,PCB Assembly,PLT-005,Electronics,400,2020-02-01,Active

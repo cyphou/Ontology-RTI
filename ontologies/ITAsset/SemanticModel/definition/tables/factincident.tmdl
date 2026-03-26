@@ -1,0 +1,110 @@
+table factincident
+	lineageTag: 40000011-0001-0001-0001-000000000001
+
+	measure 'Incident Count' = COUNTROWS(factincident)
+		displayFolder: Measures
+		lineageTag: 40000011-0001-0001-0001-100000000001
+
+	measure 'Avg Resolution Hours' = AVERAGE(factincident[DurationHours])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 40000011-0001-0001-0001-100000000002
+
+	measure 'Open Incident Count' = CALCULATE(COUNTROWS(factincident), factincident[Status] = "Open")
+		displayFolder: Measures
+		lineageTag: 40000011-0001-0001-0001-100000000003
+
+	column IncidentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: IncidentId
+		lineageTag: 40000011-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerId
+		lineageTag: 40000011-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column IncidentType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: IncidentType
+		lineageTag: 40000011-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Severity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Severity
+		lineageTag: 40000011-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReportedByUserId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ReportedByUserId
+		lineageTag: 40000011-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CreatedDate
+		lineageTag: 40000011-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column ResolvedDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ResolvedDate
+		lineageTag: 40000011-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column DurationHours
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DurationHours
+		lineageTag: 40000011-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column RootCause
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RootCause
+		lineageTag: 40000011-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 40000011-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000011-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factincident = entity
+		mode: directLake
+		entityName: factincident
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

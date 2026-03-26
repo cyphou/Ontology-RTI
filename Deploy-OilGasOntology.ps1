@@ -58,7 +58,7 @@ param(
 
 # Resolve script root for both dot-sourced and powershell -File invocations
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-if (-not $DataFolder) { $DataFolder = Join-Path $scriptDir "data" }
+if (-not $DataFolder) { $DataFolder = Join-Path $scriptDir "ontologies\OilGasRefinery\data" }
 
 $ErrorActionPreference = "Stop"
 
@@ -784,8 +784,9 @@ else {
 # ------------------------------------------------------------------
 Write-Step "Step 5: Creating Semantic Model '$SemanticModelName' (TMDL)"
 
-# Read all TMDL definition files from deploy/SemanticModel/ folder
-$tmdlRoot = Join-Path (Join-Path $scriptDir "deploy") "SemanticModel"
+# Read all TMDL definition files — prefer ontologies/OilGasRefinery/SemanticModel/
+$tmdlRoot = Join-Path $scriptDir "ontologies\OilGasRefinery\SemanticModel"
+if (-not (Test-Path $tmdlRoot)) { $tmdlRoot = Join-Path (Join-Path $scriptDir "deploy") "SemanticModel" }
 $tmdlDefDir = Join-Path $tmdlRoot "definition"
 $tmdlTablesDir = Join-Path $tmdlDefDir "tables"
 
@@ -1155,7 +1156,7 @@ Write-Host "  4. Open ontology and configure entity types + relationships" -Fore
 Write-Host "     (see SETUP_GUIDE.md Step 4)" -ForegroundColor Yellow
 Write-Host "  5. RTI Dashboard: Requires 'Create Real-Time dashboards' tenant setting" -ForegroundColor Yellow
 Write-Host "  6. Data Agent: Uses the Ontology as its sole data source (requires F64+)" -ForegroundColor Yellow
-Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/RefineryGraphQueries.gql" -ForegroundColor Yellow
+Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from ontologies/OilGasRefinery/GraphQueries.gql" -ForegroundColor Yellow
 Write-Host "  8. Operations Agent: Open agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Fabric Portal: https://app.fabric.microsoft.com/" -ForegroundColor Cyan

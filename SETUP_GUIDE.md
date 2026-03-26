@@ -1,370 +1,306 @@
-# Setup Guide - Oil & Gas Refinery Ontology in Microsoft Fabric
+<p align="center">
+  <img src="https://img.shields.io/badge/Microsoft%20Fabric-742774?style=for-the-badge&logo=microsoftfabric&logoColor=white" alt="Microsoft Fabric"/>
+  <img src="https://img.shields.io/badge/PowerShell-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell"/>
+</p>
 
-This guide walks you through setting up the Oil & Gas Refinery ontology in Microsoft Fabric IQ (preview).
+<h1 align="center">:wrench: Setup Guide</h1>
 
-> **Quick Deploy**: For automated deployment, skip to the [Automated Deployment](#automated-deployment) section below.
+<p align="center">
+  <b>Step-by-step instructions for deploying the IQ Ontology Accelerator on Microsoft Fabric</b>
+</p>
 
----
-
-## Prerequisites
-
-### 1. Fabric Capacity
-- A Microsoft Fabric workspace with an enabled [capacity](https://learn.microsoft.com/en-us/fabric/enterprise/licenses#capacity) (F2 or higher recommended).
-
-### 2. Tenant Settings
-A Fabric administrator must enable the following settings in **Admin Portal > Tenant settings**:
-
-| Setting | Required |
-|---|---|
-| **Enable Ontology item (preview)** | Yes |
-| **User can create Graph (preview)** | Yes |
-| **Create Real-Time dashboards** | Yes (for RTI Dashboard) |
-| **Users can create and share Data agent item types (preview)** | Recommended |
-| **Users can use Copilot and other features powered by Azure OpenAI** | Recommended (for NL queries) |
-| **Data sent to Azure OpenAI can be processed outside your capacity's geographic region** | Recommended |
+<p align="center">
+  <a href="#-prerequisites">Prerequisites</a> ---
+  <a href="#-automated-deployment">Automated</a> ---
+  <a href="#-manual-setup">Manual</a> ---
+  <a href="#-troubleshooting">Troubleshooting</a>
+</p>
 
 ---
 
-## Step 1: Create the Lakehouse
+## :clipboard: Prerequisites
 
-1. Navigate to your Fabric workspace.
-2. Select **+ New item** > **Lakehouse**.
-3. Name it: `OilGasRefineryLH`
-4. Click **Create**.
+### 1 - Fabric Capacity
 
----
+| Requirement | Detail |
+|:----------:|--------|
+| :zap: | **Fabric capacity** F2 or higher (Trial may work for basic items) |
+| :globe_with_meridians: | A Fabric **workspace** assigned to the capacity |
+| :key: | **Az PowerShell module** installed (`Install-Module Az -Scope CurrentUser`) |
 
-## Step 2: Upload Data Files
+### 2 - Tenant Settings
 
-1. In the lakehouse, select **Get data** > **Upload files** from the ribbon.
-2. Upload the following CSV files from the `data/` folder:
+> [!IMPORTANT]
+> A Fabric administrator must enable these settings in **Admin Portal > Tenant settings**:
 
-| File | Description |
-|---|---|
-| `DimRefinery.csv` | Refinery locations and capacities |
-| `DimProcessUnit.csv` | Process units (CDU, FCC, Hydrocracker, etc.) |
-| `DimEquipment.csv` | Equipment items (pumps, reactors, columns, etc.) |
-| `DimPipeline.csv` | Pipeline connections between process units |
-| `DimCrudeOil.csv` | Crude oil grades and properties |
-| `DimRefinedProduct.csv` | Refined product specifications |
-| `DimStorageTank.csv` | Storage tank details and levels |
-| `DimSensor.csv` | IoT sensor specifications |
-| `DimEmployee.csv` | Employees and roles |
-| `FactMaintenance.csv` | Maintenance event records |
-| `FactSafetyAlarm.csv` | Safety alarm events |
-| `FactProduction.csv` | Daily production output |
-| `BridgeCrudeOilProcessUnit.csv` | Crude oil to process unit feed mapping |
+| | Setting | Required |
+|:---:|---------|:--------:|
+| :dna: | **Enable Ontology item (preview)** | :white_check_mark: Required |
+| :spider_web: | **User can create Graph (preview)** | :white_check_mark: Required |
+| :bar_chart: | **Create Real-Time dashboards** | :white_check_mark: Required |
+| :robot: | **Users can create and share Data agent item types (preview)** | :large_orange_diamond: Recommended |
+| :brain: | **Users can use Copilot and other features powered by Azure OpenAI** | :large_orange_diamond: Recommended |
+| :globe_with_meridians: | **Data sent to Azure OpenAI can be processed outside your capacity's geographic region** | :large_orange_diamond: Recommended |
 
-> **Note:** Do NOT upload `SensorTelemetry.csv` to the lakehouse. This file goes to Eventhouse (Step 5).
+### 3 - Capacity Requirements by Feature
 
-3. After uploading, **load each file to a delta table**:
-   - Expand **Files** in the Explorer.
-   - For each file: Right-click > **Load to Tables** > **New table**.
-   - Keep default table names (lowercase versions of filenames).
+```mermaid
+flowchart LR
+    subgraph F2["F2+ Capacity"]
+        LH["Lakehouse"]
+        SM["Semantic Model"]
+        EH["Eventhouse"]
+        ONT["Ontology"]
+        DASH["RTI Dashboard"]
+    end
 
-When complete, you should see 13 tables in the lakehouse.
+    subgraph F64["F64+ Capacity"]
+        DA["Data Agent"]
+        OA["Operations Agent"]
+    end
 
----
-
-## Step 3: Create the Semantic Model
-
-Follow the detailed instructions in [SEMANTIC_MODEL_GUIDE.md](SEMANTIC_MODEL_GUIDE.md) to:
-- Create a Power BI semantic model from the lakehouse tables.
-- Define all relationships between tables.
-- Configure display names and formatting.
-
----
-
-## Step 4: Generate the Ontology
-
-### Option A: Generate from Semantic Model (Recommended)
-
-1. Navigate to the **OilGasRefineryModel** semantic model.
-2. From the top ribbon, select **Generate Ontology**.
-3. Set:
-   - **Workspace**: Your workspace
-   - **Name**: `OilGasRefineryOntology`
-4. Click **Create**.
-
-After generation, verify and configure the ontology:
-
-#### Rename Entity Types
-
-| Original Table Name | Rename To |
-|---|---|
-| dimrefinery | Refinery |
-| dimprocessunit | ProcessUnit |
-| dimequipment | Equipment |
-| dimpipeline | Pipeline |
-| dimcrudeoil | CrudeOil |
-| dimrefinedproduct | RefinedProduct |
-| dimstoragetank | StorageTank |
-| dimsensor | Sensor |
-| dimemployee | Employee |
-| factmaintenance | MaintenanceEvent |
-| factsafetyalarm | SafetyAlarm |
-| factproduction | ProductionRecord |
-| bridgecrudeoilprocessunit | CrudeOilFeed |
-
-#### Verify Entity Type Keys
-
-| Entity Type | Key Property |
-|---|---|
-| Refinery | RefineryId |
-| ProcessUnit | ProcessUnitId |
-| Equipment | EquipmentId |
-| Pipeline | PipelineId |
-| CrudeOil | CrudeOilId |
-| RefinedProduct | ProductId |
-| StorageTank | TankId |
-| Sensor | SensorId |
-| Employee | EmployeeId |
-| MaintenanceEvent | MaintenanceId |
-| SafetyAlarm | AlarmId |
-| ProductionRecord | ProductionId |
-| CrudeOilFeed | BridgeId |
-
-#### Configure Relationship Types
-
-| Relationship Name | Description | Source Data | From Entity (Source Column) | To Entity (Source Column) |
-|---|---|---|---|---|
-| contains | Refinery contains ProcessUnit | dimprocessunit | Refinery (RefineryId) | ProcessUnit (ProcessUnitId) |
-| hasEquipment | ProcessUnit has Equipment | dimequipment | ProcessUnit (ProcessUnitId) | Equipment (EquipmentId) |
-| connectsFrom | Pipeline from ProcessUnit | dimpipeline | ProcessUnit (FromProcessUnitId) | Pipeline (PipelineId) |
-| connectsTo | Pipeline to ProcessUnit | dimpipeline | ProcessUnit (ToProcessUnitId) | Pipeline (PipelineId) |
-| stores | Tank stores Product | dimstoragetank | RefinedProduct (ProductId) | StorageTank (TankId) |
-| locatedAt | Tank at Refinery | dimstoragetank | Refinery (RefineryId) | StorageTank (TankId) |
-| monitors | Sensor monitors Equipment | dimsensor | Equipment (EquipmentId) | Sensor (SensorId) |
-| targets | Maintenance targets Equipment | factmaintenance | Equipment (EquipmentId) | MaintenanceEvent (MaintenanceId) |
-| performedBy | Maintenance by Employee | factmaintenance | Employee (PerformedByEmployeeId) | MaintenanceEvent (MaintenanceId) |
-| raisedBy | Alarm raised by Sensor | factsafetyalarm | Sensor (SensorId) | SafetyAlarm (AlarmId) |
-| assignedTo | Employee at Refinery | dimemployee | Refinery (RefineryId) | Employee (EmployeeId) |
-| feeds | CrudeOil feeds ProcessUnit | bridgecrudeoilprocessunit | CrudeOil (CrudeOilId) | ProcessUnit (ProcessUnitId) |
-| produces | ProcessUnit produces Product | factproduction | ProcessUnit (ProcessUnitId) | RefinedProduct (ProductId) |
-
-### Option B: Build Directly from OneLake
-
-If you prefer to build the ontology manually:
-
-1. In your workspace, select **+ New item** > **Ontology (preview)**.
-2. Name it: `OilGasRefineryOntology`
-3. Manually create each entity type from the table above.
-4. For each entity type:
-   - Add all properties from the corresponding table.
-   - Set the entity type key.
-   - Add the data binding to the corresponding lakehouse table.
-5. Create each relationship type as listed in the relationship table.
-
----
-
-## Step 5: Set Up Eventhouse for Telemetry
-
-For real-time sensor telemetry data:
-
-1. In your workspace, select **+ New item** > **Eventhouse**.
-2. Name it: `RefineryTelemetryEH`
-3. Open the default KQL database.
-4. Select **Get data** > **Local file**.
-5. Create table: `SensorTelemetry`
-6. Upload `data/SensorTelemetry.csv`.
-7. Keep default settings and complete the import.
-
-### Bind Telemetry to Sensor Entity
-
-1. Open the `OilGasRefineryOntology` ontology.
-2. Select the **Sensor** entity type.
-3. In the **Bindings** tab, add a new binding:
-   - **Source**: `RefineryTelemetryEH` > `SensorTelemetry`
-   - **Key mapping**: `SensorId` → `SensorId`
-4. Map the telemetry properties:
-   - `Timestamp` → Date/Time property
-   - `Value` → Numeric property
-   - `Quality` → String property
-
----
-
-## Step 6: Preview and Query the Ontology
-
-### Graph Preview
-1. In the ontology editor, select **Preview** from the ribbon.
-2. Click **Refresh graph model** to populate with data.
-3. Explore:
-   - Click on a **Refinery** node to see its connected **ProcessUnits**
-   - Navigate from **ProcessUnit** to **Equipment** to **Sensors**
-   - View **MaintenanceEvents** connected to **Equipment**
-
-### Natural Language Queries (via Data Agent)
-Create a Fabric data agent connected to your ontology to ask questions like:
-
-- *"What is the total refining capacity across all active refineries?"*
-- *"Which equipment at Gulf Coast Refinery has had the most maintenance events?"*
-- *"Show me all critical alarms in the last month"*
-- *"What products does the FCC-1 unit produce and what is the daily output?"*
-- *"Which process units are fed by Brent Crude?"*
-- *"What is the current tank utilization at the Rotterdam refinery?"*
-- *"List all sensors monitoring the hydrocracker reactors"*
-- *"What was the total maintenance cost for the Gulf Coast Refinery in 2025?"*
-
-> **Note**: The Data Agent requires Fabric capacity **F64 or higher**. It is not supported on Trial capacity.
-
----
-
-## Step 7: RTI Dashboard (Real-Time Intelligence)
-
-The deployment script creates a KQL Dashboard connected to the Eventhouse with 12 visualization tiles.
-
-### Manual Setup (if not using automation)
-
-1. In your workspace, select **+ New item** > **Real-Time Dashboard**.
-2. Name it: `RefineryTelemetryDashboard`
-3. Add a data source:
-   - **Type**: Kusto (KQL)
-   - **Cluster URI**: Your Eventhouse query service URI
-   - **Database**: `RefineryTelemetryEH`
-4. Create tiles for each KQL query (see `deploy/Deploy-RTIDashboard.ps1` for tile definitions).
-
-### KQL Tables Used
-
-| KQL Table | Columns |
-|-----------|---------|
-| SensorReading | SensorId, EquipmentId, RefineryId, Timestamp, ReadingValue, MeasurementUnit, SensorType, QualityFlag, IsAnomaly |
-| EquipmentAlert | AlertId, SensorId, EquipmentId, RefineryId, Timestamp, AlertType, Severity, ReadingValue, ThresholdValue, Message, IsAcknowledged |
-| ProcessMetric | ProcessUnitId, RefineryId, Timestamp, ThroughputBPH, InletTemperatureF, OutletTemperatureF, PressurePSI, FeedRateBPH, YieldPercent, EnergyConsumptionMMBTU |
-| PipelineFlow | PipelineId, RefineryId, Timestamp, FlowRateBPH, PressurePSI, TemperatureF, ViscosityCp, IsFlowNormal |
-| TankLevel | TankId, RefineryId, Timestamp, LevelBarrels, LevelPercent, TemperatureF, ProductId, IsOverflow |
-
----
-
-## Step 8: Graph Query Set
-
-The Graph Query Set provides 20 GQL (Graph Query Language) queries for exploring the ontology graph.
-
-> **Note**: The Fabric REST API does not yet support pushing queries into a Graph Query Set programmatically.
-> The deployment script creates the empty Graph Query Set item. Queries must be added manually via the Fabric UI.
-
-### Manual Setup (Required)
-
-1. In your workspace, open the **OilGasRefineryQueries** Graph Query Set (or create one via **+ New item** > **Graph Query Set**).
-2. Select the graph model generated from the ontology.
-3. Copy queries one at a time from `deploy/RefineryGraphQueries.gql`.
-4. Paste each query, give it a name, and click **Run** to verify.
-
-### Key Queries
-
-| # | Query | Pattern |
-|---|-------|---------|
-| 1 | Full Topology | `MATCH (n)-[e]->(m) RETURN n, e, m` |
-| 2 | Process Units & Equipment | `Refinery → ProcessUnit → Equipment` |
-| 3 | Sensors & Alarms | `Equipment → Sensor ← SafetyAlarm` |
-| 4 | Maintenance Events | `Employee ← MaintenanceEvent → Equipment` |
-| 5 | Crude Supply Chain | `CrudeOil ← CrudeOilFeed → ProcessUnit` |
-| 6 | Production Records | `ProcessUnit ← ProductionRecord → RefinedProduct` |
-| 7 | Storage Tanks | `Refinery → StorageTank → RefinedProduct` |
-| 8 | Pipeline Network | `Refinery → Pipeline → ProcessUnit` |
-| 9 | End-to-End | `CrudeOil → ... → RefinedProduct` |
-| 10 | Workforce | `Refinery → Employee ← MaintenanceEvent` |
-
----
-
-## Troubleshooting
-
-| Issue | Solution |
-|---|---|
-| Cannot create ontology | Verify all tenant settings are enabled (see Prerequisites) |
-| Entity types not appearing | Make sure semantic model tables are visible (not hidden) and relationships defined |
-| Graph preview empty | Click **Refresh graph model** in the Preview tab |
-| Telemetry not showing | Ensure Eventhouse binding is configured with correct key mapping |
-| NL queries not working | Enable Azure OpenAI related tenant settings |
-| RTI Dashboard has no data | Upload data to Eventhouse KQL tables; verify the dashboard is pointing at the correct KQL database |
-| Data Agent fails to create | Requires Fabric capacity F64 or higher (not supported on Trial capacity) |
-| Graph Query Set shows no graph | Open the GQS in Fabric UI, click the graph selector, and choose the ontology graph model |
-
----
-
-## Automated Deployment
-
-Instead of performing Steps 1-5 manually, you can use the provided PowerShell deployment script to automate the process.
-
-### Prerequisites for Automation
-
-- **PowerShell 5.1+** (Windows) or **PowerShell 7+** (cross-platform)
-- **Az PowerShell module**: Install with `Install-Module -Name Az -Scope CurrentUser`
-- **Azure account** with access to your Fabric workspace
-- **Fabric workspace ID** (find it in the workspace URL: `app.fabric.microsoft.com/groups/{WorkspaceId}`)
-
-### Run the Deployment Script
-
-```powershell
-# Navigate to the accelerator folder
-cd OntologyAccelerator
-
-# Run the deployment (interactive Azure login will open if needed)
-.\Deploy-OilGasOntology.ps1 -WorkspaceId "your-workspace-guid"
+    style F2 fill:#107C10,color:#fff,stroke:#107C10
+    style F64 fill:#FF6F00,color:#fff,stroke:#FF6F00
 ```
 
-### Customize Item Names (Optional)
+> [!NOTE]
+> **Data Agents** and **Operations Agents** require Fabric capacity **F64 or higher**. Use `-SkipDataAgent` and `-SkipOperationsAgent` flags on lower SKUs.
 
-```powershell
-.\Deploy-OilGasOntology.ps1 `
-    -WorkspaceId "your-workspace-guid" `
-    -LakehouseName "MyRefineryLakehouse" `
-    -EventhouseName "MyTelemetryEH" `
-    -SemanticModelName "MyRefineryModel" `
-    -OntologyName "MyRefineryOntology"
+---
+
+## :rocket: Automated Deployment
+
+The fastest way to deploy any domain --- a single command creates all Fabric items:
+
+```mermaid
+flowchart LR
+    A["PowerShell\nDeploy-Ontology.ps1"] --> B["Login\nConnect-AzAccount"]
+    B --> C["Select Domain\n5 industries"]
+    C --> D["Deploy All\n8 Fabric items"]
+    D --> E["Validate\nPost-deploy check"]
+
+    style A fill:#5391FE,color:#fff
+    style D fill:#742774,color:#fff
+    style E fill:#107C10,color:#fff
 ```
 
-### What the Script Does
-
-| Step | Action | API Used |
-|------|--------|----------|
-| 0 | Authenticates to Azure (interactive if needed) | `Connect-AzAccount` |
-| 1 | Creates the Lakehouse | Fabric REST API |
-| 2 | Uploads all 13 CSV files to Lakehouse Files/ | OneLake DFS API |
-| 3 | Creates & runs a Spark notebook to load CSVs into Delta tables | Fabric REST API |
-| 4 | Creates the Eventhouse and KQL database for telemetry | Fabric REST API |
-| 4b | Creates 5 KQL tables and ingests SensorTelemetry.csv + sample data | Kusto REST API |
-| 5 | Creates the Semantic Model (Direct Lake, TMDL, 13 tables, 17 relationships) | Fabric REST API |
-| 6 | Creates the Ontology (59 definition parts) and builds the Graph Model | Fabric REST API |
-| 7 | Deploys the RTI Dashboard (KQL Dashboard with 12 visualization tiles) | Fabric REST API |
-| 8 | Creates a Data Agent with ontology as sole data source (requires F64+) | Fabric REST API |
-| 9 | Creates Graph Query Set item (queries must be added manually via UI) | Fabric REST API |
-| 10 | Creates an Operations Agent for RTI monitoring and Teams integration | Fabric REST API |
-
-### After Deployment
-
-The script will display a summary of what was created. Some remaining manual steps:
-
-1. **If notebook didn't complete**: Open `OilGasRefinery_LoadTables` notebook in Fabric and run it manually.
-2. **KQL data**: If KQL tables step failed, re-run `deploy\Deploy-KqlTables.ps1` or upload `data/SensorTelemetry.csv` to the Eventhouse KQL database via **Get data > Local file**.
-3. **RTI Dashboard**: Requires the **Create Real-Time dashboards** tenant setting. The dashboard auto-connects to the Eventhouse KQL database.
-4. **Data Agent**: Uses the **Ontology** as its sole data source. Requires Fabric capacity **F64+** (not supported on Trial). The script will skip this step on Trial capacity.
-5. **Graph Query Set**: Open the GQS in Fabric, select the graph model, and copy queries from `deploy/RefineryGraphQueries.gql`.
-6. **Operations Agent**: Open the agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start.
-
-### Validate the Deployment
-
-After deployment, run the validation script to verify all items were created:
+### Step 1 - Connect to Azure
 
 ```powershell
+# Login to Azure (required for Fabric REST API access)
+Connect-AzAccount
+```
+
+### Step 2 - Find your Workspace ID
+
+```powershell
+# Option A: From the Fabric portal URL
+# https://app.fabric.microsoft.com/groups/<WorkspaceId>/...
+
+# Option B: Via REST API
+$token = (Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com").Token
+$headers = @{ "Authorization" = "Bearer $token" }
+(Invoke-RestMethod -Uri "https://api.fabric.microsoft.com/v1/workspaces" -Headers $headers).value | Format-Table displayName, id
+```
+
+### Step 3 - Deploy
+
+```powershell
+# Interactive menu (choose domain at runtime)
+.\Deploy-Ontology.ps1 -WorkspaceId "your-workspace-guid"
+
+# Direct deployment (skip the menu)
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType OilGasRefinery
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType SmartBuilding
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ManufacturingPlant
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType WindTurbine
+
+# Skip optional components (useful for lower-SKU capacity)
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset -SkipDataAgent -SkipDashboard -SkipOperationsAgent
+```
+
+### Step 4 - Validate
+
+```powershell
+# Run post-deployment validation
 .\deploy\Validate-Deployment.ps1 -WorkspaceId "your-workspace-guid"
 ```
 
-This will check for the existence of the lakehouse, eventhouse, semantic model, ontology, and all 13 Delta tables.
+### What Gets Created
 
-### Deployment Files Reference
+| Step | Action | Time |
+|:----:|--------|:----:|
+| 0 | :file_cabinet: Create Lakehouse | ~30s |
+| 1 | :notebook: Upload PySpark notebook | ~20s |
+| 2 | :arrow_up: Upload CSV files to OneLake | ~60s |
+| 3 | :play_button: Execute notebook (CSV to Delta) | ~3min |
+| 4 | :triangular_ruler: Create Semantic Model (Direct Lake + TMDL) | ~30s |
+| 5 | :dna: Create Ontology (entity types + relationships) | ~45s |
+| 6 | :spider_web: Build Graph Model | ~30s |
+| 7 | :satellite: Create Eventhouse + KQL Database + Tables | ~2min |
+| 8 | :mag: Create Graph Query Set | ~15s |
+| 9 | :bar_chart: Create RTI Dashboard (10-12 tiles) | ~30s |
+| 10 | :robot: Create Data Agent + Operations Agent | ~45s |
 
-| File | Purpose |
-|------|---------|
-| `Deploy-OilGasOntology.ps1` | Main deployment orchestrator (Steps 0-10) |
-| `deploy/Build-Ontology.ps1` | Ontology definition builder (59 parts, entity types, relationships) |
-| `deploy/Build-GraphModel-v2.ps1` | Graph model builder |
-| `deploy/Deploy-RTIDashboard.ps1` | KQL Real-Time Dashboard (12 tiles, 5 KQL tables) |
-| `deploy/Deploy-DataAgent.ps1` | Fabric Data Agent for NL queries |
-| `deploy/Deploy-KqlTables.ps1` | KQL table creation and data ingestion (5 tables) |
-| `deploy/Deploy-GraphQuerySet.ps1` | Graph Query Set item creator (queries added manually) |
-| `deploy/Deploy-OperationsAgent.ps1` | Operations Agent for RTI monitoring and Teams integration |
-| `deploy/LoadDataToTables.py` | PySpark notebook code (CSV → Delta tables) |
-| `deploy/RefineryGraphQueries.gql` | GQL query reference (copy-paste fallback) |
-| `deploy/Validate-Deployment.ps1` | Post-deployment validation script |
-| `deploy/SemanticModel/` | TMDL semantic model definition (Direct Lake) |
-| `deploy/SemanticModel.bim` | Legacy BIM definition |
+> **Total estimated time:** ~8-10 minutes per domain
+
+---
+
+## :hammer_and_wrench: Manual Setup
+
+If you prefer to create items manually (or as a learning exercise), follow the steps below. These instructions use the **Oil & Gas Refinery** domain as an example. The same pattern applies to all domains.
+
+<details>
+<summary><h3>Step 1 - Create the Lakehouse</h3></summary>
+
+1. Navigate to your Fabric workspace
+2. Select **+ New item** > **Lakehouse**
+3. Name it: `OilGasRefineryLH` (or `<DomainName>LH`)
+4. Click **Create**
+
+</details>
+
+<details>
+<summary><h3>Step 2 - Upload Data Files</h3></summary>
+
+1. In the lakehouse, select **Get data** > **Upload files**
+2. Upload all CSV files from the domain `data/` folder
+3. After uploading, **load each file to a delta table**:
+   - Expand **Files** in the Explorer
+   - For each file: Right-click > **Load to Tables** > **New table**
+   - Keep default table names (lowercase versions of filenames)
+
+**Domain CSV files:**
+
+| Domain | CSV Count | Key Tables |
+|--------|:---------:|------------|
+| :oil_drum: Oil & Gas | 14 | DimRefinery, DimEquipment, DimSensor, FactProduction, SensorTelemetry |
+| :office: Smart Building | 13 | DimBuilding, DimZone, DimSensor, DimHVACSystem, SensorTelemetry |
+| :factory: Manufacturing | 12 | DimPlant, DimMachine, DimSensor, FactProductionBatch, SensorTelemetry |
+| :desktop_computer: IT Asset | 12 | DimServer, DimRack, DimApplication, FactIncident, SensorTelemetry |
+| :wind_face: Wind Turbine | 13 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
+
+> [!WARNING]
+> Do **NOT** upload `SensorTelemetry.csv` to the lakehouse. This file goes to the **Eventhouse** (Step 5).
+
+</details>
+
+<details>
+<summary><h3>Step 3 - Create the Semantic Model</h3></summary>
+
+See [SEMANTIC_MODEL_GUIDE.md](SEMANTIC_MODEL_GUIDE.md) for detailed instructions on:
+- Creating a Power BI semantic model from lakehouse tables
+- Defining all relationships between tables
+- Configuring display names and formatting
+- Adding optional DAX measures
+
+</details>
+
+<details>
+<summary><h3>Step 4 - Generate the Ontology</h3></summary>
+
+**Option A: Generate from Semantic Model (Recommended)**
+
+1. Navigate to the semantic model
+2. From the top ribbon, select **Generate Ontology**
+3. Set name: `<DomainName>Ontology`
+4. Click **Create**
+5. Rename entity types from table names to business names
+6. Verify entity type keys
+7. Configure relationship types
+
+**Option B: Build Directly from OneLake**
+
+1. Select **+ New item** > **Ontology (preview)**
+2. Manually create each entity type, properties, and relationships
+
+</details>
+
+<details>
+<summary><h3>Step 5 - Set Up Eventhouse for Telemetry</h3></summary>
+
+1. Select **+ New item** > **Eventhouse**
+2. Name it: `<DomainName>TelemetryEH`
+3. Open the default KQL database
+4. Select **Get data** > **Local file**
+5. Create table: `SensorTelemetry`
+6. Upload `data/SensorTelemetry.csv`
+7. Complete the import
+
+**Bind Telemetry to Sensor Entity:**
+1. Open the ontology
+2. Select the **Sensor** entity type
+3. In **Bindings** tab, add a new binding to the Eventhouse `SensorTelemetry` table
+4. Map: `SensorId` to `SensorId`, then telemetry properties
+
+</details>
+
+<details>
+<summary><h3>Step 6 - Preview and Query</h3></summary>
+
+**Graph Preview:**
+1. In the ontology editor, select **Preview**
+2. Click **Refresh graph model**
+3. Explore entity connections
+
+**Natural Language Queries (via Data Agent):**
+- *"What is the total refining capacity across all active refineries?"*
+- *"Which equipment at Gulf Coast Refinery has had the most maintenance events?"*
+- *"Show me all critical alarms in the last month"*
+
+</details>
+
+<details>
+<summary><h3>Step 7 - RTI Dashboard (Manual)</h3></summary>
+
+1. Select **+ New item** > **Real-Time Dashboard**
+2. Add a data source (Kusto/KQL) pointing to the Eventhouse
+3. Create tiles using queries from `Deploy-RTIDashboard.ps1`
+
+Each domain has 5 KQL tables:
+
+| Domain | Table 1 | Table 2 | Table 3 | Table 4 | Table 5 |
+|--------|---------|---------|---------|---------|---------|
+| :oil_drum: Oil & Gas | SensorReading | EquipmentAlert | ProcessMetric | PipelineFlow | TankLevel |
+| :office: Smart Building | SensorReading | BuildingAlert | HVACMetric | EnergyConsumption | OccupancyMetric |
+| :factory: Manufacturing | SensorReading | PlantAlert | ProductionMetric | MachineHealth | QualityMetric |
+| :desktop_computer: IT Asset | ServerMetric | InfraAlert | ApplicationHealth | NetworkMetric | IncidentMetric |
+| :wind_face: Wind Turbine | TurbineReading | TurbineAlert | PowerOutputMetric | WeatherMetric | MaintenanceMetric |
+
+</details>
+
+<details>
+<summary><h3>Step 8 - Graph Query Set (Manual)</h3></summary>
+
+1. Open the Graph Query Set in Fabric UI
+2. Select the ontology graph model
+3. Copy-paste queries from the domain `GraphQueries.gql` file
+
+> The Fabric REST API does not yet support pushing queries into a Graph Query Set. Queries must be added manually.
+
+</details>
+
+---
+
+## :bug: Troubleshooting
+
+| | Issue | Solution |
+|:---:|-------|---------|
+| :x: | Cannot create ontology | Verify all tenant settings are enabled (see Prerequisites) |
+| :warning: | Entity types not appearing | Ensure semantic model tables are visible and relationships defined |
+| :white_circle: | Graph preview empty | Click **Refresh graph model** in the Preview tab |
+| :satellite: | Telemetry not showing | Ensure Eventhouse binding is configured with correct key mapping |
+| :speech_balloon: | NL queries not working | Enable Azure OpenAI related tenant settings |
+| :bar_chart: | Dashboard shows no data | Upload data to Eventhouse KQL tables; verify data source URI |
+| :robot: | Data Agent fails | Requires Fabric capacity F64+ (not supported on Trial) |
+| :spider_web: | Graph Query Set empty | Open in Fabric UI, click graph selector, choose ontology graph model |
+| :repeat: | 429 Too Many Requests | Scripts auto-retry with exponential backoff; wait and retry |
+| :lock: | 403 Forbidden | Verify you have Contributor+ role on the workspace |
+
+---
+
+<p align="center">
+  <a href="README.md">:arrow_left: Back to README</a> ---
+  <a href="SEMANTIC_MODEL_GUIDE.md">Semantic Model Guide :arrow_right:</a>
+</p>

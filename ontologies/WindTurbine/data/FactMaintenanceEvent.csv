@@ -1,0 +1,23 @@
+EventId,TurbineId,TechnicianId,EventType,Priority,ScheduledDate,CompletedDate,DurationHours,Component,Description,CostUSD,Status
+ME-001,WT-001,TECH-001,Preventive,Medium,2024-10-15,2024-10-15,6,Generator,Annual generator inspection and lubrication,2500,Completed
+ME-002,WT-002,TECH-002,Preventive,Medium,2024-09-20,2024-09-20,8,Gearbox,Gearbox oil change and bearing inspection,3200,Completed
+ME-003,WT-004,TECH-001,Corrective,High,2024-11-01,2024-11-03,16,Pitch System,Pitch motor replacement on blade 2,18500,Completed
+ME-004,WT-005,TECH-003,Preventive,Low,2024-10-01,2024-10-01,4,Blades,Visual blade inspection and cleaning,1200,Completed
+ME-005,WT-009,TECH-006,Corrective,Critical,2024-07-20,,48,Main Bearing,Main bearing failure - awaiting replacement part,45000,In Progress
+ME-006,WT-013,TECH-010,Preventive,Medium,2024-11-05,2024-11-05,10,Full System,Comprehensive offshore annual inspection,8500,Completed
+ME-007,WT-015,TECH-012,Preventive,Medium,2024-11-15,2024-11-15,8,Blades,Blade coating inspection and drone survey,4200,Completed
+ME-008,WT-003,TECH-002,Corrective,High,2024-11-20,,12,Yaw System,Yaw motor intermittent fault diagnosis,7500,Scheduled
+ME-009,WT-007,TECH-005,Preventive,Low,2024-12-01,,4,Tower,Tower bolt torque check,900,Scheduled
+ME-010,WT-011,TECH-009,Preventive,Medium,2024-09-30,2024-09-30,6,Generator,Generator winding resistance check,2800,Completed
+ME-011,WT-014,TECH-011,Corrective,High,2024-10-28,2024-10-29,14,Converter,Power converter module replacement,22000,Completed
+ME-012,WT-008,TECH-006,Preventive,Low,2024-11-10,2024-11-10,3,Sensors,Anemometer calibration and replacement,1500,Completed
+"ME-013","WT-002","TN-004","Emergency",,,,"6.3","BladeHub",,"14886.92","Completed"
+"ME-014","WT-014","TN-012","Overhaul",,,,"44.5","Transformer",,"23547.28","Completed"
+"ME-015","WT-010","TN-005","Corrective",,,,"11.9","YawDrive",,"24435.8","Completed"
+"ME-016","WT-002","TN-004","Corrective",,,,"45.9","Gearbox",,"7213.09","Completed"
+"ME-017","WT-007","TN-012","Inspection",,,,"7.1","Tower",,"12536.33","Scheduled"
+"ME-018","WT-006","TN-002","Overhaul",,,,"16.8","Generator",,"5720.21","Scheduled"
+"ME-019","WT-003","TN-005","Emergency",,,,"27","Gearbox",,"17609.63","Scheduled"
+"ME-020","WT-012","TN-001","Corrective",,,,"21","SCADA",,"12339.46","Completed"
+"ME-021","WT-004","TN-006","Corrective",,,,"39.3","SCADA",,"22427.87","Completed"
+"ME-022","WT-013","TN-010","Inspection",,,,"21.8","YawDrive",,"13960.84","Completed"

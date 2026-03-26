@@ -1,0 +1,119 @@
+table factmaintenanceticket
+	lineageTag: 20000012-0001-0001-0001-000000000001
+
+	measure 'Ticket Count' = COUNTROWS(factmaintenanceticket)
+		displayFolder: Measures
+		lineageTag: 20000012-0001-0001-0001-100000000001
+
+	measure 'Total Maintenance Cost' = SUM(factmaintenanceticket[CostUSD])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 20000012-0001-0001-0001-100000000002
+
+	measure 'Avg Ticket Duration Hours' = AVERAGE(factmaintenanceticket[DurationHours])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 20000012-0001-0001-0001-100000000003
+
+	column TicketId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TicketId
+		lineageTag: 20000012-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentType
+		lineageTag: 20000012-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentId
+		lineageTag: 20000012-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column TicketType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TicketType
+		lineageTag: 20000012-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Priority
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Priority
+		lineageTag: 20000012-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column AssignedToOccupantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AssignedToOccupantId
+		lineageTag: 20000012-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CreatedDate
+		lineageTag: 20000012-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column ResolvedDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ResolvedDate
+		lineageTag: 20000012-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column DurationHours
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DurationHours
+		lineageTag: 20000012-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostUSD
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CostUSD
+		lineageTag: 20000012-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 20000012-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000012-0001-0001-0001-200000000012
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factmaintenanceticket = entity
+		mode: directLake
+		entityName: factmaintenanceticket
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,82 @@
+table dimtechnician
+	lineageTag: 50000004-0001-0001-0001-000000000001
+
+	measure 'Technician Count' = COUNTROWS(dimtechnician)
+		displayFolder: Measures
+		lineageTag: 50000004-0001-0001-0001-100000000001
+
+	measure 'Avg Years Experience' = AVERAGE(dimtechnician[YearsExperience])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 50000004-0001-0001-0001-100000000002
+
+	column TechnicianId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TechnicianId
+		lineageTag: 50000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TechnicianName
+		lineageTag: 50000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Specialization
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Specialization
+		lineageTag: 50000004-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column CertificationLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CertificationLevel
+		lineageTag: 50000004-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column WindFarmId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WindFarmId
+		lineageTag: 50000004-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Shift
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Shift
+		lineageTag: 50000004-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearsExperience
+		dataType: double
+		summarizeBy: none
+		sourceColumn: YearsExperience
+		lineageTag: 50000004-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000004-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimtechnician = entity
+		mode: directLake
+		entityName: dimtechnician
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

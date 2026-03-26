@@ -1,0 +1,98 @@
+table dimwindfarm
+	lineageTag: 50000009-0001-0001-0001-000000000001
+
+	measure 'Wind Farm Count' = COUNTROWS(dimwindfarm)
+		displayFolder: Measures
+		lineageTag: 50000009-0001-0001-0001-100000000001
+
+	measure 'Total Installed Capacity MW' = SUM(dimwindfarm[InstalledCapacityMW])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 50000009-0001-0001-0001-100000000002
+
+	column WindFarmId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WindFarmId
+		lineageTag: 50000009-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column WindFarmName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WindFarmName
+		lineageTag: 50000009-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Location
+		lineageTag: 50000009-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Latitude
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Latitude
+		lineageTag: 50000009-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Longitude
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Longitude
+		lineageTag: 50000009-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalTurbines
+		dataType: double
+		summarizeBy: none
+		sourceColumn: TotalTurbines
+		lineageTag: 50000009-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstalledCapacityMW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: InstalledCapacityMW
+		lineageTag: 50000009-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column CommissionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CommissionDate
+		lineageTag: 50000009-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Operator
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Operator
+		lineageTag: 50000009-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000009-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimwindfarm = entity
+		mode: directLake
+		entityName: dimwindfarm
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

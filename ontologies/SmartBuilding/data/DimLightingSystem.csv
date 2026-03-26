@@ -1,0 +1,16 @@
+LightingId,LightingName,ZoneId,LightingType,WattageTotalW,BulbCount,InstallDate,Status
+LIT-001,Lobby Main Lights,ZN-001,LED Panel,1200,24,2018-03-15,Active
+LIT-002,Conf Wing Lights,ZN-002,LED Panel,800,16,2018-03-15,Active
+LIT-003,Office A Lights,ZN-005,LED Troffer,2000,40,2018-04-01,Active
+LIT-004,Office B Lights,ZN-006,LED Troffer,1800,36,2018-04-01,Active
+LIT-005,Executive Lights,ZN-008,LED Downlight,600,12,2018-06-01,Active
+LIT-006,Sky Lounge Ambiance,ZN-009,RGB LED Strip,400,200,2018-06-01,Active
+LIT-007,Campus Workspace,ZN-011,LED Panel,3200,64,2020-01-15,Active
+LIT-008,Cafeteria Lights,ZN-012,LED Panel,1600,32,2020-01-15,Active
+LIT-009,Innovation Lab,ZN-013,LED Troffer,1400,28,2020-01-15,Active
+LIT-010,Training Center,ZN-015,LED Panel,1200,24,2020-02-01,Active
+LIT-011,Research Lab A,ZN-019,LED Troffer,1000,20,2021-03-01,Active
+LIT-012,Patient Wing,ZN-021,LED Panel,2000,40,2019-05-01,Active
+LIT-013,Waiting Area,ZN-022,LED Downlight,600,12,2019-05-01,Active
+LIT-014,ER Suite,ZN-023,LED Surgical,1500,30,2019-05-01,Active
+LIT-015,Pharmacy,ZN-025,LED Panel,500,10,2019-06-01,Active

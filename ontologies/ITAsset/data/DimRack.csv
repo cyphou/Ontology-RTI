@@ -1,0 +1,11 @@
+RackId,RackName,DataCenterId,RackSize,MaxPowerW,CurrentPowerW,TemperatureZone,Status
+RK-001,Rack A1-01,DC-001,42U,8000,6200,Cold Aisle,Active
+RK-002,Rack A1-02,DC-001,42U,8000,5800,Cold Aisle,Active
+RK-003,Rack B2-01,DC-001,42U,12000,9500,Cold Aisle,Active
+RK-004,Rack C3-01,DC-001,48U,15000,11000,Hot Aisle,Active
+RK-005,Rack W1-01,DC-002,42U,8000,6000,Cold Aisle,Active
+RK-006,Rack W1-02,DC-002,42U,8000,5500,Cold Aisle,Active
+RK-007,Rack EU-01,DC-003,42U,10000,7800,Cold Aisle,Active
+RK-008,Rack EU-02,DC-003,42U,10000,8200,Cold Aisle,Active
+RK-009,Rack AP-01,DC-004,42U,8000,5400,Cold Aisle,Active
+RK-010,Rack UK-01,DC-005,42U,8000,4200,Cold Aisle,Active

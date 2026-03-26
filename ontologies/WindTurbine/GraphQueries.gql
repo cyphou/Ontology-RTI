@@ -1,0 +1,75 @@
+# Wind Turbine / Wind Farm GraphQL Queries (ISO/IEC 39075:2024)
+# Graph exploration queries for Wind Turbine Ontology
+
+# 1. List all wind farms with capacity overview
+MATCH (wf:WindFarm)
+RETURN wf.WindFarmName, wf.Location, wf.TotalTurbines, wf.InstalledCapacityMW, wf.Operator, wf.CommissionDate, wf.Status
+ORDER BY wf.InstalledCapacityMW DESC
+
+# 2. Wind farm → turbines hierarchy with model details
+MATCH (wf:WindFarm)-[:WindFarmHasTurbine]->(t:Turbine)
+RETURN wf.WindFarmName, t.TurbineName, t.Model, t.Manufacturer, t.RatedCapacityKW, t.HubHeightM, t.RotorDiameterM, t.Status
+ORDER BY wf.WindFarmName, t.TurbineName
+
+# 3. Turbine full component view (nacelle + tower + blades)
+MATCH (t:Turbine)-[:TurbineHasNacelle]->(n:Nacelle), (t)-[:TurbineHasTower]->(tw:Tower)
+OPTIONAL MATCH (t)-[:TurbineHasBlade]->(b:Blade)
+RETURN t.TurbineName, n.GeneratorType, n.GearboxType, n.WeightTons, tw.HeightM, tw.FoundationType, COUNT(b) AS BladeCount
+ORDER BY t.TurbineName
+
+# 4. Blade status across the fleet
+MATCH (t:Turbine)-[:TurbineHasBlade]->(b:Blade)
+RETURN t.TurbineName, b.BladeName, b.BladePosition, b.LengthM, b.Material, b.LastInspectionDate, b.Status
+ORDER BY b.Status DESC, t.TurbineName
+
+# 5. Sensors per turbine
+MATCH (t:Turbine)-[:TurbineHasSensor]->(s:Sensor)
+RETURN t.TurbineName, s.SensorName, s.SensorType, s.Location, s.Unit, s.MinThreshold, s.MaxThreshold, s.Status
+ORDER BY t.TurbineName, s.SensorType
+
+# 6. Technicians per wind farm with specialization
+MATCH (wf:WindFarm)-[:WindFarmHasTechnician]->(tech:Technician)
+RETURN wf.WindFarmName, tech.TechnicianName, tech.Specialization, tech.CertificationLevel, tech.Shift, tech.YearsExperience
+ORDER BY wf.WindFarmName, tech.Specialization
+
+# 7. Weather stations per wind farm
+MATCH (wf:WindFarm)-[:WindFarmHasWeatherStation]->(ws:WeatherStation)
+RETURN wf.WindFarmName, ws.StationName, ws.Latitude, ws.Longitude, ws.ElevationM, ws.Status
+ORDER BY wf.WindFarmName
+
+# 8. Transformers and grid connection per wind farm
+MATCH (wf:WindFarm)-[:WindFarmHasTransformer]->(tr:Transformer)
+RETURN wf.WindFarmName, tr.TransformerName, tr.RatingMVA, tr.VoltageKV, tr.Manufacturer, tr.LastServiceDate, tr.Status
+ORDER BY wf.WindFarmName
+
+# 9. Open maintenance events with turbine and technician details
+MATCH (me:MaintenanceEvent)-[:MaintenanceOnTurbine]->(t:Turbine), (me)-[:MaintenanceByTechnician]->(tech:Technician)
+WHERE me.Status <> 'Completed'
+RETURN me.EventId, me.EventType, me.Priority, t.TurbineName, tech.TechnicianName, me.ScheduledDate, me.Component, me.Description, me.Status
+ORDER BY me.Priority, me.ScheduledDate
+
+# 10. Maintenance cost analysis per turbine
+MATCH (me:MaintenanceEvent)-[:MaintenanceOnTurbine]->(t:Turbine)
+WHERE me.Status = 'Completed'
+RETURN t.TurbineName, COUNT(me) AS EventCount, SUM(me.CostUSD) AS TotalCost, SUM(me.DurationHours) AS TotalHours
+ORDER BY TotalCost DESC
+
+# 11. Power output per turbine (latest readings)
+MATCH (po:PowerOutput)-[:PowerOutputFromTurbine]->(t:Turbine)
+RETURN t.TurbineName, po.Date, po.Hour, po.WindSpeedMs, po.PowerOutputKW, po.CapacityFactor, po.RotorRPM
+ORDER BY t.TurbineName, po.Date DESC, po.Hour DESC
+
+# 12. Active alerts and their turbines
+MATCH (al:Alert)-[:AlertOnTurbine]->(t:Turbine)
+WHERE al.Status = 'Active'
+RETURN al.AlertId, al.AlertType, al.Severity, t.TurbineName, al.Timestamp, al.Value, al.Threshold, al.Description
+ORDER BY al.Severity, al.Timestamp DESC
+
+# 13. Full asset chain: wind farm → turbine → nacelle + blades + sensors + alerts
+MATCH (wf:WindFarm)-[:WindFarmHasTurbine]->(t:Turbine)
+OPTIONAL MATCH (t)-[:TurbineHasNacelle]->(n:Nacelle)
+OPTIONAL MATCH (t)-[:TurbineHasBlade]->(b:Blade)
+OPTIONAL MATCH (t)-[:TurbineHasSensor]->(s:Sensor)
+OPTIONAL MATCH (al:Alert)-[:AlertOnTurbine]->(t) WHERE al.Status = 'Active'
+RETURN wf.WindFarmName, t.TurbineName, t.Status, n.GeneratorType, COUNT(DISTINCT b) AS Blades, COUNT(DISTINCT s) AS Sensors, COUNT(DISTINCT al) AS ActiveAlerts
+ORDER BY ActiveAlerts DESC, wf.WindFarmName

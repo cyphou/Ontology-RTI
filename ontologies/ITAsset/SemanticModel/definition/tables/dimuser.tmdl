@@ -1,0 +1,69 @@
+table dimuser
+	lineageTag: 40000008-0001-0001-0001-000000000001
+
+	measure 'User Count' = COUNTROWS(dimuser)
+		displayFolder: Measures
+		lineageTag: 40000008-0001-0001-0001-100000000001
+
+	column UserId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: UserId
+		lineageTag: 40000008-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column FullName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FullName
+		lineageTag: 40000008-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Department
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Department
+		lineageTag: 40000008-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Role
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Role
+		lineageTag: 40000008-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Email
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Email
+		lineageTag: 40000008-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column AccessLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AccessLevel
+		lineageTag: 40000008-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000008-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimuser = entity
+		mode: directLake
+		entityName: dimuser
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

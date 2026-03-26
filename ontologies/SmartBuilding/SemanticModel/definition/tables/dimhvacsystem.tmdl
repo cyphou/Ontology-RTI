@@ -1,0 +1,98 @@
+table dimhvacsystem
+	lineageTag: 20000006-0001-0001-0001-000000000001
+
+	measure 'HVAC System Count' = COUNTROWS(dimhvacsystem)
+		displayFolder: Measures
+		lineageTag: 20000006-0001-0001-0001-100000000001
+
+	measure 'Total HVAC Capacity BTU' = SUM(dimhvacsystem[CapacityBTU])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 20000006-0001-0001-0001-100000000002
+
+	column HVACId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HVACId
+		lineageTag: 20000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column HVACName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HVACName
+		lineageTag: 20000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ZoneId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ZoneId
+		lineageTag: 20000006-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column HVACType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HVACType
+		lineageTag: 20000006-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityBTU
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CapacityBTU
+		lineageTag: 20000006-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 20000006-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 20000006-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 20000006-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 20000006-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column EnergyRating
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EnergyRating
+		lineageTag: 20000006-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimhvacsystem = entity
+		mode: directLake
+		entityName: dimhvacsystem
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

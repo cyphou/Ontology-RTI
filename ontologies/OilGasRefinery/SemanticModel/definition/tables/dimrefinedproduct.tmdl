@@ -1,0 +1,85 @@
+table dimrefinedproduct
+	lineageTag: 10000006-0001-0001-0001-000000000001
+
+	measure 'Product Count' = COUNTROWS(dimrefinedproduct)
+		displayFolder: Measures
+		lineageTag: 10000006-0001-0001-0001-100000000001
+
+	column ProductId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductId
+		lineageTag: 10000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductName
+		lineageTag: 10000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductCategory
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductCategory
+		lineageTag: 10000006-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column APIGravity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: APIGravity
+		lineageTag: 10000006-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column SulfurLimitPPM
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SulfurLimitPPM
+		lineageTag: 10000006-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlashPointF
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FlashPointF
+		lineageTag: 10000006-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column SpecStandard
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SpecStandard
+		lineageTag: 10000006-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column PricePerBarrelUSD
+		dataType: double
+		summarizeBy: none
+		sourceColumn: PricePerBarrelUSD
+		lineageTag: 10000006-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 10000006-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimrefinedproduct = entity
+		mode: directLake
+		entityName: dimrefinedproduct
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,98 @@
+table dimturbine
+	lineageTag: 50000007-0001-0001-0001-000000000001
+
+	measure 'Turbine Count' = COUNTROWS(dimturbine)
+		displayFolder: Measures
+		lineageTag: 50000007-0001-0001-0001-100000000001
+
+	measure 'Total Rated Capacity KW' = SUM(dimturbine[RatedCapacityKW])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 50000007-0001-0001-0001-100000000002
+
+	column TurbineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TurbineId
+		lineageTag: 50000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TurbineName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TurbineName
+		lineageTag: 50000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column WindFarmId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WindFarmId
+		lineageTag: 50000007-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 50000007-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 50000007-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column RatedCapacityKW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: RatedCapacityKW
+		lineageTag: 50000007-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column HubHeightM
+		dataType: double
+		summarizeBy: none
+		sourceColumn: HubHeightM
+		lineageTag: 50000007-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column RotorDiameterM
+		dataType: double
+		summarizeBy: none
+		sourceColumn: RotorDiameterM
+		lineageTag: 50000007-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column CommissionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CommissionDate
+		lineageTag: 50000007-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000007-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimturbine = entity
+		mode: directLake
+		entityName: dimturbine
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

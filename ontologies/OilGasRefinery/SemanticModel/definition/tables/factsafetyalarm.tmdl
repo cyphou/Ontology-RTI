@@ -1,0 +1,118 @@
+table factsafetyalarm
+	lineageTag: 10000011-0001-0001-0001-000000000001
+
+	measure 'Alarm Count' = COUNTROWS(factsafetyalarm)
+		displayFolder: Measures
+		lineageTag: 10000011-0001-0001-0001-100000000001
+
+	measure 'Critical Alarm Count' = CALCULATE(COUNTROWS(factsafetyalarm), factsafetyalarm[Severity] = "Critical")
+		displayFolder: Measures
+		lineageTag: 10000011-0001-0001-0001-100000000002
+
+	measure 'Avg Alarm Value' = AVERAGE(factsafetyalarm[AlarmValue])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 10000011-0001-0001-0001-100000000003
+
+	column AlarmId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AlarmId
+		lineageTag: 10000011-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 10000011-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column AlarmType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AlarmType
+		lineageTag: 10000011-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Severity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Severity
+		lineageTag: 10000011-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column AlarmTimestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AlarmTimestamp
+		lineageTag: 10000011-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column AcknowledgedTimestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AcknowledgedTimestamp
+		lineageTag: 10000011-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column ClearedTimestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ClearedTimestamp
+		lineageTag: 10000011-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column AlarmValue
+		dataType: double
+		summarizeBy: none
+		sourceColumn: AlarmValue
+		lineageTag: 10000011-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column ThresholdValue
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ThresholdValue
+		lineageTag: 10000011-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 10000011-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column ActionTaken
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ActionTaken
+		lineageTag: 10000011-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	column AcknowledgedByEmployeeId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AcknowledgedByEmployeeId
+		lineageTag: 10000011-0001-0001-0001-200000000012
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factsafetyalarm = entity
+		mode: directLake
+		entityName: factsafetyalarm
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

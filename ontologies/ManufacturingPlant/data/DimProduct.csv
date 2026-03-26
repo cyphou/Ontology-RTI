@@ -1,0 +1,9 @@
+ProductId,ProductName,ProductCategory,UnitOfMeasure,WeightKg,Description
+PRD-001,EV Battery Module,Automotive,Unit,45.0,Lithium-ion battery module for electric vehicles
+PRD-002,Chassis Frame,Automotive,Unit,180.0,Stamped and welded steel chassis frame
+PRD-003,Precision Gear Set,Industrial,Set,2.5,High-precision gear set for industrial actuators
+PRD-004,Micro Controller Board,Electronics,Unit,0.05,ARM-based micro controller PCB assembly
+PRD-005,Sensor Housing,Components,Unit,0.3,Injection molded sensor housing with IP67 rating
+PRD-006,Power Inverter,Electronics,Unit,8.0,DC-AC power inverter for renewable energy
+PRD-007,Brake Caliper,Automotive,Unit,4.2,Aluminum brake caliper precision machined
+PRD-008,LED Driver Board,Electronics,Unit,0.08,Constant-current LED driver PCB

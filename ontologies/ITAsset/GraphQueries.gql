@@ -1,0 +1,73 @@
+# IT Asset Management GraphQL Queries (ISO/IEC 39075:2024)
+# Graph exploration queries for IT Asset Ontology
+
+# 1. List all data centers with rack capacity
+MATCH (dc:DataCenter)
+RETURN dc.DataCenterName, dc.Location, dc.City, dc.TierLevel, dc.TotalRackCapacity, dc.PowerCapacityKW, dc.Status
+ORDER BY dc.DataCenterName
+
+# 2. Data center → racks → servers hierarchy
+MATCH (dc:DataCenter)-[:DataCenterHasRack]->(r:Rack)-[:RackHasServer]->(s:Server)
+RETURN dc.DataCenterName, r.RackName, r.TemperatureZone, s.ServerName, s.ServerType, s.CPUCores, s.MemoryGB, s.Status
+ORDER BY dc.DataCenterName, r.RackName, s.ServerName
+
+# 3. Servers with their hosted applications
+MATCH (s:Server)-[:ServerHostsApp]->(app:Application)
+RETURN s.ServerName, s.ServerType, s.OS, app.AppName, app.AppType, app.Version, app.Environment, app.SLATier
+ORDER BY s.ServerName, app.AppName
+
+# 4. Servers with their hosted databases
+MATCH (s:Server)-[:ServerHostsDB]->(db:Database)
+RETURN s.ServerName, s.OS, db.DatabaseName, db.DBType, db.Engine, db.SizeGB, db.Status
+ORDER BY s.ServerName, db.DatabaseName
+
+# 5. Virtual machines per server
+MATCH (s:Server)-[:ServerHostsVM]->(vm:VirtualMachine)
+RETURN s.ServerName, s.CPUCores AS HostCPU, s.MemoryGB AS HostMemGB, vm.VMName, vm.vCPU, vm.MemoryGB AS VMMemGB, vm.OS, vm.Status
+ORDER BY s.ServerName, vm.VMName
+
+# 6. Network devices per data center
+MATCH (dc:DataCenter)-[:DataCenterHasNetworkDevice]->(nd:NetworkDevice)
+RETURN dc.DataCenterName, nd.DeviceName, nd.DeviceType, nd.Manufacturer, nd.Ports, nd.IPAddress, nd.Status
+ORDER BY dc.DataCenterName, nd.DeviceType
+
+# 7. Open incidents with server and reporter details
+MATCH (inc:Incident)-[:IncidentOnServer]->(s:Server), (inc)-[:IncidentReportedBy]->(u:User)
+WHERE inc.Status <> 'Resolved'
+RETURN inc.IncidentId, inc.IncidentType, inc.Severity, s.ServerName, u.FullName, inc.CreatedDate, inc.Description
+ORDER BY inc.Severity, inc.CreatedDate
+
+# 8. Critical incidents and their root causes
+MATCH (inc:Incident)-[:IncidentOnServer]->(s:Server)
+WHERE inc.Severity = 'Critical'
+RETURN inc.IncidentId, s.ServerName, inc.IncidentType, inc.RootCause, inc.DurationHours, inc.Status
+ORDER BY inc.DurationHours DESC
+
+# 9. License status and cost per application
+MATCH (app:Application)-[:AppHasLicense]->(lic:License)
+RETURN app.AppName, lic.LicenseType, lic.Vendor, lic.ExpirationDate, lic.Seats, lic.AssignedSeats, lic.CostUSD, lic.Status
+ORDER BY lic.ExpirationDate
+
+# 10. Alerts on servers
+MATCH (al:Alert)-[:AlertOnServer]->(s:Server)
+WHERE al.Status = 'Active'
+RETURN al.AlertId, al.AlertType, al.Severity, s.ServerName, al.Timestamp, al.Value, al.Threshold, al.Description
+ORDER BY al.Severity, al.Timestamp DESC
+
+# 11. Full asset chain: data center → rack → server → application → license
+MATCH (dc:DataCenter)-[:DataCenterHasRack]->(r:Rack)-[:RackHasServer]->(s:Server)-[:ServerHostsApp]->(app:Application)-[:AppHasLicense]->(lic:License)
+RETURN dc.DataCenterName, r.RackName, s.ServerName, app.AppName, lic.LicenseType, lic.ExpirationDate, lic.CostUSD
+ORDER BY dc.DataCenterName, s.ServerName
+
+# 12. Server capacity utilization (VMs + Apps per server)
+MATCH (s:Server)
+OPTIONAL MATCH (s)-[:ServerHostsVM]->(vm:VirtualMachine)
+OPTIONAL MATCH (s)-[:ServerHostsApp]->(app:Application)
+RETURN s.ServerName, s.CPUCores, s.MemoryGB, COUNT(DISTINCT vm) AS VMCount, COUNT(DISTINCT app) AS AppCount
+ORDER BY s.ServerName
+
+# 13. Incident resolution performance by user
+MATCH (inc:Incident)-[:IncidentReportedBy]->(u:User)
+WHERE inc.Status = 'Resolved'
+RETURN u.FullName, u.Department, COUNT(inc) AS ResolvedCount, AVG(inc.DurationHours) AS AvgResolutionHours
+ORDER BY AvgResolutionHours

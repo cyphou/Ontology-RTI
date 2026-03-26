@@ -1,0 +1,72 @@
+relationship dimproductionline_PlantId_dimplant
+	fromColumn: dimproductionline.PlantId
+	toColumn: dimplant.PlantId
+	crossFilteringBehavior: oneDirection
+
+relationship dimmachine_LineId_dimproductionline
+	fromColumn: dimmachine.LineId
+	toColumn: dimproductionline.LineId
+	crossFilteringBehavior: oneDirection
+
+relationship dimsensor_MachineId_dimmachine
+	fromColumn: dimsensor.MachineId
+	toColumn: dimmachine.MachineId
+	crossFilteringBehavior: oneDirection
+
+relationship dimoperator_LineId_dimproductionline
+	isActive: false
+	fromColumn: dimoperator.LineId
+	toColumn: dimproductionline.LineId
+	crossFilteringBehavior: oneDirection
+
+relationship factproductionbatch_LineId_dimproductionline
+	isActive: false
+	fromColumn: factproductionbatch.LineId
+	toColumn: dimproductionline.LineId
+	crossFilteringBehavior: oneDirection
+
+relationship factproductionbatch_ProductId_dimproduct
+	fromColumn: factproductionbatch.ProductId
+	toColumn: dimproduct.ProductId
+	crossFilteringBehavior: oneDirection
+
+relationship factqualitycheck_ProductId_dimproduct
+	isActive: false
+	fromColumn: factqualitycheck.ProductId
+	toColumn: dimproduct.ProductId
+	crossFilteringBehavior: oneDirection
+
+relationship factqualitycheck_LineId_dimproductionline
+	isActive: false
+	fromColumn: factqualitycheck.LineId
+	toColumn: dimproductionline.LineId
+	crossFilteringBehavior: oneDirection
+
+relationship factqualitycheck_InspectorId_dimoperator
+	fromColumn: factqualitycheck.InspectorId
+	toColumn: dimoperator.OperatorId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceorder_MachineId_dimmachine
+	isActive: false
+	fromColumn: factmaintenanceorder.MachineId
+	toColumn: dimmachine.MachineId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceorder_AssignedToOperatorId_dimoperator
+	isActive: false
+	fromColumn: factmaintenanceorder.AssignedToOperatorId
+	toColumn: dimoperator.OperatorId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_SensorId_dimsensor
+	fromColumn: factalert.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_SensorId_dimsensor
+	isActive: false
+	fromColumn: sensortelemetry.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+

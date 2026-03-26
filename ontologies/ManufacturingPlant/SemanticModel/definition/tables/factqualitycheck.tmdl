@@ -1,0 +1,95 @@
+table factqualitycheck
+	lineageTag: 30000011-0001-0001-0001-000000000001
+
+	measure 'QC Check Count' = COUNTROWS(factqualitycheck)
+		displayFolder: Measures
+		lineageTag: 30000011-0001-0001-0001-100000000001
+
+	measure 'Total Defect Count' = SUM(factqualitycheck[DefectCount])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 30000011-0001-0001-0001-100000000002
+
+	measure 'Pass Rate' = DIVIDE(CALCULATE(COUNTROWS(factqualitycheck), factqualitycheck[Result] = "Pass"), COUNTROWS(factqualitycheck), 0)
+		formatString: 0.00%
+		displayFolder: Measures
+		lineageTag: 30000011-0001-0001-0001-100000000003
+
+	column QCId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: QCId
+		lineageTag: 30000011-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductId
+		lineageTag: 30000011-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LineId
+		lineageTag: 30000011-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column InspectorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InspectorId
+		lineageTag: 30000011-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column CheckDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CheckDate
+		lineageTag: 30000011-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column CheckType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CheckType
+		lineageTag: 30000011-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Result
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Result
+		lineageTag: 30000011-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column DefectCount
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DefectCount
+		lineageTag: 30000011-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Notes
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Notes
+		lineageTag: 30000011-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factqualitycheck = entity
+		mode: directLake
+		entityName: factqualitycheck
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

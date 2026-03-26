@@ -1,0 +1,31 @@
+TicketId,EquipmentType,EquipmentId,TicketType,Priority,AssignedToOccupantId,CreatedDate,ResolvedDate,DurationHours,CostUSD,Description,Status
+TKT-001,HVAC,HVAC-001,Preventive,Medium,OCC-001,2024-01-15,2024-01-15,3.5,450,Quarterly filter replacement and coil cleaning,Completed
+TKT-002,Elevator,ELV-001,Corrective,High,OCC-001,2024-01-20,2024-01-21,8.0,2200,Door alignment issue causing intermittent stalling,Completed
+TKT-003,Lighting,LIT-003,Preventive,Low,OCC-006,2024-02-01,2024-02-01,1.5,120,Replace 4 failed LED panels in Office A,Completed
+TKT-004,HVAC,HVAC-009,Emergency,Critical,OCC-006,2024-02-10,2024-02-10,4.0,3500,Server room CRAC unit compressor failure,Completed
+TKT-005,HVAC,HVAC-007,Preventive,Medium,OCC-001,2024-03-01,2024-03-01,2.5,380,Campus AHU belt replacement and inspection,Completed
+TKT-006,Elevator,ELV-007,Inspection,Medium,OCC-008,2024-03-15,2024-03-15,2.0,600,Annual safety inspection - all tests passed,Completed
+TKT-007,HVAC,HVAC-011,Corrective,High,OCC-001,2024-04-05,2024-04-06,6.0,1800,Patient wing AHU abnormal vibration - bearing replaced,Completed
+TKT-008,Lighting,LIT-006,Corrective,Low,OCC-006,2024-04-10,2024-04-10,1.0,250,RGB strip controller replacement in Sky Lounge,Completed
+TKT-009,HVAC,HVAC-003,Preventive,Medium,OCC-001,2024-05-01,2024-05-01,3.0,420,Semi-annual chiller maintenance and refrigerant check,Completed
+TKT-010,Elevator,ELV-003,Corrective,High,OCC-008,2024-05-20,2024-05-21,10.0,4500,Freight elevator hydraulic pump replacement,Completed
+TKT-011,HVAC,HVAC-010,Inspection,Medium,OCC-009,2024-06-01,2024-06-01,2.0,300,Lab fume hood annual flow verification,Completed
+TKT-012,Lighting,LIT-012,Preventive,Medium,OCC-013,2024-06-15,2024-06-15,2.0,200,Patient wing lighting emergency battery test,Completed
+TKT-013,HVAC,HVAC-012,Corrective,Critical,OCC-014,2024-07-01,2024-07-02,8.0,5200,ER Suite AHU failed - emergency repair with temp cooling,Completed
+TKT-014,Elevator,ELV-005,Preventive,Medium,OCC-011,2024-07-15,2024-07-15,2.5,550,Campus elevator annual maintenance and load test,Completed
+TKT-015,HVAC,HVAC-001,Corrective,Medium,OCC-001,2024-08-01,2024-08-02,5.0,1600,Lobby AHU variable frequency drive replacement,Completed
+TKT-016,Lighting,LIT-007,Preventive,Low,OCC-011,2024-08-15,2024-08-15,1.5,180,Campus workspace LED panel cleaning and lux check,Completed
+TKT-017,HVAC,HVAC-005,Preventive,Low,OCC-001,2024-09-01,2024-09-01,1.5,200,Executive FCU filter and drain pan cleaning,Completed
+TKT-018,Elevator,ELV-001,Emergency,Critical,OCC-001,2024-09-15,2024-09-16,12.0,8000,Main cable replacement after safety sensor triggered,Completed
+TKT-019,HVAC,HVAC-007,Corrective,High,OCC-011,2024-10-01,2024-10-02,6.0,2800,Campus AHU cooling coil leak repair,In Progress
+TKT-020,Lighting,LIT-014,Corrective,High,OCC-014,2024-10-10,,0,0,ER surgical light flickering - awaiting parts,Open
+"MT-001",,,"HVAC Repair","Emergency",,"2024-10-05",,"19.9","4774.86","HVAC Repair in zone ZN-024","Completed"
+"MT-002",,,"Electrical","Emergency",,"2024-10-08",,"32.6","4181.58","Electrical in zone ZN-011","Completed"
+"MT-003",,,"HVAC Repair","Emergency",,"2024-10-11",,"35","1282.06","HVAC Repair in zone ZN-019","InProgress"
+"MT-004",,,"Plumbing","High",,"2024-10-14",,"9.4","555.45","Plumbing in zone ZN-014","Completed"
+"MT-005",,,"Electrical","Medium",,"2024-10-17",,"38.8","1516.99","Electrical in zone ZN-004","Scheduled"
+"MT-006",,,"Elevator Service","Medium",,"2024-10-20",,"26.3","957.18","Elevator Service in zone ZN-007","InProgress"
+"MT-007",,,"Cleaning","Low",,"2024-10-23",,"28.1","2713.91","Cleaning in zone ZN-012","InProgress"
+"MT-008",,,"Lighting Replacement","Emergency",,"2024-10-26",,"2","2695.26","Lighting Replacement in zone ZN-009","Completed"
+"MT-009",,,"Electrical","Medium",,"2024-10-29",,"23.6","1147.2","Electrical in zone ZN-001","Scheduled"
+"MT-010",,,"Lighting Replacement","High",,"2024-11-01",,"34.2","684.7","Lighting Replacement in zone ZN-018","InProgress"

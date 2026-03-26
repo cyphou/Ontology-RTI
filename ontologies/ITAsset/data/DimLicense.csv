@@ -1,0 +1,9 @@
+LicenseId,AppId,LicenseType,Vendor,ExpirationDate,Seats,AssignedSeats,CostUSD,Status
+LIC-001,APP-001,Enterprise,Internal,2025-12-31,Unlimited,0,0,Active
+LIC-002,APP-005,Enterprise,Tableau,2025-06-30,50,42,125000,Active
+LIC-003,APP-006,SaaS,Workday,2025-09-30,500,340,180000,Active
+LIC-004,APP-009,Open Source,Grafana Labs,2025-12-31,Unlimited,0,25000,Active
+LIC-005,APP-007,Enterprise,Microsoft,2025-12-31,1000,850,320000,Active
+LIC-006,APP-003,Enterprise,Stripe,2025-03-31,1,1,48000,Active
+LIC-007,APP-008,Enterprise,GitLab,2025-12-31,100,78,45000,Active
+LIC-008,APP-010,Enterprise,Veeam,2025-09-30,15,12,28000,Active

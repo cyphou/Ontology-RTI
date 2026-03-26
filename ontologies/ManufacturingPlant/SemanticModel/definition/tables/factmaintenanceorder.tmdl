@@ -1,0 +1,111 @@
+table factmaintenanceorder
+	lineageTag: 30000009-0001-0001-0001-000000000001
+
+	measure 'Maintenance Order Count' = COUNTROWS(factmaintenanceorder)
+		displayFolder: Measures
+		lineageTag: 30000009-0001-0001-0001-100000000001
+
+	measure 'Total Maintenance Cost' = SUM(factmaintenanceorder[CostUSD])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 30000009-0001-0001-0001-100000000002
+
+	measure 'Avg Repair Duration Hours' = AVERAGE(factmaintenanceorder[DurationHours])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 30000009-0001-0001-0001-100000000003
+
+	column OrderId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: OrderId
+		lineageTag: 30000009-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column MachineId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MachineId
+		lineageTag: 30000009-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: OrderType
+		lineageTag: 30000009-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Priority
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Priority
+		lineageTag: 30000009-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column AssignedToOperatorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AssignedToOperatorId
+		lineageTag: 30000009-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column StartDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StartDate
+		lineageTag: 30000009-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column EndDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EndDate
+		lineageTag: 30000009-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column DurationHours
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DurationHours
+		lineageTag: 30000009-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostUSD
+		dataType: double
+		summarizeBy: none
+		sourceColumn: CostUSD
+		lineageTag: 30000009-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Description
+		lineageTag: 30000009-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 30000009-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factmaintenanceorder = entity
+		mode: directLake
+		entityName: factmaintenanceorder
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

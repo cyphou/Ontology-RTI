@@ -1,0 +1,11 @@
+MeterId,MeterName,BuildingId,MeterType,MeasurementUnit,InstallDate,Status
+MTR-001,Meridian Main Meter,BLD-001,Electricity,kWh,2018-02-01,Active
+MTR-002,Meridian Gas Meter,BLD-001,Gas,Therms,2018-02-01,Active
+MTR-003,Meridian Water Meter,BLD-001,Water,Gallons,2018-02-01,Active
+MTR-004,Campus Electric Meter,BLD-002,Electricity,kWh,2020-01-01,Active
+MTR-005,Campus Gas Meter,BLD-002,Gas,Therms,2020-01-01,Active
+MTR-006,GreenLeaf Main Meter,BLD-003,Electricity,kWh,2015-06-01,Active
+MTR-007,GreenLeaf Water,BLD-003,Water,Gallons,2015-06-01,Active
+MTR-008,Nordic Lab Electric,BLD-004,Electricity,kWh,2021-01-01,Active
+MTR-009,Health Plaza Electric,BLD-005,Electricity,kWh,2019-03-01,Active
+MTR-010,Health Plaza Gas,BLD-005,Gas,Therms,2019-03-01,Active

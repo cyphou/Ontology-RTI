@@ -1,0 +1,105 @@
+table dimsensor
+	lineageTag: 10000008-0001-0001-0001-000000000001
+
+	measure 'Sensor Count' = COUNTROWS(dimsensor)
+		displayFolder: Measures
+		lineageTag: 10000008-0001-0001-0001-100000000001
+
+	measure 'Active Sensor Count' = CALCULATE(COUNTROWS(dimsensor), dimsensor[Status] = "Active")
+		displayFolder: Measures
+		lineageTag: 10000008-0001-0001-0001-100000000002
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 10000008-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorName
+		lineageTag: 10000008-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorType
+		lineageTag: 10000008-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentId
+		lineageTag: 10000008-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeasurementUnit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MeasurementUnit
+		lineageTag: 10000008-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column MinRange
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MinRange
+		lineageTag: 10000008-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxRange
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MaxRange
+		lineageTag: 10000008-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 10000008-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column CalibrationDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CalibrationDate
+		lineageTag: 10000008-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 10000008-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 10000008-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimsensor = entity
+		mode: directLake
+		entityName: dimsensor
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

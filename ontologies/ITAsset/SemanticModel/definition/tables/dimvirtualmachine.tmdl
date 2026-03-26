@@ -1,0 +1,82 @@
+table dimvirtualmachine
+	lineageTag: 40000009-0001-0001-0001-000000000001
+
+	measure 'VM Count' = COUNTROWS(dimvirtualmachine)
+		displayFolder: Measures
+		lineageTag: 40000009-0001-0001-0001-100000000001
+
+	measure 'Total vCPU' = SUM(dimvirtualmachine[vCPU])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000009-0001-0001-0001-100000000002
+
+	column VMId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: VMId
+		lineageTag: 40000009-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column VMName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: VMName
+		lineageTag: 40000009-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ServerId
+		lineageTag: 40000009-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column vCPU
+		dataType: double
+		summarizeBy: none
+		sourceColumn: vCPU
+		lineageTag: 40000009-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MemoryGB
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MemoryGB
+		lineageTag: 40000009-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column DiskGB
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DiskGB
+		lineageTag: 40000009-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column OS
+		dataType: string
+		summarizeBy: none
+		sourceColumn: OS
+		lineageTag: 40000009-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000009-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimvirtualmachine = entity
+		mode: directLake
+		entityName: dimvirtualmachine
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

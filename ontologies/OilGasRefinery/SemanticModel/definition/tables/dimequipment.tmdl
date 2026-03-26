@@ -1,0 +1,105 @@
+table dimequipment
+	lineageTag: 10000003-0001-0001-0001-000000000001
+
+	measure 'Equipment Count' = COUNTROWS(dimequipment)
+		displayFolder: Measures
+		lineageTag: 10000003-0001-0001-0001-100000000001
+
+	measure 'Critical Equipment Count' = CALCULATE(COUNTROWS(dimequipment), dimequipment[CriticalityLevel] = "High")
+		displayFolder: Measures
+		lineageTag: 10000003-0001-0001-0001-100000000002
+
+	column EquipmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentId
+		lineageTag: 10000003-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentName
+		lineageTag: 10000003-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EquipmentType
+		lineageTag: 10000003-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcessUnitId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcessUnitId
+		lineageTag: 10000003-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 10000003-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 10000003-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 10000003-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastInspectionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastInspectionDate
+		lineageTag: 10000003-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 10000003-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column CriticalityLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CriticalityLevel
+		lineageTag: 10000003-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExpectedLifeYears
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: ExpectedLifeYears
+		lineageTag: 10000003-0001-0001-0001-200000000011
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimequipment = entity
+		mode: directLake
+		entityName: dimequipment
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

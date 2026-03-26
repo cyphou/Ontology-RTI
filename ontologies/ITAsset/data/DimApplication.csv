@@ -1,0 +1,11 @@
+AppId,AppName,ServerId,AppType,Version,Environment,Owner,SLATier,Status
+APP-001,CustomerPortal,SRV-001,Web Application,3.5.2,Production,Engineering,Platinum,Active
+APP-002,OrderAPI,SRV-003,Microservice,2.1.0,Production,Engineering,Platinum,Active
+APP-003,PaymentGateway,SRV-003,Microservice,1.8.3,Production,Finance,Platinum,Active
+APP-004,InventoryService,SRV-004,Microservice,2.0.1,Production,Operations,Gold,Active
+APP-005,AnalyticsDashboard,SRV-007,Analytics,4.2.0,Production,Data Team,Gold,Active
+APP-006,HRPortal,SRV-009,Web Application,2.3.1,Production,HR,Silver,Active
+APP-007,EmailService,SRV-008,Messaging,5.1.0,Production,IT,Gold,Active
+APP-008,CIRunner,SRV-004,DevOps,3.0.0,Production,DevOps,Silver,Active
+APP-009,MonitoringStack,SRV-002,Observability,2.5.0,Production,SRE,Platinum,Active
+APP-010,BackupOrchestrator,SRV-015,Backup,1.2.0,Production,IT,Gold,Active

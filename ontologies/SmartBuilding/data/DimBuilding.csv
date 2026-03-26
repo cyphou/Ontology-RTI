@@ -1,0 +1,6 @@
+BuildingId,BuildingName,Address,City,Country,Floors,TotalAreaSqFt,YearBuilt,BuildingType,Status,Owner
+BLD-001,Meridian Tower,100 Market St,San Francisco,USA,42,520000,2018,Commercial Office,Active,Meridian Properties
+BLD-002,Azure Campus Hub,1 Microsoft Way,Redmond,USA,8,180000,2020,Corporate Campus,Active,TechCorp Inc
+BLD-003,GreenLeaf Center,250 Park Ave,New York,USA,35,410000,2015,Mixed Use,Active,GreenLeaf REIT
+BLD-004,Nordic Innovation Lab,15 Vasagatan,Stockholm,Sweden,12,95000,2021,Research Lab,Active,Nordic Ventures
+BLD-005,Pacific Health Plaza,500 Harbor Blvd,San Diego,USA,6,72000,2019,Healthcare,Active,Pacific Health Systems

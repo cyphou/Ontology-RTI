@@ -1,0 +1,16 @@
+NacelleId,NacelleName,TurbineId,GeneratorType,GearboxType,CoolingSystem,WeightTons,LastInspectionDate,Status
+NAC-001,Alpha-T01-Nacelle,WT-001,PMSG,Direct Drive,Liquid,390,2024-10-15,Good
+NAC-002,Alpha-T02-Nacelle,WT-002,PMSG,Direct Drive,Liquid,390,2024-09-20,Good
+NAC-003,Alpha-T03-Nacelle,WT-003,PMSG,Direct Drive,Air,400,2024-11-01,Good
+NAC-004,Alpha-T04-Nacelle,WT-004,PMSG,Direct Drive,Air,400,2024-08-10,Inspection Due
+NAC-005,Prairie-T01-Nacelle,WT-005,DFIG,3-Stage Gearbox,Air,85,2024-10-01,Good
+NAC-006,Prairie-T02-Nacelle,WT-006,DFIG,3-Stage Gearbox,Air,85,2024-10-05,Good
+NAC-007,Prairie-T03-Nacelle,WT-007,DFIG,3-Stage Gearbox,Liquid,92,2024-09-15,Good
+NAC-008,Highland-T01-Nacelle,WT-008,PMSG,2-Stage Gearbox,Air,145,2024-11-10,Good
+NAC-009,Highland-T02-Nacelle,WT-009,PMSG,2-Stage Gearbox,Air,145,2024-07-20,Fault
+NAC-010,Highland-T03-Nacelle,WT-010,PMSG,Direct Drive,Liquid,155,2024-10-25,Good
+NAC-011,Atacama-T01-Nacelle,WT-011,DFIG,3-Stage Gearbox,Air,120,2024-09-30,Good
+NAC-012,Atacama-T02-Nacelle,WT-012,DFIG,3-Stage Gearbox,Air,120,2024-10-20,Good
+NAC-013,Baltic-T01-Nacelle,WT-013,PMSG,Direct Drive,Liquid,600,2024-11-05,Good
+NAC-014,Baltic-T02-Nacelle,WT-014,PMSG,Direct Drive,Liquid,600,2024-10-28,Good
+NAC-015,Baltic-T03-Nacelle,WT-015,PMSG,Direct Drive,Liquid,680,2024-11-15,Good

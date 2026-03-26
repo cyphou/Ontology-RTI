@@ -1,0 +1,86 @@
+relationship dimturbine_WindFarmId_dimwindfarm
+	fromColumn: dimturbine.WindFarmId
+	toColumn: dimwindfarm.WindFarmId
+	crossFilteringBehavior: oneDirection
+
+relationship dimblade_TurbineId_dimturbine
+	fromColumn: dimblade.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship dimnacelle_TurbineId_dimturbine
+	isActive: false
+	fromColumn: dimnacelle.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship dimtower_TurbineId_dimturbine
+	isActive: false
+	fromColumn: dimtower.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship dimsensor_TurbineId_dimturbine
+	isActive: false
+	fromColumn: dimsensor.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship dimtechnician_WindFarmId_dimwindfarm
+	isActive: false
+	fromColumn: dimtechnician.WindFarmId
+	toColumn: dimwindfarm.WindFarmId
+	crossFilteringBehavior: oneDirection
+
+relationship dimweatherstation_WindFarmId_dimwindfarm
+	isActive: false
+	fromColumn: dimweatherstation.WindFarmId
+	toColumn: dimwindfarm.WindFarmId
+	crossFilteringBehavior: oneDirection
+
+relationship dimtransformer_WindFarmId_dimwindfarm
+	isActive: false
+	fromColumn: dimtransformer.WindFarmId
+	toColumn: dimwindfarm.WindFarmId
+	crossFilteringBehavior: oneDirection
+
+relationship factpoweroutput_TurbineId_dimturbine
+	isActive: false
+	fromColumn: factpoweroutput.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_TurbineId_dimturbine
+	isActive: false
+	fromColumn: factalert.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_SensorId_dimsensor
+	fromColumn: factalert.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceevent_TurbineId_dimturbine
+	isActive: false
+	fromColumn: factmaintenanceevent.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceevent_TechnicianId_dimtechnician
+	fromColumn: factmaintenanceevent.TechnicianId
+	toColumn: dimtechnician.TechnicianId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_TurbineId_dimturbine
+	isActive: false
+	fromColumn: sensortelemetry.TurbineId
+	toColumn: dimturbine.TurbineId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_SensorId_dimsensor
+	isActive: false
+	fromColumn: sensortelemetry.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+

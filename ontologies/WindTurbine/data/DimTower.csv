@@ -1,0 +1,16 @@
+TowerId,TowerName,TurbineId,HeightM,Material,Sections,FoundationType,InstallDate,Status
+TW-001,Alpha-T01-Tower,WT-001,105,Steel,5,Monopile,2019-02-01,Good
+TW-002,Alpha-T02-Tower,WT-002,105,Steel,5,Monopile,2019-02-01,Good
+TW-003,Alpha-T03-Tower,WT-003,107,Steel,5,Monopile,2019-03-01,Good
+TW-004,Alpha-T04-Tower,WT-004,107,Steel,5,Monopile,2019-03-01,Good
+TW-005,Prairie-T01-Tower,WT-005,89,Steel,4,Concrete Pad,2020-05-01,Good
+TW-006,Prairie-T02-Tower,WT-006,89,Steel,4,Concrete Pad,2020-05-01,Good
+TW-007,Prairie-T03-Tower,WT-007,95,Steel,4,Concrete Pad,2020-06-01,Good
+TW-008,Highland-T01-Tower,WT-008,82,Steel,3,Gravity Base,2018-09-01,Good
+TW-009,Highland-T02-Tower,WT-009,82,Steel,3,Gravity Base,2018-09-01,Corrosion Detected
+TW-010,Highland-T03-Tower,WT-010,105,Hybrid Steel-Concrete,4,Gravity Base,2018-10-01,Good
+TW-011,Atacama-T01-Tower,WT-011,84,Steel,3,Concrete Pad,2020-11-01,Good
+TW-012,Atacama-T02-Tower,WT-012,84,Steel,3,Concrete Pad,2020-11-01,Good
+TW-013,Baltic-T01-Tower,WT-013,138,Steel,6,Jacket,2022-04-01,Good
+TW-014,Baltic-T02-Tower,WT-014,138,Steel,6,Jacket,2022-04-01,Good
+TW-015,Baltic-T03-Tower,WT-015,150,Steel,7,Jacket,2022-05-01,Good

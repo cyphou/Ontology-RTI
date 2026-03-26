@@ -1,0 +1,90 @@
+table dimdatacenter
+	lineageTag: 40000003-0001-0001-0001-000000000001
+
+	measure 'Data Center Count' = COUNTROWS(dimdatacenter)
+		displayFolder: Measures
+		lineageTag: 40000003-0001-0001-0001-100000000001
+
+	measure 'Total Power Capacity KW' = SUM(dimdatacenter[PowerCapacityKW])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000003-0001-0001-0001-100000000002
+
+	column DataCenterId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DataCenterId
+		lineageTag: 40000003-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataCenterName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DataCenterName
+		lineageTag: 40000003-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Location
+		lineageTag: 40000003-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		summarizeBy: none
+		sourceColumn: City
+		lineageTag: 40000003-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Country
+		lineageTag: 40000003-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalRackCapacity
+		dataType: double
+		summarizeBy: none
+		sourceColumn: TotalRackCapacity
+		lineageTag: 40000003-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column TierLevel
+		dataType: double
+		summarizeBy: none
+		sourceColumn: TierLevel
+		lineageTag: 40000003-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column PowerCapacityKW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: PowerCapacityKW
+		lineageTag: 40000003-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000003-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimdatacenter = entity
+		mode: directLake
+		entityName: dimdatacenter
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

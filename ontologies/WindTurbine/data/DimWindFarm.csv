@@ -1,0 +1,6 @@
+WindFarmId,WindFarmName,Location,Latitude,Longitude,TotalTurbines,InstalledCapacityMW,CommissionDate,Operator,Status
+WF-001,North Sea Alpha,North Sea,56.5000,2.0000,80,640,2019-03-15,OceanWind Energy,Active
+WF-002,Prairie Wind Ranch,Kansas USA,38.5000,-98.7000,120,360,2020-07-01,Great Plains Power,Active
+WF-003,Highland Breeze,Scottish Highlands,57.5000,-5.0000,45,270,2018-11-20,Celtic Renewables,Active
+WF-004,Atacama Viento,Atacama Chile,-24.5000,-69.2000,60,240,2021-01-10,SolViento SA,Active
+WF-005,Baltic Storm,Baltic Sea,55.0000,14.0000,70,490,2022-06-15,Nordic Wind AB,Active

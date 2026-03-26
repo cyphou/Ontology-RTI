@@ -1,0 +1,8 @@
+TransformerId,TransformerName,WindFarmId,RatingMVA,VoltageKV,Manufacturer,InstallDate,LastServiceDate,Status
+TRF-001,Alpha Main Transformer,WF-001,700,220,ABB,2019-01-01,2024-09-01,Good
+TRF-002,Alpha Substation TR2,WF-001,350,66,Siemens Energy,2019-01-01,2024-08-15,Good
+TRF-003,Prairie Main Transformer,WF-002,400,138,GE Grid,2020-04-01,2024-10-10,Good
+TRF-004,Highland Main Transformer,WF-003,300,132,ABB,2018-08-01,2024-06-20,Good
+TRF-005,Atacama Main Transformer,WF-004,280,110,Siemens Energy,2020-10-01,2024-07-15,Good
+TRF-006,Baltic Main Transformer,WF-005,550,220,Hitachi Energy,2022-03-01,2024-11-01,Good
+TRF-007,Baltic Substation TR2,WF-005,275,66,Hitachi Energy,2022-03-01,2024-10-20,Good

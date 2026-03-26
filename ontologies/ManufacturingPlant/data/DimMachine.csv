@@ -1,0 +1,21 @@
+MachineId,MachineName,LineId,MachineType,Manufacturer,Model,InstallDate,Status,CriticalityLevel
+MCH-001,Robot Welder A1,LN-001,Welding Robot,Fanuc,R-2000iC,2005-06-15,Active,Critical
+MCH-002,Robot Welder A2,LN-001,Welding Robot,Fanuc,R-2000iC,2005-06-15,Active,Critical
+MCH-003,Conveyor A1,LN-001,Conveyor Belt,Siemens,ConveyorMax,2005-06-15,Active,High
+MCH-004,Press B1,LN-002,Hydraulic Press,Schuler,TwinServo,2010-04-01,Active,Critical
+MCH-005,Torque Station B2,LN-002,Torque Tool,Atlas Copco,PowerFocus,2010-04-01,Active,High
+MCH-006,Paint Booth P1,LN-003,Paint Booth,Durr,EcoBell3,2005-07-01,Active,High
+MCH-007,Drying Oven P2,LN-003,Oven,Despatch,LCC Series,2005-07-01,Active,Medium
+MCH-008,CNC Mill S1,LN-004,CNC Machine,DMG Mori,DMU 50,2012-10-01,Active,Critical
+MCH-009,CNC Lathe S2,LN-004,CNC Machine,DMG Mori,CTX 800,2012-10-01,Active,Critical
+MCH-010,CMM Inspector,LN-005,CMM,Hexagon,Global S,2012-10-01,Active,High
+MCH-011,Pick and Place E1,LN-006,SMT Machine,Fuji,NXT III,2015-04-15,Active,Critical
+MCH-012,Reflow Oven E2,LN-006,Reflow Oven,Heller,MK7,2015-04-15,Active,High
+MCH-013,Pick and Place E3,LN-007,SMT Machine,Fuji,NXT III,2018-02-01,Active,Critical
+MCH-014,AOI Inspector E4,LN-007,AOI Machine,Koh Young,Zenith,2018-02-01,Active,High
+MCH-015,Injection Molder M1,LN-008,Injection Molder,Engel,Victory,2018-08-01,Active,Critical
+MCH-016,Injection Molder M2,LN-008,Injection Molder,Engel,Victory,2018-08-01,Active,Critical
+MCH-017,Assembly Robot C1,LN-009,Assembly Robot,ABB,IRB 1200,2018-08-01,Active,High
+MCH-018,Soldering Station C2,LN-009,Soldering,Weller,WXD 2,2018-08-01,Active,Medium
+MCH-019,SMT Printer P1,LN-010,Stencil Printer,DEK,NeoHorizon,2020-03-01,Active,Critical
+MCH-020,Wave Solder P2,LN-010,Wave Solder,Ersa,Versaflow,2020-03-01,Active,High

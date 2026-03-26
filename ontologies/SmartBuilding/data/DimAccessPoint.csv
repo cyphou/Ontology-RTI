@@ -1,0 +1,13 @@
+AccessPointId,AccessPointName,ZoneId,AccessPointType,Protocol,CoverageAreaSqFt,Manufacturer,Status
+AP-001,Lobby WiFi 1,ZN-001,WiFi,WiFi6E,3000,Cisco,Active
+AP-002,Conf Wing WiFi,ZN-002,WiFi,WiFi6E,2500,Cisco,Active
+AP-003,Office A WiFi,ZN-005,WiFi,WiFi6E,5000,Aruba,Active
+AP-004,Office B WiFi,ZN-006,WiFi,WiFi6E,4500,Aruba,Active
+AP-005,Executive WiFi,ZN-008,WiFi,WiFi6E,4000,Cisco,Active
+AP-006,Campus Main WiFi,ZN-011,WiFi,WiFi6E,8000,Aruba,Active
+AP-007,Cafeteria WiFi,ZN-012,WiFi,WiFi6,4000,Aruba,Active
+AP-008,Server Room WiFi,ZN-014,WiFi,WiFi6E,2000,Cisco,Active
+AP-009,Lab A WiFi,ZN-019,WiFi,WiFi6E,3000,Cisco,Active
+AP-010,Patient Wing WiFi,ZN-021,WiFi,WiFi6,5000,Aruba,Active
+AP-011,Lobby BLE Beacon,ZN-001,BLE,Bluetooth5,1500,Kontakt.io,Active
+AP-012,Campus BLE Beacon,ZN-011,BLE,Bluetooth5,4000,Kontakt.io,Active
