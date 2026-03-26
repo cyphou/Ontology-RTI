@@ -4,8 +4,10 @@
  * Graph Query Language (GQL) - ISO/IEC 39075:2024
  * For use with the Fabric Graph Query Set against the ontology Graph Model.
  *
- * IMPORTANT: Paste ONE query at a time into the Fabric Graph Query Set editor.
- *            Do NOT paste this entire file. Each section below is one query.
+ * IMPORTANT: Queries are automatically pushed to the Graph Query Set via the
+ *            Deploy-GraphQuerySet.ps1 script using the definition API.
+ *            Each section below (delimited by /* ===== Query N: Title ===== */)
+ *            is parsed as one query.
  *
  * Graph Schema:
  *   Nodes: Refinery, ProcessUnit, Equipment, Pipeline, CrudeOil,

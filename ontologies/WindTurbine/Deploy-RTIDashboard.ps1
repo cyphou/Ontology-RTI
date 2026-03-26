@@ -123,12 +123,11 @@ WeatherMetric
 )
 
 $dashboard = @{
-    "$schema" = "https://dataexplorer.azure.com/static/d/schema/20/dashboard.json"
     autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "10s" }
     pages = @( @{ id = $pageId; name = "Wind Turbine Overview"; tiles = $tiles } )
     dataSources = @( @{ id = $dataSourceId; scopeId = "global"; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto" } )
     parameters = @()
-    schema_version = "20"
+    schema_version = "52"
 }
 
 $dashboardJson = $dashboard | ConvertTo-Json -Depth 20 -Compress

@@ -42,8 +42,8 @@ gantt
     Domain semantic models (TMDL)       :done, s10, 2026-03, 2026-03
 
     section Next
-    Streaming ingestion                 :active, s11, 2026-04, 2026-05
-    Cross-domain ontology links         :s12, 2026-05, 2026-06
+    Streaming & API improvements        :done, s11, 2026-04, 2026-05
+    Cross-domain ontology links         :active, s12, 2026-05, 2026-06
     CI/CD pipeline                      :s13, 2026-06, 2026-07
 ```
 
@@ -142,14 +142,16 @@ gantt
 
 ## 🔜 Upcoming Sprints
 
-### Sprint 8 — Streaming Ingestion `Apr–May 2026`
+### Sprint 8 — Streaming & API Improvements `Apr–May 2026`
 
-| | Task | Priority |
-|:---:|------|:--------:|
-| 📡 | EventStream integration (simulated real-time telemetry) | 🔴 High |
-| ⚡ | KQL Database streaming ingestion policies | 🔴 High |
-| 🔄 | EventHub connector templates | 🟡 Medium |
-| 📊 | Dashboard auto-refresh validation with live data | 🟡 Medium |
+| | Task | Priority | Status |
+|:---:|------|:--------:|:------:|
+| 📡 | Eventstream deployment script (Custom App → KQL Database) | 🔴 High | ✅ Done |
+| 🔗 | Graph Query Set: push queries via updateDefinition API | 🔴 High | ✅ Done |
+| 📊 | KQL Dashboard upgrade to schema v52 (10s min refresh) | 🟡 Medium | ✅ Done |
+| 📝 | Remove all "manual step" references from docs and scripts | 🟡 Medium | ✅ Done |
+| ⚡ | KQL Database streaming ingestion policies | 🟡 Medium | 🔲 |
+| 🔄 | EventHub connector templates | 🟢 Low | 🔲 |
 
 ### Sprint 9 — Cross-Domain & Advanced `May–Jun 2026`
 

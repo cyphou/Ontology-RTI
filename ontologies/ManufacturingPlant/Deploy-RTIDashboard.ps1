@@ -53,8 +53,8 @@ $tiles = @(
        query="ProductionMetric`n| summarize TotalEnergy = sum(EnergyUsedKWh), TotalQty = sum(QuantityProduced) by LineId`n| extend EnergyPerUnit = round(TotalEnergy / TotalQty, 2)`n| order by EnergyPerUnit desc" }
 )
 
-$dashDef = @{ '$schema'="https://dataexplorer.azure.com/static/d/schema/20/dashboard.json"; schema_version="20"; title=$DashboardName
-    autoRefresh=@{enabled=$true;defaultInterval="30s";minInterval="30s"}
+$dashDef = @{ schema_version="52"; title=$DashboardName
+    autoRefresh=@{enabled=$true;defaultInterval="30s";minInterval="10s"}
     dataSources=@(@{id=$dsId;name=$kqlDbName;clusterUri=$QueryServiceUri;database=$kqlDbName;kind="manual-kusto";scopeId="KustoDatabaseResource"})
     pages=@(@{id=$pgId;name="Plant Overview"}); tiles=$tiles; parameters=@() }
 

@@ -14,7 +14,7 @@
       8. Production Output Over Time (line/timechart)
 
     Uses the Fabric REST API for KQLDashboard items with the standard
-    RealTimeDashboard.json definition (schema version 20).
+    RealTimeDashboard.json definition (schema version 52).
 
     PREREQUISITE: The tenant setting "Create Real-Time dashboards" must be
     enabled by the Fabric admin in the Admin Portal > Tenant settings.
@@ -80,7 +80,7 @@ $kqlDbName = $kqlDbDetails.displayName
 Write-Host "  KQL Database: $kqlDbName" -ForegroundColor Gray
 
 # ── Build Dashboard Definition ──────────────────────────────────────────────
-# Schema: https://dataexplorer.azure.com/static/d/schema/20/dashboard.json
+# Schema: RealTimeDashboard.json (schema_version 52)
 # Tiles are top-level, each references a pageId and dataSourceId.
 
 $dataSourceId = [guid]::NewGuid().ToString()
@@ -338,13 +338,12 @@ TankLevel
 
 # ── Assemble full dashboard definition ──────────────────────────────────────
 $dashboardDef = @{
-    '$schema'      = "https://dataexplorer.azure.com/static/d/schema/20/dashboard.json"
-    schema_version = "20"
+    schema_version = "52"
     title          = $DashboardName
     autoRefresh    = @{
         enabled         = $true
         defaultInterval = "30s"
-        minInterval     = "30s"
+        minInterval     = "10s"
     }
     dataSources    = @(
         @{

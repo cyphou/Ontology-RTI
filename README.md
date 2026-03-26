@@ -46,6 +46,7 @@ flowchart LR
     CMD["Deploy-Ontology.ps1"] --> LH["Lakehouse\nDelta Tables"]
     CMD --> SM["Semantic Model\nDirect Lake"]
     CMD --> EH["Eventhouse\nKQL Database"]
+    CMD --> ES["Eventstream\nReal-time Ingestion"]
     CMD --> OB["Ontology\nGraph Model"]
     CMD --> GQS["Graph Query Set"]
     CMD --> DASH["RTI Dashboard\n10-12 tiles"]
@@ -58,6 +59,7 @@ flowchart LR
     style LH fill:#0078D4,color:#fff,stroke:#0078D4
     style SM fill:#F2C811,color:#000,stroke:#F2C811
     style EH fill:#0078D4,color:#fff,stroke:#0078D4
+    style ES fill:#0078D4,color:#fff,stroke:#0078D4
     style OB fill:#107C10,color:#fff,stroke:#107C10
     style GQS fill:#107C10,color:#fff,stroke:#107C10
     style DASH fill:#0078D4,color:#fff,stroke:#0078D4
@@ -65,7 +67,7 @@ flowchart LR
     style OA fill:#FF6F00,color:#fff,stroke:#FF6F00
 ```
 
-Each domain ships a **complete, ready-to-deploy package**: CSV sample data, ontology definition, graph queries, KQL enrichment tables, a real-time dashboard, and two AI agents --- all wired together and deployed with a single PowerShell command.
+Each domain ships a **complete, ready-to-deploy package**: CSV sample data, ontology definition, graph queries, KQL enrichment tables, an eventstream for real-time ingestion, a real-time dashboard, and two AI agents --- all wired together and deployed with a single PowerShell command.
 
 ---
 
@@ -212,10 +214,11 @@ flowchart TB
 | :file_cabinet: | **Lakehouse** | 11-14 tables | CSV to Delta via PySpark notebook |
 | :triangular_ruler: | **Semantic Model** | 13-17 rels | Direct Lake mode, star/snowflake schema |
 | :satellite: | **Eventhouse** | 5 KQL tables | Enriched telemetry + operational metrics |
+| :zap: | **Eventstream** | 1 stream | Custom App source to KQL Database destination |
 | :dna: | **Ontology** | 11-13 types | Entity types, properties, relationships |
 | :spider_web: | **Graph Model** | auto | Topology derived from ontology |
-| :mag: | **Graph Query Set** | 20 queries | GQL traversal patterns |
-| :bar_chart: | **RTI Dashboard** | 10-12 tiles | Real-time KQL visualizations |
+| :mag: | **Graph Query Set** | 20 queries | GQL traversal patterns (pushed via API) |
+| :bar_chart: | **RTI Dashboard** | 10-12 tiles | Real-time KQL visualizations (schema v52) |
 | :robot: | **AI Agents** | 2 agents | Data Agent + Operations Agent |
 ---
 
@@ -239,7 +242,8 @@ OntologyAccelerator/
 |   |-- Deploy-GenericOntology.ps1           <-- Generic deployment orchestrator
 |   |-- Build-Ontology.ps1                   <-- Ontology definition builder
 |   |-- Build-GraphModel-v2.ps1              <-- Graph model builder
-|   |-- Deploy-GraphQuerySet.ps1             <-- GQL query set deployer
+|   |-- Deploy-GraphQuerySet.ps1             <-- GQL query set deployer (pushes queries via API)
+|   |-- Deploy-Eventstream.ps1               <-- Eventstream deployer (real-time ingestion)
 |   |-- Deploy-KqlTables.ps1                 <-- KQL table creation (fallback)
 |   |-- Deploy-RTIDashboard.ps1              <-- Dashboard deployer (fallback)
 |   |-- Deploy-DataAgent.ps1                 <-- Data Agent deployer (fallback)
@@ -570,7 +574,7 @@ Each domain includes **20 GQL queries** covering:
 | :warning: Anti-patterns | Equipment without recent maintenance |
 
 > [!NOTE]
-> Due to a Fabric REST API limitation, GQL queries are deployed as an empty shell. Copy-paste queries from the domain `GraphQueries.gql` file via Fabric UI.
+> GQL queries are automatically pushed to the Graph Query Set via the definition API. Open the GQS in Fabric to run queries visually.
 
 ---
 

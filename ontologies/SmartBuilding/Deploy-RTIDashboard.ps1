@@ -123,9 +123,8 @@ EnergyConsumption
 )
 
 $dashboardDef = @{
-    '$schema' = "https://dataexplorer.azure.com/static/d/schema/20/dashboard.json"
-    schema_version = "20"; title = $DashboardName
-    autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "30s" }
+    schema_version = "52"; title = $DashboardName
+    autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "10s" }
     dataSources = @(@{ id = $dataSourceId; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto"; scopeId = "KustoDatabaseResource" })
     pages = @(@{ id = $pageId; name = "Building Overview" })
     tiles = $tiles; parameters = @()

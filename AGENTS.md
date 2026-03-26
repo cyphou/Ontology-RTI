@@ -216,7 +216,7 @@ PATCH {onelakeUri}?action=flush          -> 200
 **Responsibility:** Create KQL Real-Time Intelligence dashboards.
 
 **Expertise:**
-- KQL Dashboard schema version 20
+- KQL Dashboard schema version 52
 - Tile layout (x, y, width, height grid system)
 - Visual types: line, bar, pie, scatter, table, map
 - KQL query optimization for dashboard performance

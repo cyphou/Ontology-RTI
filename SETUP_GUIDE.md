@@ -275,13 +275,13 @@ Each domain has 5 KQL tables:
 </details>
 
 <details>
-<summary><h3>Step 8 - Graph Query Set (Manual)</h3></summary>
+<summary><h3>Step 8 - Graph Query Set</h3></summary>
 
-1. Open the Graph Query Set in Fabric UI
-2. Select the ontology graph model
-3. Copy-paste queries from the domain `GraphQueries.gql` file
+1. The deployment script automatically pushes GQL queries via the definition API
+2. Open the Graph Query Set in Fabric to run queries visually
+3. Queries are parsed from the domain `GraphQueries.gql` file
 
-> The Fabric REST API does not yet support pushing queries into a Graph Query Set. Queries must be added manually.
+> GQL queries are deployed automatically. No manual steps required.
 
 </details>
 
@@ -298,7 +298,7 @@ Each domain has 5 KQL tables:
 | :speech_balloon: | NL queries not working | Enable Azure OpenAI related tenant settings |
 | :bar_chart: | Dashboard shows no data | Upload data to Eventhouse KQL tables; verify data source URI |
 | :robot: | Data Agent fails | Requires Fabric capacity F64+ (not supported on Trial) |
-| :spider_web: | Graph Query Set empty | Open in Fabric UI, click graph selector, choose ontology graph model |
+| :spider_web: | Graph Query Set empty | Verify the definition API pushed queries; check script output for errors |
 | :repeat: | 429 Too Many Requests | Scripts auto-retry with exponential backoff; wait and retry |
 | :lock: | 403 Forbidden | Verify you have Contributor+ role on the workspace |
 

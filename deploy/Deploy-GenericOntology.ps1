@@ -366,6 +366,18 @@ if ($telemetryFile -and (Test-Path $kqlScript)) {
 }
 
 # ------------------------------------------------------------------
+# Step 4b: Deploy Eventstream (real-time ingestion)
+# ------------------------------------------------------------------
+Write-Step "Step 4b: Deploying Eventstream for real-time telemetry"
+$esScript = Join-Path $scriptDir "Deploy-Eventstream.ps1"
+if (Test-Path $esScript) {
+    try {
+        & $esScript -WorkspaceId $WorkspaceId -OntologyType $OntologyType
+        Write-Success "Eventstream deployed"
+    } catch { Write-Warn "Eventstream issue: $_" }
+} else { Write-Info "Skipping Eventstream (script not found)" }
+
+# ------------------------------------------------------------------
 # Step 5: Create Semantic Model (TMDL)
 # ------------------------------------------------------------------
 Write-Step "Step 5: Creating Semantic Model '$SemanticModelName' (TMDL)"

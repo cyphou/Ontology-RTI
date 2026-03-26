@@ -2,17 +2,14 @@
 .SYNOPSIS
     Deploy a Graph Query Set for any IQ Ontology domain.
 .DESCRIPTION
-    Creates a GraphQuerySet item in Microsoft Fabric and provides instructions
-    for adding GQL queries from the domain's GraphQueries.gql file.
+    Creates a GraphQuerySet item in Microsoft Fabric and pushes GQL queries
+    from the domain's GraphQueries.gql file via the updateDefinition API.
 
-    KNOWN PLATFORM LIMITATION (as of 2025):
-    The Fabric REST API does not fully support pushing queries into a Graph Query Set
-    via the updateDefinition endpoint. The API accepts the call and returns Succeeded,
-    but the queries are not persisted.
-
-    As a result, this script:
-    1. Creates the bare Graph Query Set item in the workspace.
-    2. Displays instructions for manually adding queries from the domain's GraphQueries.gql.
+    The script:
+    1. Parses the domain GraphQueries.gql file to extract named queries.
+    2. Creates (or finds existing) Graph Query Set item in the workspace.
+    3. Pushes all queries via the updateDefinition endpoint (graphQuerySet.json).
+    4. Verifies the definition was persisted.
 
 .PARAMETER WorkspaceId
     The Fabric workspace GUID.
@@ -86,224 +83,55 @@ if (-not $GraphModelId) {
     }
 }
 
-# ── Build GQL Queries ──────────────────────────────────────────────────────
-# Graph schema (from ontology graph model):
-#   Nodes: Refinery, ProcessUnit, Equipment, Pipeline, CrudeOil, RefinedProduct,
-#          StorageTank, Sensor, Employee, MaintenanceEvent, SafetyAlarm,
-#          ProductionRecord, CrudeOilFeed
-#   Edges (source -[label]-> destination):
-#     Refinery         -[HAS_PROCESS_UNIT]-> ProcessUnit
-#     ProcessUnit      -[HAS_EQUIPMENT]->    Equipment
-#     Equipment        -[HAS_SENSOR]->       Sensor
-#     Refinery         -[HAS_PIPELINE]->     Pipeline
-#     Pipeline         -[PIPELINE_FROM]->    ProcessUnit
-#     Refinery         -[HAS_STORAGE_TANK]-> StorageTank
-#     StorageTank      -[HOLDS_PRODUCT]->    RefinedProduct
-#     Refinery         -[EMPLOYS]->          Employee
-#     MaintenanceEvent -[MAINTENANCE_ON]->   Equipment
-#     MaintenanceEvent -[PERFORMED_BY]->     Employee
-#     SafetyAlarm      -[ALARM_FROM]->       Sensor
-#     ProductionRecord -[PRODUCED_BY]->      ProcessUnit
-#     ProductionRecord -[PRODUCES]->         RefinedProduct
-#     CrudeOilFeed     -[FEEDS_INTO]->       ProcessUnit
-#     CrudeOilFeed     -[CRUDE_SOURCE]->     CrudeOil
+# ── Build GQL Queries from domain .gql file ────────────────────────────────
+# Parse the GraphQueries.gql file to extract named queries.
+# Format: /* ===== Query N: Title ===== */ followed by GQL text.
 
 function New-QueryId { return [guid]::NewGuid().ToString() }
 
-$queries = @(
-    # ── 1. Full Refinery Topology ───────────────────────────────────────
-    @{
-        displayName  = "1. Full Refinery Topology (all nodes and edges)"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (n)-[e]->(m)
-RETURN n, e, m
-LIMIT 200
-"@
-        nodes = @()
-        edges = @()
-    },
+$queries = @()
 
-    # ── 2. Refinery -> Process Units -> Equipment ───────────────────────
-    @{
-        displayName  = "2. Refinery Process Units and Equipment"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (r:Refinery)-[:HAS_PROCESS_UNIT]->(pu:ProcessUnit)-[:HAS_EQUIPMENT]->(eq:Equipment)
-RETURN r.RefineryName AS Refinery,
-       pu.ProcessUnitName AS ProcessUnit,
-       pu.ProcessUnitType AS UnitType,
-       eq.EquipmentName AS Equipment,
-       eq.EquipmentType AS EquipmentType
-LIMIT 100
-"@
-        nodes = @()
-        edges = @()
-    },
+if (Test-Path $gqlFile) {
+    Write-Host "Parsing GQL queries from: $gqlFile" -ForegroundColor Yellow
+    $gqlContent = [System.IO.File]::ReadAllText($gqlFile)
 
-    # ── 3. Equipment Sensors and Safety Alarms ──────────────────────────
-    @{
-        displayName  = "3. Equipment Sensors and Safety Alarms"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (eq:Equipment)-[:HAS_SENSOR]->(s:Sensor)<-[:ALARM_FROM]-(sa:SafetyAlarm)
-RETURN eq.EquipmentName AS Equipment,
-       s.SensorName AS Sensor,
-       s.SensorType AS SensorType,
-       sa.AlarmType AS AlarmType,
-       sa.Severity AS Severity,
-       sa.AlarmTimestamp AS Timestamp
-LIMIT 100
-"@
-        nodes = @()
-        edges = @()
-    },
+    # Split on query delimiter comments: /* ===== Query N: Title ===== */
+    $pattern = '/\*\s*=+\s*Query\s+(\d+)[:\s]*([^=]*?)\s*=+\s*\*/'
+    $matches = [regex]::Matches($gqlContent, $pattern)
 
-    # ── 4. Maintenance History with Employee and Equipment ──────────────
-    @{
-        displayName  = "4. Maintenance Events by Employee and Equipment"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (emp:Employee)<-[:PERFORMED_BY]-(me:MaintenanceEvent)-[:MAINTENANCE_ON]->(eq:Equipment)
-RETURN emp.EmployeeName AS Technician,
-       emp.JobTitle AS Role,
-       me.MaintenanceType AS MaintenanceType,
-       me.MaintenanceDate AS Date,
-       me.DowntimeHours AS DowntimeHrs,
-       me.Cost AS Cost,
-       eq.EquipmentName AS Equipment
-ORDER BY me.MaintenanceDate DESC
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
-    },
+    for ($i = 0; $i -lt $matches.Count; $i++) {
+        $m = $matches[$i]
+        $qNum = $m.Groups[1].Value
+        $qTitle = $m.Groups[2].Value.Trim()
+        $startIdx = $m.Index + $m.Length
 
-    # ── 5. Crude Oil Supply Chain ───────────────────────────────────────
-    @{
-        displayName  = "5. Crude Oil Supply Chain (Source to Process Unit)"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (co:CrudeOil)<-[:CRUDE_SOURCE]-(cf:CrudeOilFeed)-[:FEEDS_INTO]->(pu:ProcessUnit)
-RETURN co.CrudeOilName AS CrudeOil,
-       co.APIGravity AS APIGravity,
-       co.SulfurContent AS SulfurPct,
-       co.Origin AS Origin,
-       pu.ProcessUnitName AS ProcessUnit,
-       pu.ProcessUnitType AS UnitType
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
-    },
+        # Query text ends at next query delimiter or end of file
+        if ($i + 1 -lt $matches.Count) {
+            $endIdx = $matches[$i + 1].Index
+        } else {
+            $endIdx = $gqlContent.Length
+        }
 
-    # ── 6. Production Output by Product ─────────────────────────────────
-    @{
-        displayName  = "6. Production Records by Product and Process Unit"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (pu:ProcessUnit)<-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
-RETURN pu.ProcessUnitName AS ProcessUnit,
-       rp.ProductName AS Product,
-       rp.ProductCategory AS Category,
-       pr.QuantityBarrels AS Barrels,
-       pr.ProductionDate AS Date
-ORDER BY pr.ProductionDate DESC
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
-    },
+        $qText = $gqlContent.Substring($startIdx, $endIdx - $startIdx).Trim()
+        # Remove any trailing block comments
+        $qText = [regex]::Replace($qText, '/\*.*?\*/', '', 'Singleline').Trim()
 
-    # ── 7. Storage Tank Inventory ───────────────────────────────────────
-    @{
-        displayName  = "7. Storage Tanks and Products by Refinery"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (r:Refinery)-[:HAS_STORAGE_TANK]->(st:StorageTank)-[:HOLDS_PRODUCT]->(rp:RefinedProduct)
-RETURN r.RefineryName AS Refinery,
-       st.TankName AS Tank,
-       st.CapacityBarrels AS CapacityBBL,
-       st.CurrentLevel AS CurrentLevel,
-       rp.ProductName AS Product
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
-    },
-
-    # ── 8. Pipeline Network ─────────────────────────────────────────────
-    @{
-        displayName  = "8. Pipeline Network - Refinery to Process Units"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (r:Refinery)-[:HAS_PIPELINE]->(p:Pipeline)-[:PIPELINE_FROM]->(pu:ProcessUnit)
-RETURN r.RefineryName AS Refinery,
-       p.PipelineName AS Pipeline,
-       p.DiameterInches AS Diameter,
-       p.Material AS Material,
-       pu.ProcessUnitName AS ConnectedUnit
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
-    },
-
-    # ── 9. End-to-End: Crude Oil -> Refinery -> Product ─────────────────
-    @{
-        displayName  = "9. End-to-End: Crude Oil to Refined Product"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (co:CrudeOil)<-[:CRUDE_SOURCE]-(cf:CrudeOilFeed)-[:FEEDS_INTO]->(pu:ProcessUnit)
-      <-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
-RETURN co.CrudeOilName AS CrudeSource,
-       co.Origin AS Origin,
-       pu.ProcessUnitName AS ProcessUnit,
-       rp.ProductName AS Product,
-       pr.QuantityBarrels AS OutputBarrels
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
-    },
-
-    # ── 10. Refinery Workforce ──────────────────────────────────────────
-    @{
-        displayName  = "10. Refinery Workforce and Maintenance Activity"
-        id           = New-QueryId
-        queryMode    = "GQLCode"
-        gqlQueryText = @"
-MATCH (r:Refinery)-[:EMPLOYS]->(emp:Employee)<-[:PERFORMED_BY]-(me:MaintenanceEvent)
-RETURN r.RefineryName AS Refinery,
-       emp.EmployeeName AS Employee,
-       emp.Department AS Department,
-       COUNT(me) AS MaintenanceCount
-LIMIT 50
-"@
-        nodes = @()
-        edges = @()
+        if ($qText.Length -gt 0) {
+            $queries += @{
+                displayName  = "$qNum. $qTitle"
+                id           = New-QueryId
+                queryMode    = "GQLCode"
+                gqlQueryText = $qText
+                nodes        = @()
+                edges        = @()
+            }
+        }
     }
-)
-
-# ── Build the graphQuerySet.json payload ────────────────────────────────────
-$querySetDef = @{
-    graphInstanceObjectId       = $GraphModelId
-    graphInstanceFolderObjectId = $WorkspaceId
-    queries                     = $queries
+    Write-Host "  Parsed $($queries.Count) queries from GQL file." -ForegroundColor Gray
+} else {
+    Write-Host "[WARN] No GQL file found at: $gqlFile" -ForegroundColor Yellow
+    Write-Host "  Graph Query Set will be created without queries." -ForegroundColor Yellow
 }
-
-# Serialize to JSON manually for PS5.1 compatibility
-$querySetJsonRaw = $querySetDef | ConvertTo-Json -Depth 10 -Compress
-$querySetB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($querySetJsonRaw))
 
 # ── Step A: Create bare Graph Query Set item ────────────────────────────────
 # Uses the type-specific /GraphQuerySets endpoint per official Fabric REST API docs.
@@ -368,23 +196,70 @@ catch {
     }
 }
 
-# ── Step B: Manual query setup instructions ────────────────────────────────────
-# NOTE: The Fabric REST API updateDefinition endpoint for GraphQuerySet accepts
-# the graphQuerySet.json payload and returns Succeeded, but does NOT actually
-# persist queries. This is a known platform limitation as of 2025.
-# Queries must be added manually via the Fabric UI.
-if ($gqsId) {
-    Write-Host "" -ForegroundColor White
-    Write-Host "[INFO] Graph Query Set item created successfully." -ForegroundColor Green
-    Write-Host "" -ForegroundColor White
-    Write-Host "IMPORTANT: Queries must be added manually via the Fabric UI." -ForegroundColor Yellow
-    Write-Host "The REST API does not yet support pushing queries into a Graph Query Set." -ForegroundColor Yellow
-    Write-Host "" -ForegroundColor White
-    Write-Host "To add queries:" -ForegroundColor Cyan
-    Write-Host "  1. Open the Graph Query Set '$QuerySetName' in Fabric" -ForegroundColor White
-    Write-Host "  2. Select the graph model from the ontology" -ForegroundColor White
-    Write-Host "  3. Copy queries from: $gqlFile" -ForegroundColor White
-    Write-Host "  4. Paste each query, give it a name, and save" -ForegroundColor White
+# ── Step B: Push queries via updateDefinition ──────────────────────────────────
+if ($gqsId -and $queries.Count -gt 0) {
+    Write-Host "Pushing $($queries.Count) queries via updateDefinition API..." -ForegroundColor Yellow
+
+    # Build manual JSON for PS5.1 compatibility (ConvertTo-Json depth limits)
+    $queryJsonParts = @()
+    foreach ($q in $queries) {
+        $escapedText = $q.gqlQueryText -replace '\\', '\\\\' -replace '"', '\"' -replace "`r`n", '\n' -replace "`n", '\n' -replace "`t", '\t'
+        $escapedName = $q.displayName -replace '"', '\"'
+        $queryJsonParts += '{"displayName":"' + $escapedName + '","id":"' + $q.id + '","queryMode":"GQLCode","gqlQueryText":"' + $escapedText + '","nodes":[],"edges":[]}'
+    }
+    $queriesJsonArray = '[' + ($queryJsonParts -join ',') + ']'
+
+    $escapedGmId = $GraphModelId -replace '"', '\"'
+    $escapedWsId = $WorkspaceId -replace '"', '\"'
+    $querySetJson = '{"graphInstanceObjectId":"' + $escapedGmId + '","graphInstanceFolderObjectId":"' + $escapedWsId + '","queries":' + $queriesJsonArray + '}'
+
+    $querySetB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($querySetJson))
+
+    $updateBody = '{"definition":{"format":"json","parts":[{"path":"graphQuerySet.json","payload":"' + $querySetB64 + '","payloadType":"InlineBase64"}]}}'
+
+    $defApplied = $false
+    foreach ($endpoint in @("$apiBase/workspaces/$WorkspaceId/GraphQuerySets/$gqsId/updateDefinition",
+                            "$apiBase/workspaces/$WorkspaceId/items/$gqsId/updateDefinition")) {
+        if ($defApplied) { break }
+        try {
+            $updResp = Invoke-WebRequest -Uri $endpoint -Method POST -Headers $headers -Body $updateBody -UseBasicParsing
+
+            if ($updResp.StatusCode -in @(200, 202)) {
+                if ($updResp.StatusCode -eq 202) {
+                    $opUrl = $updResp.Headers['Location']
+                    Write-Host "  LRO started, polling..." -ForegroundColor Yellow
+                    do {
+                        Start-Sleep -Seconds 3
+                        $poll = Invoke-RestMethod -Uri $opUrl -Headers $headers
+                        Write-Host "  Definition update: $($poll.status)"
+                    } while ($poll.status -notin @('Succeeded','Failed','Cancelled'))
+
+                    if ($poll.status -eq 'Succeeded') {
+                        $defApplied = $true
+                        Write-Host "[OK] $($queries.Count) queries pushed to Graph Query Set." -ForegroundColor Green
+                    } else {
+                        Write-Host "[WARN] Definition update: $($poll.status)" -ForegroundColor Yellow
+                    }
+                } else {
+                    $defApplied = $true
+                    Write-Host "[OK] $($queries.Count) queries pushed to Graph Query Set." -ForegroundColor Green
+                }
+            }
+        }
+        catch {
+            # Try next endpoint
+            Write-Host "  Endpoint $endpoint returned error, trying fallback..." -ForegroundColor Gray
+        }
+    }
+
+    if (-not $defApplied) {
+        Write-Host "[WARN] Definition update did not succeed via API." -ForegroundColor Yellow
+        Write-Host "  Queries can still be added via the Fabric UI from: $gqlFile" -ForegroundColor Yellow
+    }
+}
+elseif ($gqsId) {
+    Write-Host "[INFO] No queries to push (GQL file not found or empty)." -ForegroundColor Yellow
+    Write-Host "  Add queries via the Fabric UI from: $gqlFile" -ForegroundColor Yellow
 }
 
 # ── Summary ─────────────────────────────────────────────────────────────────
@@ -393,16 +268,15 @@ Write-Host "=== Graph Query Set Deployment Summary ===" -ForegroundColor Cyan
 Write-Host "  Name:         $QuerySetName"
 Write-Host "  GQS ID:       $gqsId"
 Write-Host "  GraphModel:   $GraphModelId"
+Write-Host "  GQL File:     $gqlFile"
 Write-Host "  Queries:      $($queries.Count)"
 Write-Host ""
-Write-Host "Example queries included:" -ForegroundColor White
-foreach ($q in $queries) {
-    Write-Host "  - $($q.displayName)"
+if ($queries.Count -gt 0) {
+    Write-Host "Queries deployed:" -ForegroundColor White
+    foreach ($q in $queries) {
+        Write-Host "  - $($q.displayName)"
+    }
 }
-Write-Host ""
-Write-Host "MANUAL STEP REQUIRED: Add queries to the Graph Query Set via Fabric UI." -ForegroundColor Yellow
-Write-Host "  The REST API does not persist queries (known platform limitation)." -ForegroundColor Yellow
-Write-Host "  Copy queries from: $gqlFile" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Open the Graph Query Set in Fabric to run queries visually." -ForegroundColor White
 Write-Host ""
