@@ -85,7 +85,9 @@ if (-not $GraphModelId) {
 
 # ── Build GQL Queries from domain .gql file ────────────────────────────────
 # Parse the GraphQueries.gql file to extract named queries.
-# Format: /* ===== Query N: Title ===== */ followed by GQL text.
+# Supports two formats:
+#   Format A (block comment): /* ===== Query N: Title ===== */
+#   Format B (hash comment):  # N. Title
 
 function New-QueryId { return [guid]::NewGuid().ToString() }
 
@@ -95,19 +97,34 @@ if (Test-Path $gqlFile) {
     Write-Host "Parsing GQL queries from: $gqlFile" -ForegroundColor Yellow
     $gqlContent = [System.IO.File]::ReadAllText($gqlFile)
 
-    # Split on query delimiter comments: /* ===== Query N: Title ===== */
-    $pattern = '/\*\s*=+\s*Query\s+(\d+)[:\s]*([^=]*?)\s*=+\s*\*/'
-    $matches = [regex]::Matches($gqlContent, $pattern)
+    # Detect format: block-comment vs hash-comment
+    $blockPattern = '/\*\s*=+\s*Query\s+(\d+)[:\s]*([^=]*?)\s*=+\s*\*/'
+    $hashPattern  = '(?m)^#\s*(\d+)\.\s*(.+)$'
+    $blockMatches = [regex]::Matches($gqlContent, $blockPattern)
+    $hashMatches  = [regex]::Matches($gqlContent, $hashPattern)
 
-    for ($i = 0; $i -lt $matches.Count; $i++) {
-        $m = $matches[$i]
+    if ($blockMatches.Count -ge $hashMatches.Count -and $blockMatches.Count -gt 0) {
+        # Format A: /* ===== Query N: Title ===== */
+        Write-Host "  Format: block-comment delimiters" -ForegroundColor Gray
+        $allMatches = $blockMatches
+    } elseif ($hashMatches.Count -gt 0) {
+        # Format B: # N. Title
+        Write-Host "  Format: hash-comment delimiters" -ForegroundColor Gray
+        $allMatches = $hashMatches
+    } else {
+        $allMatches = @()
+        Write-Host "  [WARN] No query delimiters found in GQL file." -ForegroundColor Yellow
+    }
+
+    for ($i = 0; $i -lt $allMatches.Count; $i++) {
+        $m = $allMatches[$i]
         $qNum = $m.Groups[1].Value
         $qTitle = $m.Groups[2].Value.Trim()
         $startIdx = $m.Index + $m.Length
 
         # Query text ends at next query delimiter or end of file
-        if ($i + 1 -lt $matches.Count) {
-            $endIdx = $matches[$i + 1].Index
+        if ($i + 1 -lt $allMatches.Count) {
+            $endIdx = $allMatches[$i + 1].Index
         } else {
             $endIdx = $gqlContent.Length
         }
@@ -115,6 +132,8 @@ if (Test-Path $gqlFile) {
         $qText = $gqlContent.Substring($startIdx, $endIdx - $startIdx).Trim()
         # Remove any trailing block comments
         $qText = [regex]::Replace($qText, '/\*.*?\*/', '', 'Singleline').Trim()
+        # Remove trailing hash-only comment lines (not query text)
+        $qText = [regex]::Replace($qText, '(?m)^#\s*$', '').Trim()
 
         if ($qText.Length -gt 0) {
             $queries += @{

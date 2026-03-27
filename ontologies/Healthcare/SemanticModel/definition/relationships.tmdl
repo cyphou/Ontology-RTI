@@ -1,0 +1,89 @@
+relationship dimdepartment_HospitalId_dimhospital
+	fromColumn: dimdepartment.HospitalId
+	toColumn: dimhospital.HospitalId
+	crossFilteringBehavior: oneDirection
+
+relationship dimward_DepartmentId_dimdepartment
+	fromColumn: dimward.DepartmentId
+	toColumn: dimdepartment.DepartmentId
+	crossFilteringBehavior: oneDirection
+
+relationship dimphysician_DepartmentId_dimdepartment
+	isActive: false
+	fromColumn: dimphysician.DepartmentId
+	toColumn: dimdepartment.DepartmentId
+	crossFilteringBehavior: oneDirection
+
+relationship dimnurse_WardId_dimward
+	fromColumn: dimnurse.WardId
+	toColumn: dimward.WardId
+	crossFilteringBehavior: oneDirection
+
+relationship dimpatient_WardId_dimward
+	isActive: false
+	fromColumn: dimpatient.WardId
+	toColumn: dimward.WardId
+	crossFilteringBehavior: oneDirection
+
+relationship dimmedicaldevice_WardId_dimward
+	isActive: false
+	fromColumn: dimmedicaldevice.WardId
+	toColumn: dimward.WardId
+	crossFilteringBehavior: oneDirection
+
+relationship dimsensor_DeviceId_dimmedicaldevice
+	fromColumn: dimsensor.DeviceId
+	toColumn: dimmedicaldevice.DeviceId
+	crossFilteringBehavior: oneDirection
+
+relationship factlabresult_PatientId_dimpatient
+	fromColumn: factlabresult.PatientId
+	toColumn: dimpatient.PatientId
+	crossFilteringBehavior: oneDirection
+
+relationship factlabresult_PhysicianId_dimphysician
+	isActive: false
+	fromColumn: factlabresult.PhysicianId
+	toColumn: dimphysician.PhysicianId
+	crossFilteringBehavior: oneDirection
+
+relationship factprocedure_PatientId_dimpatient
+	isActive: false
+	fromColumn: factprocedure.PatientId
+	toColumn: dimpatient.PatientId
+	crossFilteringBehavior: oneDirection
+
+relationship factprocedure_PhysicianId_dimphysician
+	isActive: false
+	fromColumn: factprocedure.PhysicianId
+	toColumn: dimphysician.PhysicianId
+	crossFilteringBehavior: oneDirection
+
+relationship factmedicationadmin_PatientId_dimpatient
+	isActive: false
+	fromColumn: factmedicationadmin.PatientId
+	toColumn: dimpatient.PatientId
+	crossFilteringBehavior: oneDirection
+
+relationship factmedicationadmin_MedicationId_dimmedication
+	fromColumn: factmedicationadmin.MedicationId
+	toColumn: dimmedication.MedicationId
+	crossFilteringBehavior: oneDirection
+
+relationship factmedicationadmin_NurseId_dimnurse
+	isActive: false
+	fromColumn: factmedicationadmin.NurseId
+	toColumn: dimnurse.NurseId
+	crossFilteringBehavior: oneDirection
+
+relationship bridgewarddevice_WardId_dimward
+	isActive: false
+	fromColumn: bridgewarddevice.WardId
+	toColumn: dimward.WardId
+	crossFilteringBehavior: oneDirection
+
+relationship bridgewarddevice_DeviceId_dimmedicaldevice
+	isActive: false
+	fromColumn: bridgewarddevice.DeviceId
+	toColumn: dimmedicaldevice.DeviceId
+	crossFilteringBehavior: oneDirection

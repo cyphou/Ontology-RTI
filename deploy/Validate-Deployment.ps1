@@ -8,6 +8,11 @@
     - Eventhouse
     - Semantic model
     - Ontology item
+    - Eventstream
+    - Graph Query Set
+    - KQL Dashboard
+    - Data Agent (optional, F64+)
+    - Operations Agent (optional)
 
     Supports all 5 industry domains. Uses -OntologyType to auto-resolve
     item names and expected tables, or accepts explicit overrides.
@@ -28,7 +33,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$WorkspaceId,
 
-    [ValidateSet("OilGasRefinery","SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine")]
+    [ValidateSet("OilGasRefinery","SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare")]
     [string]$OntologyType = "OilGasRefinery",
 
     [string]$LakehouseName,
@@ -44,6 +49,9 @@ $domainDefaults = @{
         Eventhouse    = "RefineryTelemetryEH"
         SemanticModel = "OilGasRefineryModel"
         Ontology      = "OilGasRefineryOntology"
+        Eventstream   = "RefineryTelemetryStream"
+        GraphQuerySet = "OilGasRefineryQueries"
+        Dashboard     = "RefineryTelemetryDashboard"
         Tables        = @("dimrefinery","dimprocessunit","dimequipment","dimpipeline","dimcrudeoil","dimrefinedproduct","dimstoragetank","dimsensor","dimemployee","factmaintenance","factsafetyalarm","factproduction","bridgecrudeoilprocessunit")
     }
     SmartBuilding = @{
@@ -51,6 +59,9 @@ $domainDefaults = @{
         Eventhouse    = "BuildingTelemetryEH"
         SemanticModel = "SmartBuildingModel"
         Ontology      = "SmartBuildingOntology"
+        Eventstream   = "BuildingTelemetryStream"
+        GraphQuerySet = "SmartBuildingQueries"
+        Dashboard     = "BuildingTelemetryDashboard"
         Tables        = @("dimbuilding","dimfloor","dimzone","dimhvacsystem","dimlightingsystem","dimelevator","dimsensor","dimemployee","factoccupancy","factenergyconsumption","factmaintenance","factsafetyalarm","bridgezonesensor")
     }
     ManufacturingPlant = @{
@@ -58,6 +69,9 @@ $domainDefaults = @{
         Eventhouse    = "PlantTelemetryEH"
         SemanticModel = "ManufacturingPlantModel"
         Ontology      = "ManufacturingPlantOntology"
+        Eventstream   = "PlantTelemetryStream"
+        GraphQuerySet = "ManufacturingPlantQueries"
+        Dashboard     = "PlantTelemetryDashboard"
         Tables        = @("dimplant","dimproductionline","dimmachine","dimmaterial","dimproduct","dimsensor","dimemployee","factproductionbatch","factqualitycheck","factmaintenance","factsafetyincident","bridgemachinesensor")
     }
     ITAsset = @{
@@ -65,6 +79,9 @@ $domainDefaults = @{
         Eventhouse    = "ITTelemetryEH"
         SemanticModel = "ITAssetModel"
         Ontology      = "ITAssetOntology"
+        Eventstream   = "ITTelemetryStream"
+        GraphQuerySet = "ITAssetQueries"
+        Dashboard     = "ITTelemetryDashboard"
         Tables        = @("dimdatacenter","dimrack","dimserver","dimvirtualmachine","dimapplication","dimnetworkdevice","dimsensor","dimemployee","factincident","factpatch","factmaintenance","bridgeapplicationserver")
     }
     WindTurbine = @{
@@ -72,7 +89,20 @@ $domainDefaults = @{
         Eventhouse    = "WindTelemetryEH"
         SemanticModel = "WindTurbineModel"
         Ontology      = "WindTurbineOntology"
+        Eventstream   = "WindTelemetryStream"
+        GraphQuerySet = "WindTurbineQueries"
+        Dashboard     = "WindTelemetryDashboard"
         Tables        = @("dimwindfarm","dimturbine","dimnacelle","dimblade","dimtower","dimgenerator","dimtransformer","dimsensor","dimemployee","factpoweroutput","factmaintenance","factsafetyalarm","bridgeturbinesensor")
+    }
+    Healthcare = @{
+        Lakehouse     = "HealthcareLH"
+        Eventhouse    = "HealthcareTelemetryEH"
+        SemanticModel = "HealthcareModel"
+        Ontology      = "HealthcareOntology"
+        Eventstream   = "HealthcareTelemetryStream"
+        GraphQuerySet = "HealthcareQueries"
+        Dashboard     = "HealthcareTelemetryDashboard"
+        Tables        = @("dimhospital","dimdepartment","dimward","dimphysician","dimnurse","dimpatient","dimmedicaldevice","dimmedication","dimsensor","factlabresult","factprocedure","factmedicationadmin","bridgewarddevice","sensortelemetry")
     }
 }
 
@@ -145,6 +175,39 @@ try {
     else {
         Write-Host "  [FAIL] Ontology '$OntologyName' NOT found" -ForegroundColor Red
         $results += $false
+    }
+
+    # ── Additional items from the items list ──
+    $extraChecks = @(
+        @{ Label = "Eventstream";       Name = $dd.Eventstream }
+        @{ Label = "Graph Query Set";   Name = $dd.GraphQuerySet }
+        @{ Label = "KQL Dashboard";     Name = $dd.Dashboard }
+    )
+    foreach ($chk in $extraChecks) {
+        $match = $allItems.value | Where-Object { $_.displayName -eq $chk.Name }
+        if ($match) {
+            Write-Host "  [PASS] $($chk.Label) '$($chk.Name)' exists (ID: $($match.id), Type: $($match.type))" -ForegroundColor Green
+            $results += $true
+        }
+        else {
+            Write-Host "  [FAIL] $($chk.Label) '$($chk.Name)' NOT found" -ForegroundColor Red
+            $results += $false
+        }
+    }
+
+    # Agents are optional (require F64+ capacity) — warn instead of fail
+    $agentChecks = @(
+        @{ Label = "Data Agent";       Name = "$($OntologyType)DataAgent" }
+        @{ Label = "Operations Agent"; Name = "$($OntologyType)OpsAgent" }
+    )
+    foreach ($chk in $agentChecks) {
+        $match = $allItems.value | Where-Object { $_.displayName -eq $chk.Name }
+        if ($match) {
+            Write-Host "  [PASS] $($chk.Label) '$($chk.Name)' exists (ID: $($match.id))" -ForegroundColor Green
+        }
+        else {
+            Write-Host "  [SKIP] $($chk.Label) '$($chk.Name)' not found (requires F64+ capacity)" -ForegroundColor DarkYellow
+        }
     }
 }
 catch {

@@ -1,0 +1,77 @@
+table dimmedicaldevice
+	lineageTag: 40000007-0001-0001-0001-000000000001
+
+	measure 'Device Count' = COUNTROWS(dimmedicaldevice)
+		displayFolder: Measures
+		lineageTag: 40000007-0001-0001-0001-100000000001
+
+	column DeviceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceId
+		lineageTag: 40000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceName
+		lineageTag: 40000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column WardId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardId
+		lineageTag: 40000007-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceType
+		lineageTag: 40000007-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 40000007-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Model
+		lineageTag: 40000007-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastCalibrationDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastCalibrationDate
+		lineageTag: 40000007-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000007-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimmedicaldevice = entity
+		mode: directLake
+		entityName: dimmedicaldevice
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

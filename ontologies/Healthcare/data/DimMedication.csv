@@ -1,0 +1,13 @@
+MedicationId,MedicationName,Category,DosageForm,Manufacturer,UnitCost,RequiresRefrigeration,Status
+MED-001,Epinephrine,Emergency,Injection,Mylan,12.50,Yes,Active
+MED-002,Heparin,Anticoagulant,Injection,Pfizer,8.75,No,Active
+MED-003,Morphine,Analgesic,Injection,West-Ward,6.30,No,Active
+MED-004,Amoxicillin,Antibiotic,Tablet,Teva,0.45,No,Active
+MED-005,Metoprolol,Beta-Blocker,Tablet,AstraZeneca,0.85,No,Active
+MED-006,Insulin Lispro,Antidiabetic,Injection,Eli Lilly,28.50,Yes,Active
+MED-007,Ceftriaxone,Antibiotic,Injection,Roche,4.20,No,Active
+MED-008,Ondansetron,Antiemetic,Injection,Novartis,3.10,No,Active
+MED-009,Furosemide,Diuretic,Tablet,Sanofi,0.35,No,Active
+MED-010,Propofol,Anesthetic,Injection,Fresenius Kabi,15.00,Yes,Active
+MED-011,Norepinephrine,Vasopressor,Injection,Pfizer,22.00,Yes,Active
+MED-012,Acetaminophen,Analgesic,Tablet,Johnson & Johnson,0.15,No,Active

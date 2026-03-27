@@ -1,0 +1,77 @@
+table sensortelemetry
+	lineageTag: 40000014-0001-0001-0001-000000000001
+
+	measure 'Reading Count' = COUNTROWS(sensortelemetry)
+		displayFolder: Measures
+		lineageTag: 40000014-0001-0001-0001-100000000001
+
+	column ReadingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ReadingId
+		lineageTag: 40000014-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceId
+		lineageTag: 40000014-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Timestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Timestamp
+		lineageTag: 40000014-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 40000014-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorType
+		lineageTag: 40000014-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Value
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Value
+		lineageTag: 40000014-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Unit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Unit
+		lineageTag: 40000014-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quality
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Quality
+		lineageTag: 40000014-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition sensortelemetry = entity
+		mode: directLake
+		entityName: sensortelemetry
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

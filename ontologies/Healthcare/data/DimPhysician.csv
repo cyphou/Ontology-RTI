@@ -1,0 +1,16 @@
+PhysicianId,PhysicianName,DepartmentId,Specialty,LicenseNumber,YearsExperience,Status
+PHY-001,Dr. Sarah Chen,DEPT-001,Emergency Medicine,NY-EM-44521,15,Active
+PHY-002,Dr. James Rodriguez,DEPT-001,Trauma Surgery,NY-TS-33102,20,Active
+PHY-003,Dr. Emily Watson,DEPT-002,Interventional Cardiology,NY-IC-55608,12,Active
+PHY-004,Dr. Michael Park,DEPT-002,Electrophysiology,NY-EP-66714,10,Active
+PHY-005,Dr. Lisa Thompson,DEPT-003,Orthopedic Surgery,NY-OS-22345,18,Active
+PHY-006,Dr. Robert Kim,DEPT-004,Pediatric Critical Care,NY-PC-11209,14,Active
+PHY-007,Dr. Amanda Foster,DEPT-005,Medical Oncology,IL-MO-77892,16,Active
+PHY-008,Dr. David Nguyen,DEPT-006,Neurosurgery,IL-NS-88431,22,Active
+PHY-009,Dr. Karen Mitchell,DEPT-007,Internal Medicine,IL-IM-99567,11,Active
+PHY-010,Dr. Steven Adams,DEPT-007,Hospitalist,IL-HO-10234,8,Active
+PHY-011,Dr. Jennifer Lee,DEPT-008,General Surgery,CA-GS-45678,19,Active
+PHY-012,Dr. Mark Taylor,DEPT-008,Vascular Surgery,CA-VS-56789,17,Active
+PHY-013,Dr. Rachel Green,DEPT-009,Obstetrics,CA-OB-67891,13,Active
+PHY-014,Dr. Thomas Brown,DEPT-010,Diagnostic Radiology,CA-DR-78901,15,Active
+PHY-015,Dr. Patricia Davis,DEPT-003,Sports Medicine,NY-SM-89012,9,Active

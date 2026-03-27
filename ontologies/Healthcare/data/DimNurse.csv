@@ -1,0 +1,21 @@
+NurseId,NurseName,WardId,Certification,ShiftPreference,YearsExperience,Status
+NRS-001,Alice Morgan,WD-001,CEN,Day,8,Active
+NRS-002,Brian Scott,WD-001,CEN,Night,6,Active
+NRS-003,Carol Yang,WD-002,CEN,Day,5,Active
+NRS-004,Derek Hill,WD-003,CCRN,Night,10,Active
+NRS-005,Eva Martinez,WD-003,CCRN,Day,12,Active
+NRS-006,Frank Lopez,WD-004,RN,Day,4,Active
+NRS-007,Grace Kim,WD-005,ONC,Night,7,Active
+NRS-008,Henry Wright,WD-007,RN,Day,3,Active
+NRS-009,Irene Patel,WD-008,CCRN,Night,11,Active
+NRS-010,Jack Turner,WD-009,OCN,Day,9,Active
+NRS-011,Kelly Adams,WD-010,OCN,Day,6,Active
+NRS-012,Luis Rivera,WD-011,CNRN,Night,8,Active
+NRS-013,Maria Santos,WD-013,RN,Day,5,Active
+NRS-014,Nathan Cole,WD-014,RN,Night,4,Active
+NRS-015,Olivia Reed,WD-015,CNOR,Day,10,Active
+NRS-016,Paul Jenkins,WD-016,CCRN,Night,13,Active
+NRS-017,Quinn Baker,WD-017,RNC-OB,Day,7,Active
+NRS-018,Rita Gomez,WD-018,RN,Day,3,Active
+NRS-019,Samuel White,WD-019,RN,Day,5,Active
+NRS-020,Tina Brooks,WD-006,RN,Night,6,Active

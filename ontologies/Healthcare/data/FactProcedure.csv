@@ -1,0 +1,16 @@
+ProcedureId,PatientId,PhysicianId,ProcedureType,ProcedureDate,DurationMinutes,Outcome,Room,Status
+PROC-001,PAT-003,PHY-003,Cardiac Catheterization,2024-10-14,75,Successful,Cath Lab 1,Completed
+PROC-002,PAT-004,PHY-004,Pacemaker Implant,2024-10-15,120,Successful,OR-2,Completed
+PROC-003,PAT-006,PHY-005,Hip Replacement,2024-10-12,180,Successful,OR-1,Completed
+PROC-004,PAT-007,PHY-015,ACL Repair,2024-10-16,90,Successful,OR-3,Completed
+PROC-005,PAT-010,PHY-007,Chemotherapy Infusion,2024-10-11,240,Completed,Chemo Bay 3,Completed
+PROC-006,PAT-011,PHY-007,Port Placement,2024-10-13,45,Successful,OR-4,Completed
+PROC-007,PAT-012,PHY-008,Craniotomy,2024-10-15,300,Successful,OR-5,Completed
+PROC-008,PAT-017,PHY-011,Appendectomy,2024-10-13,60,Successful,OR-1,Completed
+PROC-009,PAT-018,PHY-012,Vascular Bypass,2024-10-14,240,Successful,OR-2,Completed
+PROC-010,PAT-019,PHY-013,C-Section,2024-10-16,45,Successful,Delivery OR,Completed
+PROC-011,PAT-024,PHY-014,CT Guided Biopsy,2024-10-16,30,Successful,CT Suite,Completed
+PROC-012,PAT-025,PHY-014,Angiography,2024-10-15,90,Successful,Angio Suite,Completed
+PROC-013,PAT-001,PHY-001,Wound Debridement,2024-10-15,40,Successful,ER Procedure,Completed
+PROC-014,PAT-005,PHY-003,Echocardiogram,2024-10-13,30,Normal,Echo Lab,Completed
+PROC-015,PAT-015,PHY-010,Dialysis Session,2024-10-15,180,Completed,Dialysis Unit,Completed

@@ -1,0 +1,21 @@
+SensorId,SensorName,DeviceId,SensorType,Unit,MinThreshold,MaxThreshold,Status
+SNS-001,HR Sensor A1,DEV-001,HeartRate,bpm,40,180,Active
+SNS-002,SpO2 Sensor A1,DEV-001,OxygenSaturation,%,88,100,Active
+SNS-003,BP Sensor A1,DEV-001,BloodPressure,mmHg,60,200,Active
+SNS-004,Temp Sensor A1,DEV-001,Temperature,C,35.0,39.5,Active
+SNS-005,HR Sensor B1,DEV-003,HeartRate,bpm,40,180,Active
+SNS-006,SpO2 Sensor B1,DEV-003,OxygenSaturation,%,88,100,Active
+SNS-007,BP Sensor B1,DEV-003,BloodPressure,mmHg,60,200,Active
+SNS-008,Flow Sensor A2,DEV-002,AirFlow,L/min,0,60,Active
+SNS-009,Pressure Sensor A2,DEV-002,AirwayPressure,cmH2O,0,45,Active
+SNS-010,FiO2 Sensor A2,DEV-002,FiO2,%,21,100,Active
+SNS-011,Drip Rate C1,DEV-005,InfusionRate,mL/hr,0,999,Active
+SNS-012,HR Sensor E1,DEV-007,HeartRate,bpm,40,180,Active
+SNS-013,SpO2 Sensor E1,DEV-007,OxygenSaturation,%,88,100,Active
+SNS-014,Flow Sensor F1,DEV-008,AirFlow,L/min,0,60,Active
+SNS-015,Drip Rate G1,DEV-009,InfusionRate,mL/hr,0,999,Active
+SNS-016,EEG Channel H1,DEV-010,EEG,uV,-200,200,Active
+SNS-017,US Probe I1,DEV-011,Ultrasound,MHz,1,12,Active
+SNS-018,Mag Field J1,DEV-012,MagneticField,T,0,3,Active
+SNS-019,Temp Sensor K1,DEV-014,Temperature,C,35.0,39.5,Active
+SNS-020,Gas Flow L1,DEV-015,GasFlow,L/min,0,15,Active

@@ -1,0 +1,82 @@
+table dimhospital
+	lineageTag: 40000001-0001-0001-0001-000000000001
+
+	measure 'Hospital Count' = COUNTROWS(dimhospital)
+		displayFolder: Measures
+		lineageTag: 40000001-0001-0001-0001-100000000001
+
+	measure 'Total Bed Capacity' = SUM(dimhospital[BedCapacity])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000001-0001-0001-0001-100000000002
+
+	column HospitalId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HospitalId
+		lineageTag: 40000001-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column HospitalName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HospitalName
+		lineageTag: 40000001-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		summarizeBy: none
+		sourceColumn: City
+		lineageTag: 40000001-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		summarizeBy: none
+		sourceColumn: State
+		lineageTag: 40000001-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Country
+		lineageTag: 40000001-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column BedCapacity
+		dataType: double
+		summarizeBy: none
+		sourceColumn: BedCapacity
+		lineageTag: 40000001-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column TierLevel
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TierLevel
+		lineageTag: 40000001-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000001-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimhospital = entity
+		mode: directLake
+		entityName: dimhospital
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

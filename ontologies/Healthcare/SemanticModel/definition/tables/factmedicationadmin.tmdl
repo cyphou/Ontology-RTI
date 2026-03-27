@@ -1,0 +1,77 @@
+table factmedicationadmin
+	lineageTag: 40000012-0001-0001-0001-000000000001
+
+	measure 'Administration Count' = COUNTROWS(factmedicationadmin)
+		displayFolder: Measures
+		lineageTag: 40000012-0001-0001-0001-100000000001
+
+	column AdminId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AdminId
+		lineageTag: 40000012-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column PatientId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PatientId
+		lineageTag: 40000012-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column MedicationId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MedicationId
+		lineageTag: 40000012-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column NurseId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: NurseId
+		lineageTag: 40000012-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column AdminDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AdminDate
+		lineageTag: 40000012-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Dosage
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Dosage
+		lineageTag: 40000012-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Route
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Route
+		lineageTag: 40000012-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000012-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factmedicationadmin = entity
+		mode: directLake
+		entityName: factmedicationadmin
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

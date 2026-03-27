@@ -1,0 +1,77 @@
+table dimsensor
+	lineageTag: 40000009-0001-0001-0001-000000000001
+
+	measure 'Sensor Count' = COUNTROWS(dimsensor)
+		displayFolder: Measures
+		lineageTag: 40000009-0001-0001-0001-100000000001
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 40000009-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorName
+		lineageTag: 40000009-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceId
+		lineageTag: 40000009-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorType
+		lineageTag: 40000009-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Unit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Unit
+		lineageTag: 40000009-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column MinThreshold
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MinThreshold
+		lineageTag: 40000009-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxThreshold
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MaxThreshold
+		lineageTag: 40000009-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000009-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimsensor = entity
+		mode: directLake
+		entityName: dimsensor
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

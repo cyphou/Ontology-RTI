@@ -21,7 +21,11 @@ param(
     [Parameter(Mandatory)] [string]$OntologyFolder,
     [switch]$SkipDataAgent,
     [switch]$SkipOperationsAgent,
-    [switch]$SkipDashboard
+    [switch]$SkipDashboard,
+    # Service Principal auth (optional — falls back to interactive Connect-AzAccount)
+    [string]$ClientId,
+    [string]$ClientSecret,
+    [string]$TenantId
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,6 +45,11 @@ function Write-Success { param([string]$Message); Write-Host "  [OK]   $Message"
 function Write-Warn  { param([string]$Message); Write-Host "  [WARN] $Message" -ForegroundColor Yellow }
 
 function Get-FabricToken {
+    if ($ClientId -and $ClientSecret -and $TenantId) {
+        $secPwd = ConvertTo-SecureString $ClientSecret -AsPlainText -Force
+        $cred = New-Object System.Management.Automation.PSCredential($ClientId, $secPwd)
+        Connect-AzAccount -ServicePrincipal -Credential $cred -TenantId $TenantId -ErrorAction Stop | Out-Null
+    }
     try { $token = Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com"; return $token.Token }
     catch { Write-Error "Failed to get Fabric token. Run 'Connect-AzAccount' first."; throw }
 }

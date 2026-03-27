@@ -1,0 +1,82 @@
+table dimmedication
+	lineageTag: 40000008-0001-0001-0001-000000000001
+
+	measure 'Medication Count' = COUNTROWS(dimmedication)
+		displayFolder: Measures
+		lineageTag: 40000008-0001-0001-0001-100000000001
+
+	measure 'Avg Unit Cost' = AVERAGE(dimmedication[UnitCost])
+		formatString: $#,0.00
+		displayFolder: Measures
+		lineageTag: 40000008-0001-0001-0001-100000000002
+
+	column MedicationId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MedicationId
+		lineageTag: 40000008-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column MedicationName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MedicationName
+		lineageTag: 40000008-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Category
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Category
+		lineageTag: 40000008-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DosageForm
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DosageForm
+		lineageTag: 40000008-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Manufacturer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Manufacturer
+		lineageTag: 40000008-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitCost
+		dataType: double
+		summarizeBy: none
+		sourceColumn: UnitCost
+		lineageTag: 40000008-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column RequiresRefrigeration
+		dataType: string
+		summarizeBy: none
+		sourceColumn: RequiresRefrigeration
+		lineageTag: 40000008-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000008-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimmedication = entity
+		mode: directLake
+		entityName: dimmedication
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

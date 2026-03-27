@@ -1,0 +1,16 @@
+DeviceId,DeviceName,WardId,DeviceType,Manufacturer,Model,LastCalibrationDate,Status
+DEV-001,Cardiac Monitor A1,WD-001,Patient Monitor,Philips,IntelliVue MX800,2024-09-01,Active
+DEV-002,Ventilator A2,WD-001,Ventilator,Medtronic,Puritan Bennett 980,2024-08-15,Active
+DEV-003,Cardiac Monitor B1,WD-003,Patient Monitor,GE Healthcare,CARESCAPE B650,2024-09-10,Active
+DEV-004,IABP B2,WD-003,Cardiac Assist,Maquet,CS300,2024-07-20,Active
+DEV-005,Infusion Pump C1,WD-004,Infusion Pump,Baxter,Sigma Spectrum,2024-09-05,Active
+DEV-006,X-Ray Unit D1,WD-005,Imaging,Siemens,Ysio Max,2024-06-30,Active
+DEV-007,Pulse Oximeter E1,WD-007,Pulse Oximeter,Masimo,Radical-7,2024-09-12,Active
+DEV-008,Ventilator F1,WD-008,Ventilator,Hamilton Medical,Hamilton C6,2024-08-25,Active
+DEV-009,Infusion Pump G1,WD-009,Infusion Pump,BD,Alaris 8015,2024-09-01,Active
+DEV-010,EEG Machine H1,WD-011,EEG,Natus,Xltek EMU40,2024-07-15,Active
+DEV-011,Ultrasound I1,WD-017,Ultrasound,GE Healthcare,Voluson E10,2024-08-20,Active
+DEV-012,MRI Scanner J1,WD-019,MRI,Siemens,MAGNETOM Vida,2024-05-10,Active
+DEV-013,CT Scanner J2,WD-019,CT,GE Healthcare,Revolution CT,2024-06-01,Active
+DEV-014,Defibrillator K1,WD-016,Defibrillator,Zoll,R Series,2024-09-15,Active
+DEV-015,Anesthesia Machine L1,WD-015,Anesthesia,Draeger,Perseus A500,2024-08-01,Active

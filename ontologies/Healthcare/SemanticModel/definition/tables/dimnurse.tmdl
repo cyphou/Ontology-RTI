@@ -1,0 +1,69 @@
+table dimnurse
+	lineageTag: 40000005-0001-0001-0001-000000000001
+
+	measure 'Nurse Count' = COUNTROWS(dimnurse)
+		displayFolder: Measures
+		lineageTag: 40000005-0001-0001-0001-100000000001
+
+	column NurseId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: NurseId
+		lineageTag: 40000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column NurseName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: NurseName
+		lineageTag: 40000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column WardId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardId
+		lineageTag: 40000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Certification
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Certification
+		lineageTag: 40000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column ShiftPreference
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ShiftPreference
+		lineageTag: 40000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearsExperience
+		dataType: double
+		summarizeBy: none
+		sourceColumn: YearsExperience
+		lineageTag: 40000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000005-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimnurse = entity
+		mode: directLake
+		entityName: dimnurse
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,25 @@
+table bridgewarddevice
+	lineageTag: 40000013-0001-0001-0001-000000000001
+
+	column WardId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardId
+		lineageTag: 40000013-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeviceId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeviceId
+		lineageTag: 40000013-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgewarddevice = entity
+		mode: directLake
+		entityName: bridgewarddevice
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

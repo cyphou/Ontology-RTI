@@ -1,0 +1,74 @@
+table dimward
+	lineageTag: 40000003-0001-0001-0001-000000000001
+
+	measure 'Ward Count' = COUNTROWS(dimward)
+		displayFolder: Measures
+		lineageTag: 40000003-0001-0001-0001-100000000001
+
+	measure 'Total Ward Beds' = SUM(dimward[BedCount])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000003-0001-0001-0001-100000000002
+
+	column WardId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardId
+		lineageTag: 40000003-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column WardName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardName
+		lineageTag: 40000003-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column DepartmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DepartmentId
+		lineageTag: 40000003-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column WardType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardType
+		lineageTag: 40000003-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column BedCount
+		dataType: double
+		summarizeBy: none
+		sourceColumn: BedCount
+		lineageTag: 40000003-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column NurseStations
+		dataType: double
+		summarizeBy: none
+		sourceColumn: NurseStations
+		lineageTag: 40000003-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000003-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimward = entity
+		mode: directLake
+		entityName: dimward
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

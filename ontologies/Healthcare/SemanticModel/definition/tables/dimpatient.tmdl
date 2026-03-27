@@ -1,0 +1,85 @@
+table dimpatient
+	lineageTag: 40000006-0001-0001-0001-000000000001
+
+	measure 'Patient Count' = COUNTROWS(dimpatient)
+		displayFolder: Measures
+		lineageTag: 40000006-0001-0001-0001-100000000001
+
+	column PatientId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PatientId
+		lineageTag: 40000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column PatientName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PatientName
+		lineageTag: 40000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column WardId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WardId
+		lineageTag: 40000006-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateOfBirth
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DateOfBirth
+		lineageTag: 40000006-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Gender
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Gender
+		lineageTag: 40000006-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column BloodType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BloodType
+		lineageTag: 40000006-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InsuranceProvider
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InsuranceProvider
+		lineageTag: 40000006-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column AdmissionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AdmissionDate
+		lineageTag: 40000006-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000006-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimpatient = entity
+		mode: directLake
+		entityName: dimpatient
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

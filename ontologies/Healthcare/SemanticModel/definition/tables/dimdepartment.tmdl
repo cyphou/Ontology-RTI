@@ -1,0 +1,74 @@
+table dimdepartment
+	lineageTag: 40000002-0001-0001-0001-000000000001
+
+	measure 'Department Count' = COUNTROWS(dimdepartment)
+		displayFolder: Measures
+		lineageTag: 40000002-0001-0001-0001-100000000001
+
+	measure 'Total Department Beds' = SUM(dimdepartment[BedCount])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000002-0001-0001-0001-100000000002
+
+	column DepartmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DepartmentId
+		lineageTag: 40000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column DepartmentName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DepartmentName
+		lineageTag: 40000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column HospitalId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: HospitalId
+		lineageTag: 40000002-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DepartmentType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DepartmentType
+		lineageTag: 40000002-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Floor
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Floor
+		lineageTag: 40000002-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column BedCount
+		dataType: double
+		summarizeBy: none
+		sourceColumn: BedCount
+		lineageTag: 40000002-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000002-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimdepartment = entity
+		mode: directLake
+		entityName: dimdepartment
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,21 @@
+WardId,WardName,DepartmentId,WardType,BedCount,NurseStations,Status
+WD-001,ER Trauma Bay,DEPT-001,Emergency,12,3,Active
+WD-002,ER Observation,DEPT-001,Observation,10,2,Active
+WD-003,Cardiac ICU,DEPT-002,ICU,8,4,Active
+WD-004,Cardiac Step-Down,DEPT-002,Step-Down,12,2,Active
+WD-005,Ortho Ward A,DEPT-003,Inpatient,10,2,Active
+WD-006,Ortho Recovery,DEPT-003,Post-Op,8,2,Active
+WD-007,Pediatric Ward,DEPT-004,Inpatient,14,3,Active
+WD-008,PICU,DEPT-004,ICU,6,3,Active
+WD-009,Oncology Ward,DEPT-005,Inpatient,12,2,Active
+WD-010,Chemo Suite,DEPT-005,Treatment,8,2,Active
+WD-011,Neuro ICU,DEPT-006,ICU,6,3,Active
+WD-012,Neuro Ward,DEPT-006,Inpatient,10,2,Active
+WD-013,General Medicine A,DEPT-007,Inpatient,16,3,Active
+WD-014,General Medicine B,DEPT-007,Inpatient,14,3,Active
+WD-015,Surgical Ward A,DEPT-008,Inpatient,12,2,Active
+WD-016,Surgical ICU,DEPT-008,ICU,8,4,Active
+WD-017,Labor & Delivery,DEPT-009,Delivery,10,3,Active
+WD-018,Postpartum Ward,DEPT-009,Inpatient,12,2,Active
+WD-019,Imaging Suite,DEPT-010,Diagnostic,0,1,Active
+WD-020,Interventional Lab,DEPT-010,Procedural,4,2,Active

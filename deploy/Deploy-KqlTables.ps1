@@ -210,6 +210,19 @@ foreach ($tbl in $tableDefinitions) {
     }
 }
 
+# ── Enable streaming ingestion policies ─────────────────────────────────────
+Write-Host "`n[Step 1b] Enabling streaming ingestion policies..." -ForegroundColor Cyan
+foreach ($tbl in $tableDefinitions) {
+    try {
+        Invoke-KustoMgmt -Command ".alter table $($tbl.Name) policy streamingingestion '{`"IsEnabled`": true}'" `
+                         -Description "Streaming on $($tbl.Name)..." | Out-Null
+        Write-Host "  [OK] $($tbl.Name) streaming enabled" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "  [WARN] $($tbl.Name) streaming policy: $_" -ForegroundColor Yellow
+    }
+}
+
 # ════════════════════════════════════════════════════════════════════════════
 # STEP 2: ENRICH AND INGEST SensorTelemetry → SensorReading
 # ════════════════════════════════════════════════════════════════════════════

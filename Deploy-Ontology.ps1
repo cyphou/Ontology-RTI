@@ -50,7 +50,7 @@ param(
     [string]$WorkspaceId,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine")]
+    [ValidateSet("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare")]
     [string]$OntologyType,
 
     [switch]$SkipDataAgent,
@@ -125,6 +125,18 @@ $domains = @{
         OntologyFolder = Join-Path $scriptDir "ontologies\WindTurbine"
         Color        = "Blue"
     }
+    Healthcare = @{
+        DisplayName  = "Healthcare"
+        Emoji        = [char]0x1F3E5  # hospital
+        Description  = "Hospitals, departments, wards, patients, physicians, devices, medications"
+        Lakehouse    = "HealthcareLH"
+        Eventhouse   = "HealthcareTelemetryEH"
+        SemanticModel = "HealthcareModel"
+        OntologyName = "HealthcareOntology"
+        DataFolder   = Join-Path $scriptDir "ontologies\Healthcare\data"
+        OntologyFolder = Join-Path $scriptDir "ontologies\Healthcare"
+        Color        = "Red"
+    }
 }
 
 # ============================================================================
@@ -142,7 +154,7 @@ if (-not $OntologyType) {
 
     $index = 1
     $menuMap = @{}
-    foreach ($key in @("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine")) {
+    foreach ($key in @("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare")) {
         $d = $domains[$key]
         $color = $d.Color
         Write-Host "    [$index] " -NoNewline -ForegroundColor White
@@ -153,7 +165,7 @@ if (-not $OntologyType) {
     }
 
     Write-Host ""
-    $choice = Read-Host "  Enter choice (1-5)"
+    $choice = Read-Host "  Enter choice (1-6)"
     $choiceInt = [int]$choice
     if ($menuMap.ContainsKey($choiceInt)) {
         $OntologyType = $menuMap[$choiceInt]

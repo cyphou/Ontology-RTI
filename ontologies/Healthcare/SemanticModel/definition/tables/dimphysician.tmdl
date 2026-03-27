@@ -1,0 +1,69 @@
+table dimphysician
+	lineageTag: 40000004-0001-0001-0001-000000000001
+
+	measure 'Physician Count' = COUNTROWS(dimphysician)
+		displayFolder: Measures
+		lineageTag: 40000004-0001-0001-0001-100000000001
+
+	column PhysicianId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PhysicianId
+		lineageTag: 40000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column PhysicianName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PhysicianName
+		lineageTag: 40000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column DepartmentId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DepartmentId
+		lineageTag: 40000004-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Specialty
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Specialty
+		lineageTag: 40000004-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column LicenseNumber
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LicenseNumber
+		lineageTag: 40000004-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearsExperience
+		dataType: double
+		summarizeBy: none
+		sourceColumn: YearsExperience
+		lineageTag: 40000004-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000004-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimphysician = entity
+		mode: directLake
+		entityName: dimphysician
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

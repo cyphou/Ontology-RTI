@@ -1,0 +1,4 @@
+HospitalId,HospitalName,City,State,Country,BedCapacity,TierLevel,Status
+H-001,Metro General Hospital,New York,NY,USA,800,Level 1 Trauma,Active
+H-002,Lakeside Medical Center,Chicago,IL,USA,450,Level 2 Trauma,Active
+H-003,Pacific Health Institute,San Francisco,CA,USA,600,Level 1 Trauma,Active

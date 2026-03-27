@@ -1,0 +1,11 @@
+DepartmentId,DepartmentName,HospitalId,DepartmentType,Floor,BedCount,Status
+DEPT-001,Emergency Medicine,H-001,Clinical,1,40,Active
+DEPT-002,Cardiology,H-001,Clinical,3,30,Active
+DEPT-003,Orthopedics,H-001,Surgical,4,25,Active
+DEPT-004,Pediatrics,H-001,Clinical,5,35,Active
+DEPT-005,Oncology,H-002,Clinical,2,28,Active
+DEPT-006,Neurology,H-002,Clinical,3,22,Active
+DEPT-007,Internal Medicine,H-002,Clinical,4,32,Active
+DEPT-008,Surgery,H-003,Surgical,2,30,Active
+DEPT-009,Obstetrics,H-003,Clinical,3,26,Active
+DEPT-010,Radiology,H-003,Diagnostic,1,10,Active

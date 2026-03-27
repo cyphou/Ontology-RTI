@@ -1,0 +1,185 @@
+name: Ontology Accelerator CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate Ontology Domains
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate domain folder structure
+        shell: pwsh
+        run: |
+          $errors = 0
+          $domains = Get-ChildItem -Path "ontologies" -Directory
+
+          foreach ($domain in $domains) {
+            $name = $domain.Name
+            Write-Host "`n=== Validating $name ===" -ForegroundColor Cyan
+
+            # Required files
+            $requiredFiles = @(
+              "Build-Ontology.ps1",
+              "Deploy-KqlTables.ps1",
+              "Deploy-RTIDashboard.ps1",
+              "Deploy-DataAgent.ps1",
+              "Deploy-OperationsAgent.ps1",
+              "GraphQueries.gql",
+              "LoadDataToTables.py"
+            )
+
+            foreach ($file in $requiredFiles) {
+              $path = Join-Path $domain.FullName $file
+              if (Test-Path $path) {
+                Write-Host "  [OK] $file" -ForegroundColor Green
+              } else {
+                Write-Host "  [FAIL] $file missing" -ForegroundColor Red
+                $errors++
+              }
+            }
+
+            # Data folder with at least one CSV
+            $dataDir = Join-Path $domain.FullName "data"
+            if (Test-Path $dataDir) {
+              $csvCount = (Get-ChildItem -Path $dataDir -Filter "*.csv").Count
+              if ($csvCount -gt 0) {
+                Write-Host "  [OK] data/ ($csvCount CSVs)" -ForegroundColor Green
+              } else {
+                Write-Host "  [FAIL] data/ has no CSV files" -ForegroundColor Red
+                $errors++
+              }
+            } else {
+              Write-Host "  [FAIL] data/ folder missing" -ForegroundColor Red
+              $errors++
+            }
+
+            # SemanticModel folder
+            $smDir = Join-Path $domain.FullName "SemanticModel/definition"
+            if (Test-Path $smDir) {
+              $tmdlCount = (Get-ChildItem -Path $smDir -Filter "*.tmdl" -Recurse).Count
+              Write-Host "  [OK] SemanticModel/ ($tmdlCount TMDL files)" -ForegroundColor Green
+            } else {
+              Write-Host "  [FAIL] SemanticModel/definition/ missing" -ForegroundColor Red
+              $errors++
+            }
+          }
+
+          Write-Host "`n=== Domain count: $($domains.Count) ==="
+          if ($errors -gt 0) {
+            Write-Host "[FAIL] $errors errors found" -ForegroundColor Red
+            exit 1
+          } else {
+            Write-Host "[PASS] All domains valid" -ForegroundColor Green
+          }
+
+      - name: Validate CSV headers (no empty headers)
+        shell: pwsh
+        run: |
+          $errors = 0
+          $csvFiles = Get-ChildItem -Path "ontologies" -Filter "*.csv" -Recurse
+
+          foreach ($csv in $csvFiles) {
+            $header = Get-Content -Path $csv.FullName -TotalCount 1
+            if (-not $header -or $header.Trim() -eq "") {
+              Write-Host "[FAIL] Empty header: $($csv.FullName)" -ForegroundColor Red
+              $errors++
+            } else {
+              $cols = $header.Split(",")
+              $emptyCol = $cols | Where-Object { $_.Trim() -eq "" }
+              if ($emptyCol) {
+                Write-Host "[FAIL] Empty column name in: $($csv.FullName)" -ForegroundColor Red
+                $errors++
+              }
+            }
+          }
+
+          Write-Host "`nChecked $($csvFiles.Count) CSV files"
+          if ($errors -gt 0) { exit 1 } else { Write-Host "[PASS] All CSV headers valid" -ForegroundColor Green }
+
+      - name: Validate GQL files (non-empty with queries)
+        shell: pwsh
+        run: |
+          $errors = 0
+          $gqlFiles = Get-ChildItem -Path "ontologies" -Filter "*.gql" -Recurse
+
+          foreach ($gql in $gqlFiles) {
+            $content = Get-Content -Path $gql.FullName -Raw
+            if (-not $content -or $content.Trim().Length -lt 10) {
+              Write-Host "[FAIL] Empty or trivial GQL: $($gql.FullName)" -ForegroundColor Red
+              $errors++
+              continue
+            }
+
+            # Check for at least one MATCH keyword (GQL queries)
+            if ($content -notmatch "(?i)MATCH") {
+              Write-Host "[FAIL] No MATCH keyword in: $($gql.FullName)" -ForegroundColor Red
+              $errors++
+            } else {
+              $matchCount = ([regex]::Matches($content, "(?i)MATCH")).Count
+              Write-Host "[OK] $($gql.Name): $matchCount MATCH patterns" -ForegroundColor Green
+            }
+          }
+
+          if ($errors -gt 0) { exit 1 } else { Write-Host "[PASS] All GQL files valid" -ForegroundColor Green }
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = 0
+          $ps1Files = Get-ChildItem -Path "ontologies","deploy" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
+
+          foreach ($ps1 in $ps1Files) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($ps1.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              Write-Host "[FAIL] $($ps1.Name): $($parseErrors.Count) parse errors" -ForegroundColor Red
+              foreach ($err in $parseErrors) { Write-Host "  - $($err.Message)" -ForegroundColor Red }
+              $errors++
+            } else {
+              Write-Host "[OK] $($ps1.Name)" -ForegroundColor Green
+            }
+          }
+
+          if ($errors -gt 0) { exit 1 } else { Write-Host "[PASS] All PowerShell scripts parse successfully" -ForegroundColor Green }
+
+      - name: Validate Python syntax
+        shell: bash
+        run: |
+          errors=0
+          for pyfile in $(find ontologies deploy -name "*.py" 2>/dev/null); do
+            if python3 -c "import py_compile; py_compile.compile('$pyfile', doraise=True)" 2>/dev/null; then
+              echo "[OK] $pyfile"
+            else
+              echo "[FAIL] $pyfile"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ $errors -gt 0 ]; then exit 1; fi
+          echo "[PASS] All Python files compile"
+
+      - name: Validate Deploy-Ontology domain registry
+        shell: pwsh
+        run: |
+          $domains = (Get-ChildItem -Path "ontologies" -Directory).Name
+          $content = Get-Content -Path "Deploy-Ontology.ps1" -Raw
+
+          $errors = 0
+          foreach ($domain in $domains) {
+            if ($content -match [regex]::Escape($domain)) {
+              Write-Host "[OK] $domain registered in Deploy-Ontology.ps1" -ForegroundColor Green
+            } else {
+              Write-Host "[FAIL] $domain NOT registered in Deploy-Ontology.ps1" -ForegroundColor Red
+              $errors++
+            }
+          }
+
+          if ($errors -gt 0) { exit 1 } else { Write-Host "[PASS] All domains registered" -ForegroundColor Green }

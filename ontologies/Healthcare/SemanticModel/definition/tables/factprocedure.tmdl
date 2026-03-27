@@ -1,0 +1,90 @@
+table factprocedure
+	lineageTag: 40000011-0001-0001-0001-000000000001
+
+	measure 'Procedure Count' = COUNTROWS(factprocedure)
+		displayFolder: Measures
+		lineageTag: 40000011-0001-0001-0001-100000000001
+
+	measure 'Avg Procedure Duration' = AVERAGE(factprocedure[DurationMinutes])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 40000011-0001-0001-0001-100000000002
+
+	column ProcedureId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcedureId
+		lineageTag: 40000011-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column PatientId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PatientId
+		lineageTag: 40000011-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column PhysicianId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PhysicianId
+		lineageTag: 40000011-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcedureType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcedureType
+		lineageTag: 40000011-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProcedureDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProcedureDate
+		lineageTag: 40000011-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column DurationMinutes
+		dataType: double
+		summarizeBy: none
+		sourceColumn: DurationMinutes
+		lineageTag: 40000011-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Outcome
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Outcome
+		lineageTag: 40000011-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Room
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Room
+		lineageTag: 40000011-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 40000011-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factprocedure = entity
+		mode: directLake
+		entityName: factprocedure
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
