@@ -124,8 +124,24 @@ $kqlLines += "    [string]`$QueryServiceUri, [string]`$KqlDatabaseName,"
 $kqlLines += "    [string]`$DataFolder = (Join-Path `$PSScriptRoot 'data')"
 $kqlLines += ")"
 $kqlLines += ""
-$kqlLines += "# TODO: Define KQL tables and ingestion logic."
-$kqlLines += '# See ontologies/OilGasRefinery/Deploy-KqlTables.ps1 for reference.'
+$kqlLines += "# Authentication"
+$kqlLines += "`$resource = 'https://kusto.kusto.windows.net'"
+$kqlLines += "`$kustoToken = `$null"
+$kqlLines += "for (`$i = 0; `$i -lt 3; `$i++) {"
+$kqlLines += "    try { `$kustoToken = (Get-AzAccessToken -ResourceUrl `$resource).Token; break } catch {}"
+$kqlLines += "    Start-Sleep -Seconds 2"
+$kqlLines += "}"
+$kqlLines += "if (-not `$kustoToken) { Write-Error 'Cannot acquire Kusto token'; exit 1 }"
+$kqlLines += ""
+$kqlLines += "function Invoke-KustoMgmt { param([string]`$Command)"
+$kqlLines += "    `$body = @{ csl = `$Command; db = `$KqlDatabaseName } | ConvertTo-Json"
+$kqlLines += "    Invoke-RestMethod -Method Post -Uri `"`$QueryServiceUri/v1/rest/mgmt`" -Headers @{ Authorization = `"Bearer `$kustoToken`"; 'Content-Type' = 'application/json' } -Body `$body"
+$kqlLines += "}"
+$kqlLines += ""
+$kqlLines += "# ── Create SensorReading table ──"
+$kqlLines += '# TODO: Define table columns matching your SensorTelemetry.csv schema.'
+$kqlLines += '# Example:'
+$kqlLines += '# Invoke-KustoMgmt -Command ".create-merge table SensorReading (ReadingId:string, SensorId:string, Timestamp:datetime, Value:real, Unit:string, Quality:string)"'
 $kqlLines += ""
 $kqlLines += "Write-Host `"[TODO] Implement $DisplayName KQL tables`" -ForegroundColor Yellow"
 ($kqlLines -join "`n") | Set-Content -Path (Join-Path $domainDir "Deploy-KqlTables.ps1") -NoNewline
@@ -142,7 +158,13 @@ $dashLines += "    [Parameter(Mandatory=`$true)] [string]`$WorkspaceId,"
 $dashLines += "    [string]`$KqlDatabaseId, [string]`$QueryServiceUri, [string]`$KqlDatabaseName"
 $dashLines += ")"
 $dashLines += ""
-$dashLines += "# TODO: Define 10+ dashboard tiles with KQL queries."
+$dashLines += "`$DashboardName = '${DomainName}Dashboard'"
+$dashLines += "`$fabricToken = (Get-AzAccessToken -ResourceUrl 'https://api.fabric.microsoft.com').Token"
+$dashLines += "`$apiBase = 'https://api.fabric.microsoft.com/v1'"
+$dashLines += "`$headers = @{ Authorization = `"Bearer `$fabricToken`"; 'Content-Type' = 'application/json' }"
+$dashLines += ""
+$dashLines += '# TODO: Define 10+ dashboard tiles with KQL queries.'
+$dashLines += '# Each tile needs: title, queryText, visualType (line/bar/pie/table), x/y/width/height.'
 $dashLines += '# See ontologies/OilGasRefinery/Deploy-RTIDashboard.ps1 for reference.'
 $dashLines += ""
 $dashLines += "Write-Host `"[TODO] Implement $DisplayName dashboard`" -ForegroundColor Yellow"
@@ -160,7 +182,13 @@ $daLines += "    [Parameter(Mandatory=`$true)] [string]`$WorkspaceId,"
 $daLines += "    [string]`$LakehouseId"
 $daLines += ")"
 $daLines += ""
-$daLines += "# TODO: Define data agent with AI instructions and Lakehouse data source."
+$daLines += "`$AgentName = '${DomainName}DataAgent'"
+$daLines += "`$fabricToken = (Get-AzAccessToken -ResourceUrl 'https://api.fabric.microsoft.com').Token"
+$daLines += "`$apiBase = 'https://api.fabric.microsoft.com/v1'"
+$daLines += "`$headers = @{ Authorization = `"Bearer `$fabricToken`"; 'Content-Type' = 'application/json' }"
+$daLines += ""
+$daLines += '# TODO: Define data_agent.json (schema 2.1.0) and stage_config.json (schema 1.0.0).'
+$daLines += '# Include: AI instructions, Lakehouse data source, entity-aware prompts.'
 $daLines += '# See ontologies/OilGasRefinery/Deploy-DataAgent.ps1 for reference.'
 $daLines += ""
 $daLines += "Write-Host `"[TODO] Implement $DisplayName Data Agent`" -ForegroundColor Yellow"
@@ -178,7 +206,13 @@ $oaLines += "    [Parameter(Mandatory=`$true)] [string]`$WorkspaceId,"
 $oaLines += "    [string]`$KqlDatabaseId"
 $oaLines += ")"
 $oaLines += ""
-$oaLines += "# TODO: Define operations agent with 5 operational goals and KQL data source."
+$oaLines += "`$AgentName = '${DomainName}OpsAgent'"
+$oaLines += "`$fabricToken = (Get-AzAccessToken -ResourceUrl 'https://api.fabric.microsoft.com').Token"
+$oaLines += "`$apiBase = 'https://api.fabric.microsoft.com/v1'"
+$oaLines += "`$headers = @{ Authorization = `"Bearer `$fabricToken`"; 'Content-Type' = 'application/json' }"
+$oaLines += ""
+$oaLines += '# TODO: Define operations agent with 5 operational goals and KQL data source.'
+$oaLines += '# Include: goal definitions, Teams integration, KQL database binding.'
 $oaLines += '# See ontologies/OilGasRefinery/Deploy-OperationsAgent.ps1 for reference.'
 $oaLines += ""
 $oaLines += "Write-Host `"[TODO] Implement $DisplayName Operations Agent`" -ForegroundColor Yellow"
@@ -187,17 +221,59 @@ Write-Host "[OK] Deploy-OperationsAgent.ps1" -ForegroundColor Green
 
 # ── GraphQueries.gql template ──────────────────────────────────────────────
 $gqlLines = @()
-$gqlLines += "# $DisplayName Graph Queries"
-$gqlLines += "# ISO/IEC 39075:2024 GQL"
+$gqlLines += "/* $DisplayName Graph Queries */"
+$gqlLines += "/* ISO/IEC 39075:2024 GQL */"
 $gqlLines += ""
-$gqlLines += "# 1. List all $($entityList[0]) entities"
-$gqlLines += "GRAPH_TABLE ($DomainName"
-$gqlLines += "  MATCH (n:$($entityList[0]))"
-$gqlLines += "  COLUMNS (n.$($entityList[0])Id, n.$($entityList[0])Name)"
-$gqlLines += ")"
-$gqlLines += ""
-$gqlLines += "# TODO: Add 19 more query patterns."
-$gqlLines += '# See ontologies/OilGasRefinery/GraphQueries.gql for reference.'
+
+$qn = 1
+# Per-entity list queries
+foreach ($entity in $entityList) {
+    $prefix = $entity.Substring(0,3).ToUpper()
+    $gqlLines += "/* $qn. List all $entity entities */"
+    $gqlLines += "GRAPH_TABLE ($DomainName"
+    $gqlLines += "  MATCH (n:$entity)"
+    $gqlLines += "  COLUMNS (n.${entity}Id, n.${entity}Name, n.Status)"
+    $gqlLines += ")"
+    $gqlLines += ""
+    $qn++
+}
+
+# Relationship queries between consecutive pairs
+for ($i = 0; $i -lt $entityList.Count - 1; $i++) {
+    $from = $entityList[$i]
+    $to = $entityList[$i + 1]
+    $gqlLines += "/* $qn. ${from}-to-${to} relationship */"
+    $gqlLines += "GRAPH_TABLE ($DomainName"
+    $gqlLines += "  MATCH (a:$from)-[:${from}Has${to}]->(b:$to)"
+    $gqlLines += "  COLUMNS (a.${from}Name, b.${to}Name, b.Status)"
+    $gqlLines += ")"
+    $gqlLines += ""
+    $qn++
+}
+
+# Count aggregation per entity
+foreach ($entity in $entityList) {
+    $gqlLines += "/* $qn. Count ${entity} by Status */"
+    $gqlLines += "GRAPH_TABLE ($DomainName"
+    $gqlLines += "  MATCH (n:$entity)"
+    $gqlLines += "  COLUMNS (n.Status, COUNT(*) AS Total)"
+    $gqlLines += ")"
+    $gqlLines += ""
+    $qn++
+}
+
+# 2-hop traversal if 3+ entities
+if ($entityList.Count -ge 3) {
+    $gqlLines += "/* $qn. 2-hop traversal: $($entityList[0]) -> $($entityList[1]) -> $($entityList[2]) */"
+    $gqlLines += "GRAPH_TABLE ($DomainName"
+    $gqlLines += "  MATCH (a:$($entityList[0]))-[:$($entityList[0])Has$($entityList[1])]->(b:$($entityList[1]))-[:$($entityList[1])Has$($entityList[2])]->(c:$($entityList[2]))"
+    $gqlLines += "  COLUMNS (a.$($entityList[0])Name, b.$($entityList[1])Name, c.$($entityList[2])Name)"
+    $gqlLines += ")"
+    $gqlLines += ""
+}
+
+$gqlLines += "/* Add more queries to reach 20 minimum. */"
+$gqlLines += "/* See ontologies/OilGasRefinery/GraphQueries.gql for advanced patterns. */"
 ($gqlLines -join "`n") | Set-Content -Path (Join-Path $domainDir "GraphQueries.gql") -NoNewline
 Write-Host "[OK] GraphQueries.gql" -ForegroundColor Green
 

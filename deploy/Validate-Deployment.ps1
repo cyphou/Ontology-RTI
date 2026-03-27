@@ -21,7 +21,7 @@
     The GUID of the Fabric workspace to validate.
 
 .PARAMETER OntologyType
-    Domain key: OilGasRefinery, SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine.
+    Domain key: OilGasRefinery, SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine, Healthcare.
     Defaults to OilGasRefinery for backward compatibility.
 
 .EXAMPLE

@@ -540,7 +540,7 @@ if (-not $SkipDashboard) {
             $kqlInfo = Invoke-FabricApi -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/kqlDatabases" -Token $fabricToken
             $kqlDb = $kqlInfo.value | Where-Object { $_.displayName -eq $EventhouseName }
             if ($kqlDb) { $kqlDbId = $kqlDb.id; $kqlDetail = Invoke-FabricApi -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/kqlDatabases/$kqlDbId" -Token $fabricToken; $kqlQueryUri = $kqlDetail.properties.queryServiceUri }
-        } catch {}
+        } catch { Write-Warn "KQL lookup issue (continuing): $_" }
         if ($kqlQueryUri -and $kqlDbId) {
             try { & $rtiScript -WorkspaceId $WorkspaceId -KqlDatabaseId $kqlDbId -QueryServiceUri $kqlQueryUri; Write-Success "Dashboard deployed" }
             catch { Write-Warn "Dashboard issue: $_" }

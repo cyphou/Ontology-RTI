@@ -98,7 +98,7 @@ $existing = $null
 try {
     $items = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items?type=DataAgent" -Headers $headers).value
     $existing = $items | Where-Object { $_.displayName -eq $AgentName } | Select-Object -First 1
-} catch {}
+} catch { Write-Warning "Could not list existing agents: $($_.Exception.Message)" }
 
 if ($existing) {
     Write-Host "  Updating existing agent $($existing.id)..." -ForegroundColor Yellow

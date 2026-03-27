@@ -3,7 +3,7 @@
     Enrich all domain CSVs with additional sample data.
 .DESCRIPTION
     Generates and appends realistic sample data to SensorTelemetry,
-    Fact tables, and Dimension tables across all 5 ontology domains.
+    Fact tables, and Dimension tables across all 6 ontology domains.
     Target: 300+ total rows per domain.
 #>
 param(
@@ -438,6 +438,121 @@ if (Test-Path $ogProd) {
     }
     $newProd | Export-Csv -Path $ogProd -Append -NoTypeInformation -Force
     Write-Host "  FactProduction: +$($newProd.Count) rows" -ForegroundColor Green
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HEALTHCARE
+# ══════════════════════════════════════════════════════════════════════════════
+Write-Host "`n--- Healthcare ---" -ForegroundColor Yellow
+$hcData = Join-Path $BasePath "Healthcare\data"
+
+# SensorTelemetry: ReadingId,DeviceId,Timestamp,SensorId,SensorType,Value,Unit,Quality
+$hcTelemetry = Join-Path $hcData "SensorTelemetry.csv"
+if (Test-Path $hcTelemetry) {
+    $nextId = Get-NextId -Path $hcTelemetry -Prefix "RD-"
+    $devices = @("DEV-001","DEV-002","DEV-003","DEV-004","DEV-005","DEV-006","DEV-007","DEV-008","DEV-009","DEV-010","DEV-011","DEV-012","DEV-013","DEV-014","DEV-015")
+    $sensors = @("SEN-001","SEN-002","SEN-003","SEN-004","SEN-005","SEN-006","SEN-007","SEN-008","SEN-009","SEN-010","SEN-011","SEN-012","SEN-013","SEN-014","SEN-015","SEN-016","SEN-017","SEN-018","SEN-019","SEN-020")
+    $sensorTypes = @("HeartRate","SpO2","BloodPressure","Temperature","Respiration")
+    $units = @{HeartRate="bpm";SpO2="%";BloodPressure="mmHg";Temperature="°C";Respiration="breaths/min"}
+    $ranges = @{HeartRate=@(55,120);SpO2=@(88,100);BloodPressure=@(70,180);Temperature=@(355,400);Respiration=@(10,28)}
+    $newRows = @()
+    $dates = @("2024-10-01","2024-10-02","2024-10-03","2024-10-04","2024-10-05","2024-10-06","2024-10-07")
+    $hours = @("06:00:00","08:00:00","10:00:00","12:00:00","14:00:00","16:00:00","18:00:00","20:00:00","22:00:00")
+    foreach ($dt in $dates) {
+        foreach ($dev in ($devices | Get-Random -Count 8)) {
+            foreach ($hr in ($hours | Get-Random -Count 3)) {
+                $sn = $sensors | Get-Random
+                $st = $sensorTypes | Get-Random
+                $r = $ranges[$st]
+                $val = if ($st -eq "Temperature") { [Math]::Round($r[0] / 10 + (Get-Random -Minimum 0 -Maximum ($r[1]-$r[0])) / 10, 1) } else { Get-Random -Minimum $r[0] -Maximum $r[1] }
+                $quality = if ((Get-Random -Minimum 0 -Maximum 10) -gt 1) { "Good" } else { "Degraded" }
+                $id = "RD-" + $nextId.ToString().PadLeft(3,'0')
+                $newRows += [PSCustomObject]@{ ReadingId=$id; DeviceId=$dev; Timestamp="${dt}T${hr}"; SensorId=$sn; SensorType=$st; Value=$val; Unit=$units[$st]; Quality=$quality }
+                $nextId++
+            }
+        }
+    }
+    $newRows | Export-Csv -Path $hcTelemetry -Append -NoTypeInformation -Force
+    Write-Host "  SensorTelemetry: +$($newRows.Count) rows" -ForegroundColor Green
+}
+
+# FactLabResult
+$hcLab = Join-Path $hcData "FactLabResult.csv"
+if (Test-Path $hcLab) {
+    $nextLabId = Get-NextId -Path $hcLab -Prefix "LAB-"
+    $patients = @("PAT-001","PAT-002","PAT-003","PAT-004","PAT-005","PAT-006","PAT-007","PAT-008","PAT-009","PAT-010","PAT-011","PAT-012","PAT-013","PAT-014","PAT-015","PAT-016","PAT-017","PAT-018","PAT-019","PAT-020","PAT-021","PAT-022","PAT-023","PAT-024","PAT-025")
+    $physicians = @("PHY-001","PHY-002","PHY-003","PHY-004","PHY-005","PHY-006","PHY-007","PHY-008","PHY-009","PHY-010","PHY-011","PHY-012","PHY-013","PHY-014","PHY-015")
+    $testTypes = @("CBC","BMP","LipidPanel","ThyroidPanel","UrinalysisPanel","LiverPanel","A1C","Troponin","DDimer","CRP")
+    $interpretations = @("Normal","Abnormal","Critical","Borderline")
+    $newLabs = @()
+    foreach ($dt in @("2024-10-08","2024-10-09","2024-10-10","2024-10-11","2024-10-12","2024-10-13","2024-10-14")) {
+        $count = Get-Random -Minimum 3 -Maximum 7
+        for ($i = 0; $i -lt $count; $i++) {
+            $id = "LAB-" + $nextLabId.ToString().PadLeft(3,'0')
+            $pat = $patients | Get-Random
+            $phy = $physicians | Get-Random
+            $tt = $testTypes | Get-Random
+            $rv = [Math]::Round((Get-Random -Minimum 10 -Maximum 500) + (Get-Random -Minimum 0 -Maximum 100) / 100, 1)
+            $interp = $interpretations | Get-Random
+            $status = if ((Get-Random -Minimum 0 -Maximum 10) -gt 1) { "Completed" } else { "Pending" }
+            $newLabs += [PSCustomObject]@{ LabResultId=$id; PatientId=$pat; PhysicianId=$phy; TestType=$tt; TestDate=$dt; ResultValue=$rv; Unit="mg/dL"; ReferenceRange="10-200"; Interpretation=$interp; Status=$status }
+            $nextLabId++
+        }
+    }
+    $newLabs | Export-Csv -Path $hcLab -Append -NoTypeInformation -Force
+    Write-Host "  FactLabResult: +$($newLabs.Count) rows" -ForegroundColor Green
+}
+
+# FactProcedure
+$hcProc = Join-Path $hcData "FactProcedure.csv"
+if (Test-Path $hcProc) {
+    $nextProcId = Get-NextId -Path $hcProc -Prefix "PROC-"
+    $procTypes = @("Appendectomy","Endoscopy","Biopsy","Catheterization","Dialysis","MRI","CTScan","Ultrasound","PhysicalTherapy","Suturing")
+    $outcomes = @("Successful","Successful","Successful","Complications","Scheduled","InProgress")
+    $rooms = @("OR-1","OR-2","OR-3","IR-1","IR-2","ER-Bay-1","ER-Bay-2","Radiology-1","Radiology-2","PT-Room-1")
+    $newProcs = @()
+    foreach ($dt in @("2024-10-08","2024-10-09","2024-10-10","2024-10-11","2024-10-12")) {
+        $count = Get-Random -Minimum 2 -Maximum 5
+        for ($i = 0; $i -lt $count; $i++) {
+            $id = "PROC-" + $nextProcId.ToString().PadLeft(3,'0')
+            $pat = $patients | Get-Random
+            $phy = $physicians | Get-Random
+            $pt = $procTypes | Get-Random
+            $dur = Get-Random -Minimum 15 -Maximum 240
+            $outcome = $outcomes | Get-Random
+            $room = $rooms | Get-Random
+            $newProcs += [PSCustomObject]@{ ProcedureId=$id; PatientId=$pat; PhysicianId=$phy; ProcedureType=$pt; ProcedureDate=$dt; DurationMinutes=$dur; Outcome=$outcome; Room=$room; Status="Completed" }
+            $nextProcId++
+        }
+    }
+    $newProcs | Export-Csv -Path $hcProc -Append -NoTypeInformation -Force
+    Write-Host "  FactProcedure: +$($newProcs.Count) rows" -ForegroundColor Green
+}
+
+# FactMedicationAdmin
+$hcMed = Join-Path $hcData "FactMedicationAdmin.csv"
+if (Test-Path $hcMed) {
+    $nextMedId = Get-NextId -Path $hcMed -Prefix "ADM-"
+    $medications = @("MED-001","MED-002","MED-003","MED-004","MED-005","MED-006","MED-007","MED-008","MED-009","MED-010","MED-011","MED-012")
+    $nurses = @("NRS-001","NRS-002","NRS-003","NRS-004","NRS-005","NRS-006","NRS-007","NRS-008","NRS-009","NRS-010","NRS-011","NRS-012","NRS-013","NRS-014","NRS-015","NRS-016","NRS-017","NRS-018","NRS-019","NRS-020")
+    $routes = @("Oral","IV","IM","Subcutaneous","Topical","Inhalation")
+    $newMeds = @()
+    foreach ($dt in @("2024-10-08","2024-10-09","2024-10-10","2024-10-11","2024-10-12","2024-10-13","2024-10-14")) {
+        $count = Get-Random -Minimum 3 -Maximum 8
+        for ($i = 0; $i -lt $count; $i++) {
+            $id = "ADM-" + $nextMedId.ToString().PadLeft(3,'0')
+            $pat = $patients | Get-Random
+            $med = $medications | Get-Random
+            $nrs = $nurses | Get-Random
+            $dosage = @("5mg","10mg","25mg","50mg","100mg","250mg","500mg") | Get-Random
+            $route = $routes | Get-Random
+            $status = if ((Get-Random -Minimum 0 -Maximum 10) -gt 1) { "Administered" } else { "Scheduled" }
+            $newMeds += [PSCustomObject]@{ AdminId=$id; PatientId=$pat; MedicationId=$med; NurseId=$nrs; AdminDate=$dt; Dosage=$dosage; Route=$route; Status=$status }
+            $nextMedId++
+        }
+    }
+    $newMeds | Export-Csv -Path $hcMed -Append -NoTypeInformation -Force
+    Write-Host "  FactMedicationAdmin: +$($newMeds.Count) rows" -ForegroundColor Green
 }
 
 Write-Host "`n=== Data Enrichment Complete ===" -ForegroundColor Cyan

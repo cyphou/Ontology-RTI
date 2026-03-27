@@ -146,7 +146,7 @@ $existingDashboard = $null
 try {
     $items = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items?type=KQLDashboard" -Headers $headers).value
     $existingDashboard = $items | Where-Object { $_.displayName -eq $DashboardName } | Select-Object -First 1
-} catch {}
+} catch { Write-Warning "Could not list existing dashboards: $($_.Exception.Message)" }
 
 if ($existingDashboard) {
     Write-Host "  Updating existing dashboard $($existingDashboard.id)..." -ForegroundColor Yellow

@@ -158,7 +158,7 @@ if ($dashboardId) {
         try {
             $r = Invoke-WebRequest -Uri $ep -Method POST -Headers $headers -Body $updateBody -UseBasicParsing
             if ($r.StatusCode -in @(200,202)) { Write-Host "[OK] Dashboard definition applied." -ForegroundColor Green; break }
-        } catch {}
+        } catch { Write-Warning "Dashboard endpoint $ep failed: $($_.Exception.Message)" }
     }
 }
 

@@ -1,76 +1,115 @@
-# Healthcare GQL Queries
-# Graph traversal patterns for the Healthcare ontology
+/* Healthcare GQL Queries */
+/* Graph traversal patterns for the Healthcare ontology */
 
-# 1. List all hospitals with department counts
+/* 1. List all hospitals with department counts */
 MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)
 RETURN h.HospitalName, h.City, h.BedCapacity, COUNT(d) AS DepartmentCount
 ORDER BY h.HospitalName
 
-# 2. Hospital-Department-Ward hierarchy
+/* 2. Hospital-Department-Ward hierarchy */
 MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)-[:DepartmentHasWard]->(w:Ward)
 RETURN h.HospitalName, d.DepartmentName, w.WardName, w.WardType, w.BedCount
 ORDER BY h.HospitalName, d.DepartmentName
 
-# 3. Find all physicians by department and specialty
+/* 3. Find all physicians by department and specialty */
 MATCH (d:Department)-[:DepartmentHasPhysician]->(p:Physician)
 RETURN d.DepartmentName, p.PhysicianName, p.Specialty, p.YearsExperience
 ORDER BY d.DepartmentName, p.Specialty
 
-# 4. Patients admitted to ICU wards
+/* 4. Patients admitted to ICU wards */
 MATCH (w:Ward)-[:WardHasPatient]->(pat:Patient)
 WHERE w.WardType = 'ICU'
 RETURN w.WardName, pat.PatientName, pat.BloodType, pat.AdmissionDate, pat.Status
 ORDER BY pat.AdmissionDate DESC
 
-# 5. Nurses assigned to each ward with certifications
+/* 5. Nurses assigned to each ward with certifications */
 MATCH (w:Ward)-[:WardHasNurse]->(n:Nurse)
 RETURN w.WardName, w.WardType, n.NurseName, n.Certification, n.ShiftPreference
 ORDER BY w.WardName, n.ShiftPreference
 
-# 6. Medical devices per ward with sensor counts
+/* 6. Medical devices per ward with sensor counts */
 MATCH (w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)
 RETURN w.WardName, dev.DeviceName, dev.DeviceType, COUNT(s) AS SensorCount
 ORDER BY w.WardName, dev.DeviceName
 
-# 7. Full care path: Hospital to Patient (3-hop)
+/* 7. Full care path: Hospital to Patient (3-hop) */
 MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasPatient]->(pat:Patient)
 RETURN h.HospitalName, d.DepartmentName, w.WardName, pat.PatientName, pat.Status
 ORDER BY h.HospitalName, d.DepartmentName
 
-# 8. Device monitoring chain: Ward to Sensor (2-hop)
+/* 8. Device monitoring chain: Ward to Sensor (2-hop) */
 MATCH (w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)
 WHERE s.SensorType = 'HeartRate'
 RETURN w.WardName, dev.DeviceName, s.SensorName, s.MinThreshold, s.MaxThreshold
 ORDER BY w.WardName
 
-# 9. Departments with most patients (aggregation)
+/* 9. Departments with most patients (aggregation) */
 MATCH (d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasPatient]->(pat:Patient)
 WHERE pat.Status = 'Admitted'
 RETURN d.DepartmentName, d.DepartmentType, COUNT(DISTINCT pat) AS PatientCount
 ORDER BY PatientCount DESC
 
-# 10. Wards with no patients (anti-pattern detection)
+/* 10. Wards with no patients (anti-pattern detection) */
 MATCH (w:Ward)
 OPTIONAL MATCH (w)-[:WardHasPatient]->(pat:Patient)
 WHERE pat IS NULL
 RETURN w.WardName, w.WardType, w.BedCount
 ORDER BY w.BedCount DESC
 
-# 11. Physician workload: patients per physician's department
+/* 11. Physician workload: patients per physician's department */
 MATCH (d:Department)-[:DepartmentHasPhysician]->(p:Physician)
 MATCH (d)-[:DepartmentHasWard]->(w:Ward)-[:WardHasPatient]->(pat:Patient)
 RETURN p.PhysicianName, p.Specialty, d.DepartmentName, COUNT(DISTINCT pat) AS PatientLoad
 ORDER BY PatientLoad DESC
 
-# 12. ICU device inventory with full hierarchy (4-hop)
+/* 12. ICU device inventory with full hierarchy (4-hop) */
 MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)
 WHERE w.WardType = 'ICU'
 RETURN h.HospitalName, d.DepartmentName, w.WardName, dev.DeviceName, dev.DeviceType, dev.Manufacturer
 ORDER BY h.HospitalName, w.WardName
 
-# 13. Nurse-to-patient ratio by ward
+/* 13. Nurse-to-patient ratio by ward */
 MATCH (w:Ward)-[:WardHasNurse]->(n:Nurse)
 MATCH (w)-[:WardHasPatient]->(pat:Patient)
 WHERE pat.Status = 'Admitted'
 RETURN w.WardName, w.WardType, COUNT(DISTINCT n) AS NurseCount, COUNT(DISTINCT pat) AS PatientCount
 ORDER BY w.WardName
+
+/* 14. Medication administration frequency by route */
+MATCH (ma:MedicationAdmin)-[:AdminForPatient]->(pat:Patient)
+MATCH (ma)-[:AdminOfMedication]->(med:Medication)
+RETURN med.MedicationName, med.Category, ma.Route, COUNT(ma) AS AdminCount
+ORDER BY AdminCount DESC
+
+/* 15. Lab result trends by test type */
+MATCH (lr:LabResult)-[:LabForPatient]->(pat:Patient)
+MATCH (lr)-[:LabOrderedBy]->(phy:Physician)
+RETURN lr.TestType, lr.Interpretation, COUNT(lr) AS ResultCount, AVG(lr.ResultValue) AS AvgValue
+ORDER BY ResultCount DESC
+
+/* 16. Ward bed occupancy analysis */
+MATCH (w:Ward)-[:WardHasPatient]->(pat:Patient)
+WHERE pat.Status = 'Admitted'
+RETURN w.WardName, w.WardType, w.BedCount, COUNT(pat) AS OccupiedBeds
+ORDER BY OccupiedBeds DESC
+
+/* 17. Physician procedure performance */
+MATCH (proc:Procedure)-[:ProcedureByPhysician]->(phy:Physician)
+RETURN phy.PhysicianName, phy.Specialty, COUNT(proc) AS ProcedureCount, AVG(proc.DurationMinutes) AS AvgDuration
+ORDER BY ProcedureCount DESC
+
+/* 18. Medical device calibration status per ward */
+MATCH (w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)
+RETURN w.WardName, dev.DeviceName, dev.DeviceType, dev.LastCalibrationDate, COUNT(s) AS SensorCount
+ORDER BY dev.LastCalibrationDate
+
+/* 19. Cross-department physician assignments with patient load */
+MATCH (d:Department)-[:DepartmentHasPhysician]->(phy:Physician)
+OPTIONAL MATCH (proc:Procedure)-[:ProcedureByPhysician]->(phy)
+RETURN d.DepartmentName, phy.PhysicianName, phy.Specialty, COUNT(proc) AS Procedures
+ORDER BY d.DepartmentName, Procedures DESC
+
+/* 20. Full care chain: hospital to sensor readings */
+MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)
+RETURN h.HospitalName, d.DepartmentName, w.WardName, dev.DeviceName, s.SensorName, s.SensorType, s.Unit
+ORDER BY h.HospitalName, d.DepartmentName, w.WardName

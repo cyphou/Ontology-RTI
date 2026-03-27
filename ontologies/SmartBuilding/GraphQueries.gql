@@ -176,3 +176,79 @@ RETURN t.EquipmentType AS EquipmentType,
        t.Description AS Description
 ORDER BY t.CostUSD DESC
 LIMIT 20
+
+
+/* ===== Query 14: Elevator Status per Building ===== */
+
+MATCH (b:Building)-[:HAS_ELEVATOR]->(e:Elevator)
+RETURN b.BuildingName AS Building,
+       e.ElevatorName AS Elevator,
+       e.MaxFloors AS MaxFloors,
+       e.CapacityLbs AS Capacity,
+       e.Status AS Status
+ORDER BY b.BuildingName
+
+/* ===== Query 15: Energy Meter Readings per Building ===== */
+
+MATCH (b:Building)-[:HAS_ENERGY_METER]->(em:EnergyMeter)
+RETURN b.BuildingName AS Building,
+       em.MeterName AS Meter,
+       em.MeterType AS MeterType,
+       em.Unit AS Unit,
+       em.Status AS Status
+ORDER BY b.BuildingName
+
+/* ===== Query 16: Zones with No Sensors (gap detection) ===== */
+
+MATCH (z:Zone)
+WHERE NOT EXISTS { MATCH (z)-[:ZONE_HAS_SENSOR]->(:Sensor) }
+RETURN z.ZoneName AS Zone,
+       z.ZoneType AS ZoneType,
+       z.AreaSqFt AS Area,
+       z.MaxOccupancy AS MaxOccupancy
+
+/* ===== Query 17: Full Building Asset Chain (4-hop) ===== */
+
+MATCH (b:Building)-[:HAS_FLOOR]->(f:Floor)-[:HAS_ZONE]->(z:Zone)-[:ZONE_HAS_SENSOR]->(s:Sensor)
+RETURN b.BuildingName AS Building,
+       f.FloorName AS Floor,
+       z.ZoneName AS Zone,
+       s.SensorName AS Sensor,
+       s.SensorType AS SensorType,
+       s.Status AS SensorStatus
+ORDER BY b.BuildingName, f.FloorNumber, z.ZoneName
+LIMIT 50
+
+/* ===== Query 18: Maintenance Cost by Building ===== */
+
+MATCH (t:MaintenanceTicket)-[:TICKET_IN_BUILDING]->(b:Building)
+WHERE t.Status = 'Resolved'
+RETURN b.BuildingName AS Building,
+       COUNT(t) AS TicketCount,
+       SUM(t.CostUSD) AS TotalCost,
+       AVG(t.DurationHours) AS AvgDuration
+ORDER BY TotalCost DESC
+
+/* ===== Query 19: HVAC Systems with High Capacity by Zone ===== */
+
+MATCH (z:Zone)-[:ZONE_HAS_HVAC]->(hvac:HVACSystem)
+WHERE hvac.CapacityBTU > 50000
+RETURN z.ZoneName AS Zone,
+       hvac.SystemName AS HVACSystem,
+       hvac.SystemType AS Type,
+       hvac.CapacityBTU AS Capacity,
+       hvac.Status AS Status
+ORDER BY hvac.CapacityBTU DESC
+
+/* ===== Query 20: Multi-System Zone Summary ===== */
+
+MATCH (z:Zone)
+OPTIONAL MATCH (z)-[:ZONE_HAS_SENSOR]->(s:Sensor)
+OPTIONAL MATCH (z)-[:ZONE_HAS_HVAC]->(hvac:HVACSystem)
+OPTIONAL MATCH (z)-[:HAS_ACCESS_POINT]->(ap:AccessPoint)
+RETURN z.ZoneName AS Zone,
+       z.ZoneType AS ZoneType,
+       COUNT(DISTINCT s) AS Sensors,
+       COUNT(DISTINCT hvac) AS HVACSystems,
+       COUNT(DISTINCT ap) AS AccessPoints
+ORDER BY z.ZoneName

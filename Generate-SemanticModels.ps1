@@ -7,6 +7,7 @@
     TMDL (Tabular Model Definition Language) files for Direct Lake semantic
     models. Includes per-domain measures, relationships, and column type mapping.
 
+    Supports 6 domains: SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine, Healthcare.
     Output: ontologies/<Domain>/SemanticModel/ folder per domain.
 
 .EXAMPLE
@@ -14,7 +15,7 @@
     .\Generate-SemanticModels.ps1 -Domain SmartBuilding
 #>
 param(
-    [ValidateSet("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","All")]
+    [ValidateSet("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare","All")]
     [string]$Domain = "All"
 )
 
@@ -47,6 +48,11 @@ $numericColumns = @{
         "MinThreshold","MaxThreshold","YearsExperience","Latitude","Longitude",
         "WindSpeedMs","PowerOutputKW","CapacityFactor","RotorRPM","PitchAngleDeg","YawAngleDeg",
         "GridFrequencyHz","DurationHours","CostUSD","Value","Threshold","Hour"
+    )
+    "Healthcare" = @(
+        "BedCapacity","TierLevel","BedCount","Floor","NurseStations","UnitCost",
+        "YearsExperience","MinThreshold","MaxThreshold","ResultValue","DurationMinutes",
+        "Dosage","Value"
     )
 }
 
@@ -113,6 +119,25 @@ $relationships = @{
         @{Name="factmaintenanceevent_TechnicianId_dimtechnician"; From="factmaintenanceevent.TechnicianId"; To="dimtechnician.TechnicianId"}
         @{Name="sensortelemetry_TurbineId_dimturbine"; From="sensortelemetry.TurbineId"; To="dimturbine.TurbineId"; Inactive=$true}
         @{Name="sensortelemetry_SensorId_dimsensor"; From="sensortelemetry.SensorId"; To="dimsensor.SensorId"; Inactive=$true}
+    )
+    "Healthcare" = @(
+        @{Name="dimdepartment_HospitalId_dimhospital"; From="dimdepartment.HospitalId"; To="dimhospital.HospitalId"}
+        @{Name="dimward_DepartmentId_dimdepartment"; From="dimward.DepartmentId"; To="dimdepartment.DepartmentId"}
+        @{Name="dimphysician_DepartmentId_dimdepartment"; From="dimphysician.DepartmentId"; To="dimdepartment.DepartmentId"; Inactive=$true}
+        @{Name="dimnurse_WardId_dimward"; From="dimnurse.WardId"; To="dimward.WardId"}
+        @{Name="dimpatient_WardId_dimward"; From="dimpatient.WardId"; To="dimward.WardId"; Inactive=$true}
+        @{Name="dimmedicaldevice_WardId_dimward"; From="dimmedicaldevice.WardId"; To="dimward.WardId"; Inactive=$true}
+        @{Name="dimsensor_DeviceId_dimmedicaldevice"; From="dimsensor.DeviceId"; To="dimmedicaldevice.DeviceId"}
+        @{Name="factlabresult_PatientId_dimpatient"; From="factlabresult.PatientId"; To="dimpatient.PatientId"}
+        @{Name="factlabresult_PhysicianId_dimphysician"; From="factlabresult.PhysicianId"; To="dimphysician.PhysicianId"; Inactive=$true}
+        @{Name="factprocedure_PatientId_dimpatient"; From="factprocedure.PatientId"; To="dimpatient.PatientId"; Inactive=$true}
+        @{Name="factprocedure_PhysicianId_dimphysician"; From="factprocedure.PhysicianId"; To="dimphysician.PhysicianId"; Inactive=$true}
+        @{Name="factmedicationadmin_PatientId_dimpatient"; From="factmedicationadmin.PatientId"; To="dimpatient.PatientId"; Inactive=$true}
+        @{Name="factmedicationadmin_MedicationId_dimmedication"; From="factmedicationadmin.MedicationId"; To="dimmedication.MedicationId"}
+        @{Name="factmedicationadmin_NurseId_dimnurse"; From="factmedicationadmin.NurseId"; To="dimnurse.NurseId"; Inactive=$true}
+        @{Name="bridgewarddevice_WardId_dimward"; From="bridgewarddevice.WardId"; To="dimward.WardId"; Inactive=$true}
+        @{Name="bridgewarddevice_DeviceId_dimmedicaldevice"; From="bridgewarddevice.DeviceId"; To="dimmedicaldevice.DeviceId"; Inactive=$true}
+        @{Name="sensortelemetry_DeviceId_dimmedicaldevice"; From="sensortelemetry.DeviceId"; To="dimmedicaldevice.DeviceId"; Inactive=$true}
     )
 }
 
@@ -327,6 +352,58 @@ $measures = @{
             @{Name="Telemetry Count"; DAX="COUNTROWS(sensortelemetry)"; Format=$null}
         )
     }
+    "Healthcare" = @{
+        "dimhospital" = @(
+            @{Name="Hospital Count"; DAX="COUNTROWS(dimhospital)"; Format=$null}
+            @{Name="Total Bed Capacity"; DAX="SUM(dimhospital[BedCapacity])"; Format="#,0"}
+        )
+        "dimdepartment" = @(
+            @{Name="Department Count"; DAX="COUNTROWS(dimdepartment)"; Format=$null}
+            @{Name="Total Department Beds"; DAX="SUM(dimdepartment[BedCount])"; Format="#,0"}
+        )
+        "dimward" = @(
+            @{Name="Ward Count"; DAX="COUNTROWS(dimward)"; Format=$null}
+            @{Name="Total Ward Beds"; DAX="SUM(dimward[BedCount])"; Format="#,0"}
+        )
+        "dimphysician" = @(
+            @{Name="Physician Count"; DAX="COUNTROWS(dimphysician)"; Format=$null}
+            @{Name="Avg Physician Experience"; DAX="AVERAGE(dimphysician[YearsExperience])"; Format="#,0.0"}
+        )
+        "dimnurse" = @(
+            @{Name="Nurse Count"; DAX="COUNTROWS(dimnurse)"; Format=$null}
+            @{Name="Avg Nurse Experience"; DAX="AVERAGE(dimnurse[YearsExperience])"; Format="#,0.0"}
+        )
+        "dimpatient" = @(
+            @{Name="Patient Count"; DAX="COUNTROWS(dimpatient)"; Format=$null}
+        )
+        "dimmedicaldevice" = @(
+            @{Name="Medical Device Count"; DAX="COUNTROWS(dimmedicaldevice)"; Format=$null}
+        )
+        "dimmedication" = @(
+            @{Name="Medication Count"; DAX="COUNTROWS(dimmedication)"; Format=$null}
+            @{Name="Avg Medication Unit Cost"; DAX="AVERAGE(dimmedication[UnitCost])"; Format="$#,0.00"}
+        )
+        "dimsensor" = @(
+            @{Name="Sensor Count"; DAX="COUNTROWS(dimsensor)"; Format=$null}
+        )
+        "factlabresult" = @(
+            @{Name="Lab Result Count"; DAX="COUNTROWS(factlabresult)"; Format=$null}
+            @{Name="Avg Result Value"; DAX="AVERAGE(factlabresult[ResultValue])"; Format="#,0.00"}
+        )
+        "factprocedure" = @(
+            @{Name="Procedure Count"; DAX="COUNTROWS(factprocedure)"; Format=$null}
+            @{Name="Avg Procedure Duration Min"; DAX="AVERAGE(factprocedure[DurationMinutes])"; Format="#,0.0"}
+        )
+        "factmedicationadmin" = @(
+            @{Name="Medication Admin Count"; DAX="COUNTROWS(factmedicationadmin)"; Format=$null}
+        )
+        "bridgewarddevice" = @(
+            @{Name="Ward-Device Mappings"; DAX="COUNTROWS(bridgewarddevice)"; Format=$null}
+        )
+        "sensortelemetry" = @(
+            @{Name="Telemetry Count"; DAX="COUNTROWS(sensortelemetry)"; Format=$null}
+        )
+    }
 }
 
 # ============================================================================
@@ -338,6 +415,7 @@ $descriptions = @{
     "ManufacturingPlant" = "Direct Lake semantic model for Manufacturing Plant ontology - 12 tables with plant, production, quality, and maintenance analysis"
     "ITAsset"            = "Direct Lake semantic model for IT Asset Management ontology - 12 tables with datacenter, server, application, and incident analysis"
     "WindTurbine"        = "Direct Lake semantic model for Wind Turbine ontology - 13 tables with turbine, power output, weather, and maintenance analysis"
+    "Healthcare"         = "Direct Lake semantic model for Healthcare ontology - 14 tables with hospital, patient, physician, procedure, and lab analysis"
 }
 
 # LineageTag prefix per domain
@@ -346,6 +424,7 @@ $lineagePrefixes = @{
     "ManufacturingPlant" = 30000000
     "ITAsset"            = 40000000
     "WindTurbine"        = 50000000
+    "Healthcare"         = 60000000
 }
 
 # ============================================================================
@@ -487,7 +566,7 @@ function New-TableTmdl {
 # MAIN GENERATION LOOP
 # ============================================================================
 
-$domainsToProcess = if ($Domain -eq "All") { @("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine") } else { @($Domain) }
+$domainsToProcess = if ($Domain -eq "All") { @("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare") } else { @($Domain) }
 $totalFiles = 0
 
 foreach ($domainName in $domainsToProcess) {

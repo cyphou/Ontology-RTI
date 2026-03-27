@@ -55,7 +55,7 @@ function Invoke-KustoMgmt {
 
 for ($w = 1; $w -le 6; $w++) { try { Invoke-KustoMgmt -Command ".show database" | Out-Null; break } catch { Start-Sleep -Seconds 15 } }
 
-# ── CREATE TABLES ───────────────────────────────────────────────────────────
+# Ã¢â€â‚¬Ã¢â€â‚¬ CREATE TABLES Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 1] Creating KQL tables..." -ForegroundColor Cyan
 
 $tables = @(
@@ -71,15 +71,15 @@ foreach ($t in $tables) {
     catch { Write-Host "  [WARN] $($t.Name): $_" -ForegroundColor Yellow }
 }
 
-# ── Enable streaming ingestion policies ─────────────────────────────────────
+# Ã¢â€â‚¬Ã¢â€â‚¬ Enable streaming ingestion policies Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 1b] Enabling streaming ingestion policies..." -ForegroundColor Cyan
 foreach ($t in $tables) {
     try { Invoke-KustoMgmt -Command ".alter table $($t.Name) policy streamingingestion '{`"IsEnabled`": true}'" -Description "Streaming on $($t.Name)..." | Out-Null; Write-Host "  [OK] $($t.Name) streaming enabled" -ForegroundColor Green }
     catch { Write-Host "  [WARN] $($t.Name) streaming policy: $_" -ForegroundColor Yellow }
 }
 
-# ── ENRICH SensorTelemetry → SensorReading ──────────────────────────────────
-Write-Host "`n[Step 2] Enriching SensorTelemetry → SensorReading..." -ForegroundColor Cyan
+# Ã¢â€â‚¬Ã¢â€â‚¬ ENRICH SensorTelemetry Ã¢â€ â€™ SensorReading Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+Write-Host "`n[Step 2] Enriching SensorTelemetry Ã¢â€ â€™ SensorReading..." -ForegroundColor Cyan
 
 $sensorLookup = @{}
 Import-Csv -Path (Join-Path $DataFolder "DimSensor.csv") | ForEach-Object {
@@ -99,11 +99,11 @@ foreach ($row in $telemetry) {
 }
 for ($i = 0; $i -lt $lines.Count; $i += 50) {
     $batch = $lines[$i..([Math]::Min($i + 49, $lines.Count - 1))]
-    try { Invoke-KustoMgmt -Command ".ingest inline into table SensorReading with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch {}
+    try { Invoke-KustoMgmt -Command ".ingest inline into table SensorReading with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $(    try { Invoke-KustoMgmt -Command ".ingest inline into table SensorReading with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $($_.Exception.Message)" }.Exception.Message)" }
 }
 Write-Host "  [OK] SensorReading ($($lines.Count) rows)" -ForegroundColor Green
 
-# ── INGEST PlantAlert ───────────────────────────────────────────────────────
+# Ã¢â€â‚¬Ã¢â€â‚¬ INGEST PlantAlert Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 3] Ingesting PlantAlert sample data..." -ForegroundColor Cyan
 
 $alertData = @(
@@ -126,7 +126,7 @@ $alertData = @(
 try { Invoke-KustoMgmt -Command ".ingest inline into table PlantAlert with (format='csv') <|`n$($alertData -join "`n")" -Description "Ingesting 15 PlantAlert rows..." | Out-Null; Write-Host "  [OK] PlantAlert (15 rows)" -ForegroundColor Green }
 catch { Write-Host "  [WARN] PlantAlert: $_" -ForegroundColor Yellow }
 
-# ── INGEST ProductionMetric ─────────────────────────────────────────────────
+# Ã¢â€â‚¬Ã¢â€â‚¬ INGEST ProductionMetric Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 4] Ingesting ProductionMetric sample data..." -ForegroundColor Cyan
 
 $prodData = @(
@@ -154,7 +154,7 @@ $prodData = @(
 try { Invoke-KustoMgmt -Command ".ingest inline into table ProductionMetric with (format='csv') <|`n$($prodData -join "`n")" -Description "Ingesting 20 ProductionMetric rows..." | Out-Null; Write-Host "  [OK] ProductionMetric (20 rows)" -ForegroundColor Green }
 catch { Write-Host "  [WARN] ProductionMetric: $_" -ForegroundColor Yellow }
 
-# ── INGEST MachineHealth ────────────────────────────────────────────────────
+# Ã¢â€â‚¬Ã¢â€â‚¬ INGEST MachineHealth Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 5] Ingesting MachineHealth sample data..." -ForegroundColor Cyan
 
 $healthData = @(
@@ -187,7 +187,7 @@ $healthData = @(
 try { Invoke-KustoMgmt -Command ".ingest inline into table MachineHealth with (format='csv') <|`n$($healthData -join "`n")" -Description "Ingesting 25 MachineHealth rows..." | Out-Null; Write-Host "  [OK] MachineHealth (25 rows)" -ForegroundColor Green }
 catch { Write-Host "  [WARN] MachineHealth: $_" -ForegroundColor Yellow }
 
-# ── INGEST QualityMetric ────────────────────────────────────────────────────
+# Ã¢â€â‚¬Ã¢â€â‚¬ INGEST QualityMetric Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 6] Ingesting QualityMetric sample data..." -ForegroundColor Cyan
 
 $qualityData = @(

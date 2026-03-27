@@ -69,7 +69,7 @@ try {
 if ($dashboardId) {
     $updateBody = @{definition=@{parts=@(@{path="RealTimeDashboard.json";payload=$dashB64;payloadType="InlineBase64"})}} | ConvertTo-Json -Depth 10
     foreach ($ep in @("$apiBase/workspaces/$WorkspaceId/kqlDashboards/$dashboardId/updateDefinition","$apiBase/workspaces/$WorkspaceId/items/$dashboardId/updateDefinition")) {
-        try { $r=Invoke-WebRequest -Uri $ep -Method POST -Headers $headers -Body $updateBody -UseBasicParsing; if ($r.StatusCode -in @(200,202)) { Write-Host "[OK] Dashboard definition applied." -ForegroundColor Green; break } } catch {}
+        try { $r=Invoke-WebRequest -Uri $ep -Method POST -Headers $headers -Body $updateBody -UseBasicParsing; if ($r.StatusCode -in @(200,202)) { Write-Host "[OK] Dashboard definition applied." -ForegroundColor Green; break } } catch { Write-Warning "Dashboard endpoint failed: $($_.Exception.Message)" }
     }
 }
 
