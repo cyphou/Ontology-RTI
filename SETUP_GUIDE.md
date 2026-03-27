@@ -79,7 +79,7 @@ The fastest way to deploy any domain --- a single command creates all Fabric ite
 ```mermaid
 flowchart LR
     A["PowerShell\nDeploy-Ontology.ps1"] --> B["Login\nConnect-AzAccount"]
-    B --> C["Select Domain\n5 industries"]
+    B --> C["Select Domain\n6 industries"]
     C --> D["Deploy All\n8 Fabric items"]
     D --> E["Validate\nPost-deploy check"]
 
@@ -119,6 +119,7 @@ $headers = @{ "Authorization" = "Bearer $token" }
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ManufacturingPlant
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType WindTurbine
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType Healthcare
 
 # Skip optional components (useful for lower-SKU capacity)
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset -SkipDataAgent -SkipDashboard -SkipOperationsAgent
@@ -184,6 +185,7 @@ If you prefer to create items manually (or as a learning exercise), follow the s
 | <img src="assets/icons/manufacturing.svg" width="18"/> Manufacturing | 12 | DimPlant, DimMachine, DimSensor, FactProductionBatch, SensorTelemetry |
 | <img src="assets/icons/it-asset.svg" width="18"/> IT Asset | 12 | DimServer, DimRack, DimApplication, FactIncident, SensorTelemetry |
 | <img src="assets/icons/wind-turbine.svg" width="18"/> Wind Turbine | 13 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
+| <img src="assets/icons/healthcare.svg" width="18"/> Healthcare | 14 | DimHospital, DimWard, DimPatient, DimPhysician, SensorTelemetry |
 
 > [!WARNING]
 > Do **NOT** upload `SensorTelemetry.csv` to the lakehouse. This file goes to the **Eventhouse** (Step 5).
@@ -271,6 +273,7 @@ Each domain has 5 KQL tables:
 | :factory: Manufacturing | SensorReading | PlantAlert | ProductionMetric | MachineHealth | QualityMetric |
 | :desktop_computer: IT Asset | ServerMetric | InfraAlert | ApplicationHealth | NetworkMetric | IncidentMetric |
 | :wind_face: Wind Turbine | TurbineReading | TurbineAlert | PowerOutputMetric | WeatherMetric | MaintenanceMetric |
+| :hospital: Healthcare | PatientVitals | ClinicalAlert | LabMetric | MedicationEvent | DeviceReading |
 
 </details>
 

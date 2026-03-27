@@ -61,12 +61,22 @@ deploy/
   Deploy-DataAgent.ps1         # Data Agent (F64+)
   Deploy-OperationsAgent.ps1   # Operations Agent
   Deploy-GraphQuerySet.ps1     # Graph Query Set
+  Deploy-Eventstream.ps1       # Eventstream deployer
+  Deploy-BulkImport.ps1        # Bulk entity import
+  Send-TelemetrySimulator.ps1  # Real-time event simulator
+  New-OntologyDomain.ps1       # Domain scaffolding wizard
+  Validate-Deployment.ps1      # Post-deploy validation (9 item types)
+  Build-GraphModel-v2.ps1      # Graph model builder
   LoadDataToTables.py          # PySpark notebook source
   SemanticModel/               # TMDL definition files
 ontologies/
+  OilGasRefinery/              # Oil & Gas Refinery domain
   SmartBuilding/               # Smart Building domain
   ManufacturingPlant/          # Manufacturing Plant domain
   ITAsset/                     # IT Asset Management domain
   WindTurbine/                 # Wind Turbine domain
-data/                          # Oil & Gas CSV data (original)
+  Healthcare/                  # Healthcare domain
+.github/
+  workflows/ci.yml             # GitHub Actions CI pipeline
+  agents/                      # 7 Copilot agent definitions
 ```

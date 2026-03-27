@@ -1,6 +1,21 @@
-# Ontology Diagram - Oil & Gas Refinery
+# Ontology Diagrams — All 6 Domains
 
-## Entity-Relationship Model (Mermaid)
+## Domain Overview
+
+| Domain | Entity Types | Relationships | KQL Tables |
+|--------|:-----------:|:------------:|:----------:|
+| Oil & Gas Refinery | 13 | 17 | 5 |
+| Smart Building | 12 | 11 | 5 |
+| Manufacturing Plant | 11 | 11 | 5 |
+| IT Asset Management | 11 | 10 | 5 |
+| Wind Turbine | 12 | 12 | 5 |
+| Healthcare | 9 | 7 | 5 |
+
+---
+
+## Oil & Gas Refinery
+
+### Entity-Relationship Model (Mermaid)
 
 ```mermaid
 graph TB
@@ -268,4 +283,177 @@ SafetyAlarm ──(N)────(1)──> Sensor          "Alarms are raised b
 MaintenanceEvent ──(N)────(1)──> Equipment  "Maintenance targets equipment"
 MaintenanceEvent ──(N)────(1)──> Employee   "Maintenance performed by employee"
 Employee ──(N)────(1)──> Refinery           "Employees assigned to a refinery"
+```
+
+---
+
+## Smart Building
+
+```mermaid
+graph TB
+    subgraph Infrastructure
+        BLD[Building]
+        FLR[Floor]
+        ZN[Zone]
+    end
+    subgraph Systems
+        HVAC[HVAC]
+        LGT[Lighting]
+        ELV[Elevator]
+        EM[EnergyMeter]
+    end
+    subgraph Monitoring
+        SN[Sensor]
+        AP[AccessPoint]
+        AL[Alert]
+    end
+    BLD -->|has| FLR
+    FLR -->|contains| ZN
+    ZN -->|equippedWith| HVAC
+    ZN -->|equippedWith| LGT
+    ZN -->|has| SN
+    BLD -->|has| ELV
+    SN -->|triggers| AL
+    style BLD fill:#0078D4,color:#fff
+    style FLR fill:#0078D4,color:#fff
+    style ZN fill:#0078D4,color:#fff
+```
+
+---
+
+## Manufacturing Plant
+
+```mermaid
+graph TB
+    subgraph PlantFloor
+        PLT[Plant]
+        LN[ProductionLine]
+        MC[Machine]
+    end
+    subgraph Production
+        PRD[Product]
+        MAT[Material]
+        BATCH[ProductionBatch]
+    end
+    subgraph Quality
+        QC[QualityCheck]
+        SN[Sensor]
+        AL[Alert]
+    end
+    PLT -->|has| LN
+    LN -->|contains| MC
+    MC -->|monitored_by| SN
+    BATCH -->|produces| PRD
+    BATCH -->|uses| MAT
+    QC -->|checks| BATCH
+    SN -->|triggers| AL
+    style PLT fill:#107C10,color:#fff
+    style LN fill:#107C10,color:#fff
+    style MC fill:#107C10,color:#fff
+```
+
+---
+
+## IT Asset Management
+
+```mermaid
+graph TB
+    subgraph Infra
+        DC[DataCenter]
+        RK[Rack]
+        SRV[Server]
+        VM[VirtualMachine]
+    end
+    subgraph Software
+        APP[Application]
+        DB[Database]
+        LIC[License]
+    end
+    subgraph Ops
+        NET[NetworkDevice]
+        INC[Incident]
+    end
+    DC -->|contains| RK
+    RK -->|hosts| SRV
+    SRV -->|runs| VM
+    VM -->|hosts| APP
+    APP -->|uses| DB
+    INC -->|affects| SRV
+    style DC fill:#FF6F00,color:#fff
+    style RK fill:#FF6F00,color:#fff
+    style SRV fill:#FF6F00,color:#fff
+```
+
+---
+
+## Wind Turbine
+
+```mermaid
+graph TB
+    subgraph Fleet
+        WF[WindFarm]
+        WT[Turbine]
+        NC[Nacelle]
+        BL[Blade]
+        TW[Tower]
+    end
+    subgraph Electrical
+        TR[Transformer]
+        PO[PowerOutput]
+    end
+    subgraph Mon[Monitoring]
+        SN[Sensor]
+        WS[WeatherStation]
+        AL[Alert]
+    end
+    subgraph MntOps[Operations]
+        TN[Technician]
+        ME[MaintenanceEvent]
+    end
+    WF -->|contains| WT
+    WT -->|has| NC
+    WT -->|has| BL
+    WT -->|has| TW
+    WT -->|monitored_by| SN
+    WF -->|has| WS
+    WF -->|has| TR
+    PO -->|generated_by| WT
+    AL -->|affects| WT
+    ME -->|performed_on| WT
+    ME -->|performed_by| TN
+    style WF fill:#00897B,color:#fff
+    style WT fill:#00897B,color:#fff
+```
+
+---
+
+## Healthcare
+
+```mermaid
+graph TB
+    subgraph Facility
+        HOS[Hospital]
+        DEP[Department]
+        WRD[Ward]
+    end
+    subgraph Staff
+        PHY[Physician]
+        NRS[Nurse]
+    end
+    subgraph PatientCare[Patient Care]
+        PAT[Patient]
+        MED[Medication]
+        DEV[MedicalDevice]
+        SN[Sensor]
+    end
+    HOS -->|has| DEP
+    DEP -->|contains| WRD
+    WRD -->|admits| PAT
+    WRD -->|staffedBy| NRS
+    WRD -->|equippedWith| DEV
+    DEV -->|monitored_by| SN
+    PHY -->|assignedTo| DEP
+    style HOS fill:#D32F2F,color:#fff
+    style DEP fill:#D32F2F,color:#fff
+    style WRD fill:#D32F2F,color:#fff
 ```

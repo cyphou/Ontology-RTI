@@ -17,7 +17,7 @@
 
 ## :globe_with_meridians: Overview
 
-This project uses a **multi-agent architecture** with 7 specialized GitHub Copilot agents and a shared instruction set. Each agent has deep expertise in a specific phase of ontology design and deployment.
+This project uses a **multi-agent architecture** with 7 specialized GitHub Copilot agents and a shared instruction set. Each agent has deep expertise in a specific phase of ontology design and deployment across **6 industry domains**: Oil & Gas Refinery, Smart Building, Manufacturing Plant, IT Asset Management, Wind Turbine, and Healthcare.
 
 ```mermaid
 flowchart TB

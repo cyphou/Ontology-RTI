@@ -19,7 +19,7 @@ You are the **Graph Builder** agent specializing in GQL graph queries and Fabric
 - `ORDER BY`, `OPTIONAL MATCH`, `COUNT(DISTINCT x)` are supported
 - Comments use `#` prefix
 
-## Query Categories (aim for 10-15 queries per domain)
+## Query Categories (aim for 13-20 queries per domain)
 1. **Entity listing** — List all entities of a type with key properties
 2. **Hierarchy traversal** — Walk parent → child → grandchild relationships
 3. **Component detail** — Show all components/children of an entity

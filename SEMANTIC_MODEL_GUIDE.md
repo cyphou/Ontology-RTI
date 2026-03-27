@@ -11,7 +11,7 @@
 <h1 align="center">:triangular_ruler: Semantic Model Guide</h1>
 
 <p align="center">
-  <b>Power BI semantic model configuration for all 5 ontology domains</b>
+  <b>Power BI semantic model configuration for all 6 ontology domains</b>
 </p>
 
 > [!TIP]
@@ -271,6 +271,36 @@ Key relationships:
 - `dimsensor.TurbineId` :arrow_right: `dimturbine.TurbineId`
 - `factpoweroutput.TurbineId` :arrow_right: `dimturbine.TurbineId`
 - `factmaintenanceevent.TurbineId` :arrow_right: `dimturbine.TurbineId`
+
+</details>
+
+---
+
+## :hospital: Healthcare Model
+
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**9 entity types** | **17 relationships** | **Snowflake schema**
+
+Key relationships:
+- `dimdepartment.HospitalId` :arrow_right: `dimhospital.HospitalId`
+- `dimward.DepartmentId` :arrow_right: `dimdepartment.DepartmentId`
+- `dimphysician.DepartmentId` :arrow_right: `dimdepartment.DepartmentId`
+- `dimnurse.WardId` :arrow_right: `dimward.WardId`
+- `dimpatient.WardId` :arrow_right: `dimward.WardId`
+- `dimmedicaldevice.WardId` :arrow_right: `dimward.WardId`
+- `dimsensor.DeviceId` :arrow_right: `dimmedicaldevice.DeviceId`
+- `factlabresult.PatientId` :arrow_right: `dimpatient.PatientId`
+- `factlabresult.PhysicianId` :arrow_right: `dimphysician.PhysicianId`
+- `factprocedure.PatientId` :arrow_right: `dimpatient.PatientId`
+- `factprocedure.PhysicianId` :arrow_right: `dimphysician.PhysicianId`
+- `factmedicationadmin.PatientId` :arrow_right: `dimpatient.PatientId`
+- `factmedicationadmin.MedicationId` :arrow_right: `dimmedication.MedicationId`
+- `factmedicationadmin.NurseId` :arrow_right: `dimnurse.NurseId`
+- `bridgewarddevice.WardId` :arrow_right: `dimward.WardId`
+- `bridgewarddevice.DeviceId` :arrow_right: `dimmedicaldevice.DeviceId`
+- `sensortelemetry.SensorId` :arrow_right: `dimsensor.SensorId`
 
 </details>
 

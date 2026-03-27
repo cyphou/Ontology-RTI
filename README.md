@@ -11,14 +11,14 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/domains-5%20industries-742774?style=flat-square" alt="5 Domains"/>
-  <img src="https://img.shields.io/badge/entity%20types-59-blue?style=flat-square" alt="59 Entity Types"/>
-  <img src="https://img.shields.io/badge/CSV%20tables-64-green?style=flat-square" alt="64 Tables"/>
-  <img src="https://img.shields.io/badge/sample%20rows-2%2C800%2B-orange?style=flat-square" alt="2800+ Rows"/>
-  <img src="https://img.shields.io/badge/KQL%20tables-25-0078D4?style=flat-square" alt="25 KQL Tables"/>
-  <img src="https://img.shields.io/badge/dashboard%20tiles-52-0078D4?style=flat-square" alt="52 Tiles"/>
-  <img src="https://img.shields.io/badge/GQL%20queries-100%2B-107C10?style=flat-square" alt="GQL Queries"/>
-  <img src="https://img.shields.io/badge/AI%20agents-10-FF6F00?style=flat-square" alt="AI Agents"/>
+  <img src="https://img.shields.io/badge/domains-6%20industries-742774?style=flat-square" alt="6 Domains"/>
+  <img src="https://img.shields.io/badge/entity%20types-68-blue?style=flat-square" alt="68 Entity Types"/>
+  <img src="https://img.shields.io/badge/CSV%20tables-78-green?style=flat-square" alt="78 Tables"/>
+  <img src="https://img.shields.io/badge/sample%20rows-3%2C100%2B-orange?style=flat-square" alt="3100+ Rows"/>
+  <img src="https://img.shields.io/badge/KQL%20tables-30-0078D4?style=flat-square" alt="30 KQL Tables"/>
+  <img src="https://img.shields.io/badge/dashboard%20tiles-62-0078D4?style=flat-square" alt="62 Tiles"/>
+  <img src="https://img.shields.io/badge/GQL%20queries-113%2B-107C10?style=flat-square" alt="GQL Queries"/>
+  <img src="https://img.shields.io/badge/AI%20agents-12-FF6F00?style=flat-square" alt="AI Agents"/>
   <img src="https://img.shields.io/badge/copilot%20agents-7-5391FE?style=flat-square" alt="7 Copilot Agents"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
 </p>
@@ -38,9 +38,9 @@
 ```mermaid
 flowchart LR
     subgraph Input["Package"]
-        CSV["CSV Data\n64 tables"]
-        ONT["Ontology\n59 entity types"]
-        GQL["GQL Queries\n100+ queries"]
+        CSV["CSV Data\n78 tables"]
+        ONT["Ontology\n68 entity types"]
+        GQL["GQL Queries\n113+ queries"]
     end
 
     CMD["Deploy-Ontology.ps1"] --> LH["Lakehouse\nDelta Tables"]
@@ -75,7 +75,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 
 <table>
 <tr>
-<td width="20%" align="center">
+<td width="16%" align="center">
 <img src="assets/icons/oil-gas.svg" width="80" alt="Oil & Gas"/>
 
 ### Oil & Gas
@@ -84,7 +84,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 445 rows
 
 </td>
-<td width="20%" align="center">
+<td width="16%" align="center">
 <img src="assets/icons/smart-building.svg" width="80" alt="Smart Building"/>
 
 ### Smart Building
@@ -93,7 +93,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 498 rows
 
 </td>
-<td width="20%" align="center">
+<td width="16%" align="center">
 <img src="assets/icons/manufacturing.svg" width="80" alt="Manufacturing"/>
 
 ### Manufacturing
@@ -102,7 +102,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 444 rows
 
 </td>
-<td width="20%" align="center">
+<td width="16%" align="center">
 <img src="assets/icons/it-asset.svg" width="80" alt="IT Asset"/>
 
 ### IT Asset
@@ -111,13 +111,22 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 381 rows
 
 </td>
-<td width="20%" align="center">
+<td width="16%" align="center">
 <img src="assets/icons/wind-turbine.svg" width="80" alt="Wind Turbine"/>
 
 ### Wind Turbine
 **Wind Farm**
 12 entities · 13 CSVs
 651 rows
+
+</td>
+<td width="16%" align="center">
+<img src="assets/icons/healthcare.svg" width="80" alt="Healthcare"/>
+
+### Healthcare
+**Hospital Ops**
+9 entities · 14 CSVs
+260 rows
 
 </td>
 </tr>
@@ -127,6 +136,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 <td><sub>Plants, production lines, machines, quality checks, materials, batches, OEE</sub></td>
 <td><sub>Datacenters, racks, servers, VMs, applications, incidents, licenses</sub></td>
 <td><sub>Wind farms, turbines, nacelles, blades, towers, power output, weather stations</sub></td>
+<td><sub>Hospitals, departments, wards, physicians, nurses, patients, devices, medications</sub></td>
 </tr>
 </table>
 ---
@@ -151,6 +161,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
   |    [3]  Manufacturing Plant                                   |
   |    [4]  IT Asset Management                                   |
   |    [5]  Wind Turbine / Wind Farm                              |
+  |    [6]  Healthcare                                            |
   |                                                               |
   +==============================================================+
 ```
@@ -160,7 +171,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 ```powershell
 # Deploy a specific domain
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType SmartBuilding
-.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType WindTurbine
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType Healthcare
 
 # Skip optional components
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset -SkipDataAgent -SkipDashboard
@@ -233,7 +244,6 @@ OntologyAccelerator/
 |-- SEMANTIC_MODEL_GUIDE.md                  <-- Power BI model configuration
 |-- AGENTS.md                                <-- Multi-agent architecture
 |-- DEVELOPMENT_PLAN.md                      <-- Sprint roadmap
-|-- Enrich-SampleData.ps1                    <-- Data enrichment tool
 |
 |-- Deploy-Ontology.ps1                      <-- Multi-domain entry point
 |-- Deploy-OilGasOntology.ps1                <-- Original single-domain script
@@ -248,30 +258,29 @@ OntologyAccelerator/
 |   |-- Deploy-RTIDashboard.ps1              <-- Dashboard deployer (fallback)
 |   |-- Deploy-DataAgent.ps1                 <-- Data Agent deployer (fallback)
 |   |-- Deploy-OperationsAgent.ps1           <-- Operations Agent deployer (fallback)
-|   |-- LoadDataToTables.py                  <-- PySpark notebook template
+|   |-- Deploy-BulkImport.ps1               <-- Bulk entity import
+|   |-- Send-TelemetrySimulator.ps1          <-- Real-time event simulator
+|   |-- New-OntologyDomain.ps1               <-- Domain scaffolding wizard
 |   |-- Validate-Deployment.ps1              <-- Post-deploy validation
+|   |-- LoadDataToTables.py                  <-- PySpark notebook template
 |   +-- SemanticModel/                       <-- TMDL semantic model (Direct Lake)
 |
 |-- ontologies/
 |   |-- OilGasRefinery/                      <-- Oil & Gas domain
-|   |   |-- Build-Ontology.ps1
-|   |   |-- GraphQueries.gql
-|   |   |-- Deploy-KqlTables.ps1             <-- Domain-specific KQL
-|   |   |-- Deploy-RTIDashboard.ps1          <-- Domain-specific dashboard
-|   |   |-- Deploy-DataAgent.ps1             <-- Domain-specific AI agent
-|   |   |-- Deploy-OperationsAgent.ps1       <-- Domain-specific ops agent
-|   |   +-- data/ (14 CSVs)
-|   |-- SmartBuilding/                       <-- Smart Building domain  
+|   |-- SmartBuilding/                       <-- Smart Building domain
 |   |-- ManufacturingPlant/                  <-- Manufacturing domain
 |   |-- ITAsset/                             <-- IT Asset domain
-|   +-- WindTurbine/                         <-- Wind Turbine domain
+|   |-- WindTurbine/                         <-- Wind Turbine domain
+|   +-- Healthcare/                          <-- Healthcare domain
 |       +-- (same structure per domain)
+|
+|-- .github/
+|   |-- workflows/ci.yml                     <-- GitHub Actions CI pipeline
+|   +-- agents/                              <-- 7 Copilot agent definitions
+|       +-- shared.instructions.md
 |
 |-- diagrams/
 |   +-- ontology_diagram.md
-|
-+-- .github/agents/                          <-- 7 Copilot agent definitions
-    +-- shared.instructions.md
 ```
 
 ### :arrows_counterclockwise: Domain Script Resolution
@@ -534,13 +543,57 @@ graph TB
 **Dashboard:** 10 tiles (power output, capacity factor, wind vs power scatter, icing risk, weather)
 
 </details>
+
+<details>
+<summary><h3>:hospital: Healthcare</h3></summary>
+
+**9 entity types** | **7 relationships** | **14 CSVs** | **260 rows**
+
+```mermaid
+graph TB
+    subgraph Facility["Facility"]
+        HOS["Hospital"]
+        DEP["Department"]
+        WRD["Ward"]
+    end
+
+    subgraph Staff["Staff"]
+        PHY["Physician"]
+        NRS["Nurse"]
+    end
+
+    subgraph Patients["Patient Care"]
+        PAT["Patient"]
+        MED["Medication"]
+        DEV["MedicalDevice"]
+        SN["Sensor"]
+    end
+
+    HOS -->|has| DEP
+    DEP -->|contains| WRD
+    WRD -->|admits| PAT
+    WRD -->|staffedBy| NRS
+    WRD -->|equippedWith| DEV
+    DEV -->|monitored_by| SN
+    PHY -->|assignedTo| DEP
+
+    style HOS fill:#D32F2F,color:#fff
+    style DEP fill:#D32F2F,color:#fff
+    style WRD fill:#D32F2F,color:#fff
+```
+
+**KQL Tables:** PatientVitals | ClinicalAlert | LabMetric | MedicationEvent | DeviceReading
+
+**Dashboard:** 10 tiles (patient vitals, clinical alerts, lab results, medication timeline, device status)
+
+</details>
 ---
 
 ## :bar_chart: KQL Real-Time Dashboards
 
 <p align="center">
-  <img src="https://img.shields.io/badge/total%20tiles-52-0078D4?style=for-the-badge" alt="52 tiles"/>
-  <img src="https://img.shields.io/badge/KQL%20tables-25-742774?style=for-the-badge" alt="25 KQL tables"/>
+  <img src="https://img.shields.io/badge/total%20tiles-62-0078D4?style=for-the-badge" alt="62 tiles"/>
+  <img src="https://img.shields.io/badge/KQL%20tables-30-742774?style=for-the-badge" alt="30 KQL tables"/>
   <img src="https://img.shields.io/badge/auto--refresh-30s-107C10?style=for-the-badge" alt="30s refresh"/>
 </p>
 
@@ -553,6 +606,7 @@ Each domain deploys its own RTI dashboard with domain-specific KQL queries:
 | :factory: Manufacturing | `ManufacturingDashboard` | 10 | OEE bars, machine health, defect trends |
 | :desktop_computer: IT Asset | `ITAssetDashboard` | 10 | CPU/memory lines, app health, incident resolution |
 | :wind_face: Wind Turbine | `WindTurbineDashboard` | 10 | Power output, wind-power scatter, icing risk |
+| :hospital: Healthcare | `HealthcareDashboard` | 10 | Patient vitals, clinical alerts, lab results, device status |
 
 ---
 
@@ -581,8 +635,8 @@ Each domain includes **20 GQL queries** covering:
 ## :robot: AI Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Data%20Agents-5-FF6F00?style=for-the-badge" alt="5 Data Agents"/>
-  <img src="https://img.shields.io/badge/Operations%20Agents-5-742774?style=for-the-badge" alt="5 Ops Agents"/>
+  <img src="https://img.shields.io/badge/Data%20Agents-6-FF6F00?style=for-the-badge" alt="6 Data Agents"/>
+  <img src="https://img.shields.io/badge/Operations%20Agents-6-742774?style=for-the-badge" alt="6 Ops Agents"/>
   <img src="https://img.shields.io/badge/Microsoft%20Teams-6264A7?style=for-the-badge&logo=microsoftteams&logoColor=white" alt="Teams"/>
 </p>
 
@@ -609,6 +663,7 @@ flowchart LR
 | :factory: Manufacturing | :white_check_mark: | :white_check_mark: | Production efficiency - Machine health - Quality - Safety - Maintenance |
 | :desktop_computer: IT Asset | :white_check_mark: | :white_check_mark: | Server health - App performance - Network - Incidents - Capacity |
 | :wind_face: Wind Turbine | :white_check_mark: | :white_check_mark: | Turbine performance - Predictive maintenance - Weather - Grid - Fleet |
+| :hospital: Healthcare | :white_check_mark: | :white_check_mark: | Patient vitals - Clinical alerts - Lab monitoring - Medication safety - Device management |
 
 ---
 
@@ -654,6 +709,12 @@ Agents auto-activate based on the file you are editing. See [AGENTS.md](AGENTS.m
 
 ## :clipboard: Adding a New Domain
 
+> [!TIP]
+> Use the scaffolding wizard to generate the full domain skeleton:
+> ```powershell
+> .\deploy\New-OntologyDomain.ps1 -DomainName "SmartAgriculture" -DisplayName "Smart Agriculture" -Entities "Farm,Field,Crop,Sensor"
+> ```
+
 ```mermaid
 flowchart LR
     A["1 Create folder\nontologies/Domain/"] --> B["2 Add CSVs\ndata/*.csv"]
@@ -670,6 +731,25 @@ flowchart LR
 2. Add domain-specific: `Deploy-KqlTables.ps1`, `Deploy-RTIDashboard.ps1`, `Deploy-DataAgent.ps1`, `Deploy-OperationsAgent.ps1`
 3. Add domain entry to `$domains` hashtable in `Deploy-Ontology.ps1`
 4. Run `.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType <DomainName>`
+
+---
+
+## :toolbox: Additional Tools
+
+| Script | Description |
+|--------|-------------|
+| `deploy\Send-TelemetrySimulator.ps1` | Sends real-time events to Eventstream (6 domain-specific generators) |
+| `deploy\Deploy-BulkImport.ps1` | Batch-imports Lakehouse data into ontology entities |
+| `deploy\New-OntologyDomain.ps1` | Scaffolds a new domain with template files |
+| `deploy\Validate-Deployment.ps1` | Post-deploy validation of all 9 Fabric item types |
+
+**Service Principal Authentication:**
+```powershell
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType Healthcare `
+    -ClientId "app-id" -ClientSecret "secret" -TenantId "tenant-id"
+```
+
+**CI Pipeline:** Automated validation on push/PR via [GitHub Actions](.github/workflows/ci.yml) — validates folder structure, CSV headers, GQL syntax, PowerShell/Python compilation, and domain registry.
 
 ---
 

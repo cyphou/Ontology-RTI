@@ -12,7 +12,7 @@
 .PARAMETER WorkspaceId
     The Fabric workspace GUID.
 .PARAMETER OntologyType
-    Domain key: OilGasRefinery, SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine.
+    Domain key: OilGasRefinery, SmartBuilding, ManufacturingPlant, ITAsset, WindTurbine, Healthcare.
 .PARAMETER EventstreamName
     Display name (auto-derived from OntologyType if omitted).
 .PARAMETER KqlDatabaseId
@@ -35,6 +35,7 @@ $domainConfig = @{
     ManufacturingPlant = @{ Name = "PlantTelemetryStream";        EH = "PlantTelemetryEH";        Table = "SensorReading" }
     ITAsset            = @{ Name = "ITTelemetryStream";           EH = "ITTelemetryEH";           Table = "ServerMetric" }
     WindTurbine        = @{ Name = "WindTelemetryStream";         EH = "WindTelemetryEH";         Table = "TurbineReading" }
+    Healthcare         = @{ Name = "HealthcareTelemetryStream";  EH = "HealthcareTelemetryEH";   Table = "PatientVitals" }
 }
 
 $config = $domainConfig[$OntologyType]

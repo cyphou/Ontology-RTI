@@ -37,7 +37,7 @@ SensorTelemetry
 ```
 
 ## Tile Layout
-- Aim for 12 tiles arranged in a 3×4 or 4×3 grid
+- Aim for 10-12 tiles arranged in a 3×4 or 4×3 grid
 - Top row: KPI stats (count, latest, min/max)
 - Middle rows: time series charts, bar/pie charts
 - Bottom row: detailed table, alerts table
