@@ -31,8 +31,8 @@
 #>
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
-    [Parameter(Mandatory=$false)] [string]$EventhouseId  = "eebfbc02-b985-4b6e-8530-8ae2a2a6166b",
-    [Parameter(Mandatory=$false)] [string]$KqlDatabaseId = "734b6c9e-a93f-4992-b709-2ae257a1df5f",
+    [Parameter(Mandatory=$false)] [string]$EventhouseId,
+    [Parameter(Mandatory=$false)] [string]$KqlDatabaseId,
     [Parameter(Mandatory=$false)] [string]$AgentName     = "RefineryOperationsAgent"
 )
 
@@ -43,6 +43,28 @@ $headers = @{
     "Content-Type"  = "application/json"
 }
 $apiBase = "https://api.fabric.microsoft.com/v1"
+
+# ── Auto-detect Eventhouse/KQL Database if not provided ─────────────────────
+if (-not $EventhouseId -or -not $KqlDatabaseId) {
+    Write-Host "[Auto-detect] Looking up Eventhouse and KQL Database in workspace..." -ForegroundColor Yellow
+    try {
+        $kqlDbs = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/kqlDatabases" -Headers $headers).value
+        if ($kqlDbs -and $kqlDbs.Count -gt 0) {
+            $kqlDb = $kqlDbs | Select-Object -First 1
+            if (-not $KqlDatabaseId) { $KqlDatabaseId = $kqlDb.id; Write-Host "  Found KQL Database: $($kqlDb.displayName) ($KqlDatabaseId)" -ForegroundColor Green }
+            if (-not $EventhouseId -and $kqlDb.properties -and $kqlDb.properties.parentEventhouseItemId) {
+                $EventhouseId = $kqlDb.properties.parentEventhouseItemId
+                Write-Host "  Found Eventhouse: $EventhouseId" -ForegroundColor Green
+            }
+        }
+        if (-not $EventhouseId) {
+            $ehs = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/eventhouses" -Headers $headers).value
+            if ($ehs -and $ehs.Count -gt 0) { $EventhouseId = $ehs[0].id; Write-Host "  Found Eventhouse: $($ehs[0].displayName) ($EventhouseId)" -ForegroundColor Green }
+        }
+    } catch {
+        Write-Host "  [WARN] Auto-detect failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
 
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Cyan

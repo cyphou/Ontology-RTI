@@ -307,6 +307,38 @@ Each domain has 5 KQL tables:
 
 ---
 
+## :robot: Operations Agent — Manual Configuration
+
+> [!IMPORTANT]
+> The Operations Agent is created and configured with goals and instructions automatically,
+> but **Knowledge Sources and Actions** must be set up manually in the Fabric UI.
+> The `dataSources` API is not yet publicly supported for Operations Agents.
+
+### After Deployment
+
+1. **Open** the agent in Fabric:
+   `https://app.fabric.microsoft.com/groups/<WorkspaceId>/operationsagents/<AgentId>`
+
+2. **Knowledge Source** — click *Knowledge source* in the Agent setup page:
+   - Select the domain Eventhouse (e.g., `RefineryTelemetryEH`)
+   - Select the KQL Database (auto-discovered from the Eventhouse)
+   - The agent will discover tables: `SensorTelemetry`, `Fact*`, `Dim*`
+
+3. **Actions** (optional) — add Power Automate flow triggers:
+   - *Send Safety Alert* — triggers on Critical/High alarm severity
+   - *Create Maintenance Work Order* — triggers on equipment failure patterns
+   - *Escalate Production Issue* — triggers on yield/throughput drops
+
+4. **Save** the agent to generate the playbook, then click **Start**
+
+5. **Teams** — install the *Fabric Operations Agent* app in Microsoft Teams to receive proactive recommendations
+
+> [!NOTE]
+> This limitation applies to all 6 domains. The deployment script auto-detects the Eventhouse
+> and KQL Database IDs from the workspace — no hardcoded GUIDs required.
+
+---
+
 <p align="center">
   <a href="README.md">:arrow_left: Back to README</a> ---
   <a href="SEMANTIC_MODEL_GUIDE.md">Semantic Model Guide :arrow_right:</a>

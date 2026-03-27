@@ -4,6 +4,8 @@
 #>
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
+    [Parameter(Mandatory=$false)] [string]$EventhouseId,
+    [Parameter(Mandatory=$false)] [string]$KqlDatabaseId,
     [Parameter(Mandatory=$false)] [string]$AgentName = "ITAssetOpsAgent"
 )
 
@@ -12,6 +14,28 @@ $headers = @{ "Authorization" = "Bearer $token"; "Content-Type" = "application/j
 $apiBase = "https://api.fabric.microsoft.com/v1"
 
 Write-Host "=== Deploying Operations Agent: $AgentName ===" -ForegroundColor Cyan
+
+# ── Auto-detect Eventhouse/KQL Database if not provided ─────────────────────
+if (-not $EventhouseId -or -not $KqlDatabaseId) {
+    Write-Host "[Auto-detect] Looking up Eventhouse and KQL Database in workspace..." -ForegroundColor Yellow
+    try {
+        $kqlDbs = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/kqlDatabases" -Headers $headers).value
+        if ($kqlDbs -and $kqlDbs.Count -gt 0) {
+            $kqlDb = $kqlDbs | Select-Object -First 1
+            if (-not $KqlDatabaseId) { $KqlDatabaseId = $kqlDb.id; Write-Host "  Found KQL Database: $($kqlDb.displayName) ($KqlDatabaseId)" -ForegroundColor Green }
+            if (-not $EventhouseId -and $kqlDb.properties -and $kqlDb.properties.parentEventhouseItemId) {
+                $EventhouseId = $kqlDb.properties.parentEventhouseItemId
+                Write-Host "  Found Eventhouse: $EventhouseId" -ForegroundColor Green
+            }
+        }
+        if (-not $EventhouseId) {
+            $ehs = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/eventhouses" -Headers $headers).value
+            if ($ehs -and $ehs.Count -gt 0) { $EventhouseId = $ehs[0].id; Write-Host "  Found Eventhouse: $($ehs[0].displayName) ($EventhouseId)" -ForegroundColor Green }
+        }
+    } catch {
+        Write-Host "  [WARN] Auto-detect failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
 
 $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
 $existing = $allItems | Where-Object { $_.displayName -eq $AgentName }

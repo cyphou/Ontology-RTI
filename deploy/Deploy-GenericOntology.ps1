@@ -36,85 +36,15 @@ $FabricApiBase = "https://api.fabric.microsoft.com/v1"
 $OneLakeBase = "https://onelake.dfs.fabric.microsoft.com"
 
 # ============================================================================
-# HELPER FUNCTIONS (same as Deploy-OilGasOntology.ps1)
+# SHARED HELPERS (dot-sourced from helpers.ps1)
 # ============================================================================
+# Propagate SPN credentials to script-scope vars used by Get-FabricToken in helpers.ps1
+$script:ClientId     = $ClientId
+$script:ClientSecret = $ClientSecret
+$script:TenantId     = $TenantId
+$script:FabricApiBase = $FabricApiBase
 
-function Write-Step { param([string]$Message); Write-Host ""; Write-Host ("=" * 69) -ForegroundColor Cyan; Write-Host " $Message" -ForegroundColor Cyan; Write-Host ("=" * 69) -ForegroundColor Cyan }
-function Write-Info  { param([string]$Message); Write-Host "  [INFO] $Message" -ForegroundColor Gray }
-function Write-Success { param([string]$Message); Write-Host "  [OK]   $Message" -ForegroundColor Green }
-function Write-Warn  { param([string]$Message); Write-Host "  [WARN] $Message" -ForegroundColor Yellow }
-
-function Get-FabricToken {
-    if ($ClientId -and $ClientSecret -and $TenantId) {
-        $secPwd = ConvertTo-SecureString $ClientSecret -AsPlainText -Force
-        $cred = New-Object System.Management.Automation.PSCredential($ClientId, $secPwd)
-        Connect-AzAccount -ServicePrincipal -Credential $cred -TenantId $TenantId -ErrorAction Stop | Out-Null
-    }
-    try { $token = Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com"; return $token.Token }
-    catch { Write-Error "Failed to get Fabric token. Run 'Connect-AzAccount' first."; throw }
-}
-
-function Get-StorageToken {
-    try { $token = Get-AzAccessToken -ResourceTypeName Storage; return $token.Token }
-    catch { Write-Error "Failed to get Storage token."; throw }
-}
-
-function Invoke-FabricApi {
-    param([string]$Method, [string]$Uri, [object]$Body = $null, [string]$BodyJson = $null, [string]$Token, [int]$MaxRetries = 10)
-    $headers = @{ "Authorization" = "Bearer $Token"; "Content-Type" = "application/json" }
-    if (-not $BodyJson -and $Body) { $BodyJson = $Body | ConvertTo-Json -Depth 10 }
-    for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
-        try {
-            $params = @{ Method = $Method; Uri = $Uri; Headers = $headers; UseBasicParsing = $true }
-            if ($BodyJson) { $params["Body"] = $BodyJson }
-            $webResponse = Invoke-WebRequest @params
-            if ($webResponse.StatusCode -eq 202) {
-                $loc = $webResponse.Headers["Location"]
-                if (-not $loc) { $opId = $webResponse.Headers["x-ms-operation-id"]; if ($opId) { $loc = "$FabricApiBase/operations/$opId" } }
-                if ($loc) { return Wait-FabricOperation -OperationUrl $loc -Token $Token }
-                return $null
-            }
-            if ($webResponse.Content) { try { return $webResponse.Content | ConvertFrom-Json } catch { return $webResponse.Content } }
-            return $null
-        } catch {
-            $ex = $_.Exception; $sc = $null; $eb = ""
-            if ($ex.Response) { $sc = [int]$ex.Response.StatusCode; try { $sr = New-Object System.IO.StreamReader($ex.Response.GetResponseStream()); $eb = $sr.ReadToEnd(); $sr.Close() } catch {} }
-            $isRetriable = ($eb -like "*isRetriable*true*" -or $eb -like "*NotAvailableYet*")
-            if ($sc -eq 429 -or $isRetriable) {
-                $ra = if ($isRetriable) { 15 } else { 30 }
-                Write-Warn "Retriable ($sc). Retry after $ra`s (attempt $attempt/$MaxRetries)..."
-                Start-Sleep -Seconds $ra
-            } else { if ($eb) { throw "Fabric API error (HTTP $sc): $eb" }; throw }
-        }
-    }
-    throw "Max retries exceeded for $Uri"
-}
-
-function Wait-FabricOperation {
-    param([string]$OperationUrl, [string]$Token, [int]$TimeoutSeconds = 600, [int]$PollIntervalSeconds = 10)
-    $headers = @{ "Authorization" = "Bearer $Token" }; $elapsed = 0
-    while ($elapsed -lt $TimeoutSeconds) {
-        Start-Sleep -Seconds $PollIntervalSeconds; $elapsed += $PollIntervalSeconds
-        try {
-            $status = Invoke-RestMethod -Method Get -Uri $OperationUrl -Headers $headers
-            Write-Info "  Operation: $($status.status) ($elapsed`s)"
-            if ($status.status -eq "Succeeded") { return $status }
-            if ($status.status -eq "Failed") { throw "Fabric operation failed: $($status | ConvertTo-Json -Depth 5 -Compress)" }
-        } catch {
-            if ($_.Exception.Response -and [int]$_.Exception.Response.StatusCode -eq 429) { Start-Sleep -Seconds 30 } else { throw }
-        }
-    }
-    throw "Operation timed out after $TimeoutSeconds`s"
-}
-
-function Upload-FileToOneLake {
-    param([string]$LocalFilePath, [string]$OneLakePath, [string]$Token)
-    $fileBytes = [System.IO.File]::ReadAllBytes($LocalFilePath)
-    $fileName = [System.IO.Path]::GetFileName($LocalFilePath)
-    Invoke-RestMethod -Method Put -Uri "${OneLakePath}/${fileName}?resource=file" -Headers @{ Authorization = "Bearer $Token"; "Content-Length" = "0" } | Out-Null
-    Invoke-RestMethod -Method Patch -Uri "${OneLakePath}/${fileName}?action=append&position=0" -Headers @{ Authorization = "Bearer $Token"; "Content-Type" = "application/octet-stream"; "Content-Length" = $fileBytes.Length.ToString() } -Body $fileBytes | Out-Null
-    Invoke-RestMethod -Method Patch -Uri "${OneLakePath}/${fileName}?action=flush&position=$($fileBytes.Length)" -Headers @{ Authorization = "Bearer $Token"; "Content-Length" = "0" } | Out-Null
-}
+. (Join-Path $scriptDir "helpers.ps1")
 
 # ============================================================================
 # MAIN DEPLOYMENT
@@ -579,7 +509,7 @@ if (-not $SkipOperationsAgent) {
     $opsScript = Join-Path $OntologyFolder "Deploy-OperationsAgent.ps1"
     if (-not (Test-Path $opsScript)) { $opsScript = Join-Path $scriptDir "Deploy-OperationsAgent.ps1" }
     if (Test-Path $opsScript) {
-        try { & $opsScript -WorkspaceId $WorkspaceId; Write-Success "Operations Agent deployed" }
+        try { & $opsScript -WorkspaceId $WorkspaceId -EventhouseId $eventhouseId; Write-Success "Operations Agent deployed" }
         catch { Write-Warn "Operations Agent issue: $_" }
     }
 } else { Write-Info "Skipping Operations Agent (--SkipOperationsAgent)" }
