@@ -249,6 +249,7 @@ if ($notebookId) {
             if ($udResp.StatusCode -eq 200) { $definitionApplied = $true }
             elseif ($udResp.StatusCode -eq 202) {
                 $udOpUrl = $udResp.Headers["Location"]
+                if ($udOpUrl -is [array]) { $udOpUrl = $udOpUrl[0] }
                 if ($udOpUrl) { for ($p = 1; $p -le 12; $p++) { Start-Sleep -Seconds 5; $poll = Invoke-RestMethod -Uri $udOpUrl -Headers @{Authorization = "Bearer $fabricToken"}; if ($poll.status -eq "Succeeded") { $definitionApplied = $true; break }; if ($poll.status -eq "Failed") { break } } }
             }
             if ($definitionApplied) { Write-Success "Notebook definition updated"; break }
@@ -432,7 +433,13 @@ Write-Step "Step 6: Creating Ontology '$OntologyName'"
 $ontologyId = $null
 try {
     $ont = Invoke-FabricApi -Method Post -Uri "$FabricApiBase/workspaces/$WorkspaceId/items" -Body @{ displayName = $OntologyName; type = "Ontology"; description = "$OntologyType ontology" } -Token $fabricToken
-    $ontologyId = $ont.id; Write-Success "Created: $ontologyId"
+    $ontologyId = $ont.id
+    # LRO result may not include item id — look up by name
+    if (-not $ontologyId) {
+        $ontItems = Invoke-FabricApi -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Ontology" -Token $fabricToken
+        $ontologyId = ($ontItems.value | Where-Object { $_.displayName -eq $OntologyName } | Select-Object -First 1).id
+    }
+    Write-Success "Created: $ontologyId"
 } catch {
     if ($_.Exception.Message -like "*ItemDisplayNameAlreadyInUse*" -or $_.Exception.Message -like "*already in use*") {
         $ontItems = Invoke-FabricApi -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Ontology" -Token $fabricToken

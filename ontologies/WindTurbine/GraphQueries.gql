@@ -102,12 +102,12 @@ ORDER BY TotalCost DESC
 
 /* 19. Power output trends by turbine model */
 MATCH (t:Turbine)-[:TurbineHasNacelle]->(n:Nacelle)
-MATCH (po:PowerOutput)-[:OutputFromTurbine]->(t)
+MATCH (po:PowerOutput)-[:PowerOutputFromTurbine]->(t)
 RETURN t.Model, n.GeneratorType, COUNT(po) AS Readings, AVG(po.PowerOutputKW) AS AvgPower, AVG(po.CapacityFactor) AS AvgCF
 ORDER BY AvgPower DESC
 
 /* 20. Multi-hop asset integrity: wind farm to sensor with alert count */
 MATCH (wf:WindFarm)-[:WindFarmHasTurbine]->(t:Turbine)-[:TurbineHasSensor]->(s:Sensor)
-OPTIONAL MATCH (al:Alert)-[:AlertFromSensor]->(s) WHERE al.Status = 'Active'
+OPTIONAL MATCH (al:Alert)-[:AlertOnTurbine]->(t) WHERE al.Status = 'Active'
 RETURN wf.WindFarmName, t.TurbineName, s.SensorName, s.SensorType, COUNT(al) AS ActiveAlerts
 ORDER BY ActiveAlerts DESC, wf.WindFarmName

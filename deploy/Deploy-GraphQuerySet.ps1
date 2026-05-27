@@ -97,16 +97,22 @@ if (Test-Path $gqlFile) {
     Write-Host "Parsing GQL queries from: $gqlFile" -ForegroundColor Yellow
     $gqlContent = [System.IO.File]::ReadAllText($gqlFile)
 
-    # Detect format: block-comment vs hash-comment
+    # Detect format: block-comment vs hash-comment vs simple block-comment
     $blockPattern = '/\*\s*=+\s*Query\s+(\d+)[:\s]*([^=]*?)\s*=+\s*\*/'
     $hashPattern  = '(?m)^#\s*(\d+)\.\s*(.+)$'
+    $simpleBlockPattern = '/\*\s*(\d+)\.\s*([^*]+?)\s*\*/'
     $blockMatches = [regex]::Matches($gqlContent, $blockPattern)
     $hashMatches  = [regex]::Matches($gqlContent, $hashPattern)
+    $simpleBlockMatches = [regex]::Matches($gqlContent, $simpleBlockPattern)
 
-    if ($blockMatches.Count -ge $hashMatches.Count -and $blockMatches.Count -gt 0) {
+    if ($blockMatches.Count -ge $hashMatches.Count -and $blockMatches.Count -ge $simpleBlockMatches.Count -and $blockMatches.Count -gt 0) {
         # Format A: /* ===== Query N: Title ===== */
         Write-Host "  Format: block-comment delimiters" -ForegroundColor Gray
         $allMatches = $blockMatches
+    } elseif ($simpleBlockMatches.Count -ge $hashMatches.Count -and $simpleBlockMatches.Count -gt 0) {
+        # Format C: /* N. Title */
+        Write-Host "  Format: simple block-comment delimiters" -ForegroundColor Gray
+        $allMatches = $simpleBlockMatches
     } elseif ($hashMatches.Count -gt 0) {
         # Format B: # N. Title
         Write-Host "  Format: hash-comment delimiters" -ForegroundColor Gray
@@ -174,6 +180,7 @@ try {
     }
     elseif ($response.StatusCode -eq 202) {
         $opUrl = $response.Headers['Location']
+        if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
         Write-Host "LRO started, polling..." -ForegroundColor Yellow
         do {
             Start-Sleep -Seconds 3
@@ -193,25 +200,25 @@ try {
     }
 }
 catch {
-    $sr = $_.Exception.Response
-    if ($sr) {
-        $stream = $sr.GetResponseStream()
-        $reader = New-Object System.IO.StreamReader($stream)
-        $errBody = $reader.ReadToEnd()
-        Write-Host "[ERROR] $([int]$sr.StatusCode): $errBody" -ForegroundColor Red
+    $errBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errBody = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message }
+    } else { $errBody = $_.Exception.Message }
 
-        if ($errBody -match 'ItemDisplayNameAlreadyInUse') {
-            Write-Host "  Graph Query Set '$QuerySetName' already exists. Will update definition..." -ForegroundColor Yellow
-            $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
-            $existing = $allItems | Where-Object { $_.displayName -eq $QuerySetName -and $_.type -eq 'GraphQuerySet' }
-            if ($existing) {
-                $gqsId = $existing.id
-                Write-Host "  Existing GQS ID: $gqsId" -ForegroundColor Gray
-            }
+    $sc = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    if ($sc) { Write-Host "[ERROR] $sc`: $errBody" -ForegroundColor Red }
+    else { Write-Host "[ERROR] $errBody" -ForegroundColor Red }
+
+    if ($errBody -match 'ItemDisplayNameAlreadyInUse') {
+        Write-Host "  Graph Query Set '$QuerySetName' already exists. Will update definition..." -ForegroundColor Yellow
+        $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
+        $existing = $allItems | Where-Object { $_.displayName -eq $QuerySetName -and $_.type -eq 'GraphQuerySet' }
+        if ($existing) {
+            $gqsId = $existing.id
+            Write-Host "  Existing GQS ID: $gqsId" -ForegroundColor Gray
         }
-    }
-    else {
-        Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
@@ -246,6 +253,7 @@ if ($gqsId -and $queries.Count -gt 0) {
             if ($updResp.StatusCode -in @(200, 202)) {
                 if ($updResp.StatusCode -eq 202) {
                     $opUrl = $updResp.Headers['Location']
+                    if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
                     Write-Host "  LRO started, polling..." -ForegroundColor Yellow
                     do {
                         Start-Sleep -Seconds 3

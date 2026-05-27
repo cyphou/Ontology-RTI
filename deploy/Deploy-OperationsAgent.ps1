@@ -108,6 +108,7 @@ if (-not $agentId) {
         elseif ($response.StatusCode -eq 202) {
             # LRO
             $opUrl = $response.Headers['Location']
+            if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
             Write-Host "  Provisioning (LRO)..." -ForegroundColor Yellow
             do {
                 Start-Sleep -Seconds 3
@@ -127,21 +128,22 @@ if (-not $agentId) {
         }
     }
     catch {
-        $sr = $_.Exception.Response
-        if ($sr) {
-            $stream  = $sr.GetResponseStream()
-            $reader  = New-Object System.IO.StreamReader($stream)
-            $errBody = $reader.ReadToEnd()
-            Write-Host "  [ERROR] $([int]$sr.StatusCode): $errBody" -ForegroundColor Red
+        $errBody = ""
+        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+            $errBody = $_.ErrorDetails.Message
+        } elseif ($_.Exception.Response) {
+            try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message }
+        } else { $errBody = $_.Exception.Message }
 
-            if ($errBody -match 'FeatureNotAvailable|ItemTypeNotSupportedInThisRegion') {
-                Write-Host ""
-                Write-Host "  >>> Operations Agent preview must be enabled by your Fabric admin." -ForegroundColor Magenta
-                Write-Host "  >>> Go to Admin Portal > Tenant settings > enable 'Operations Agent'" -ForegroundColor Magenta
-                Write-Host "  >>> Also enable 'Copilot and Azure OpenAI Service'" -ForegroundColor Magenta
-            }
-        } else {
-            Write-Host "  [ERROR] $($_.Exception.Message)" -ForegroundColor Red
+        $sc = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+        if ($sc) { Write-Host "  [ERROR] $sc`: $errBody" -ForegroundColor Red }
+        else { Write-Host "  [ERROR] $errBody" -ForegroundColor Red }
+
+        if ($errBody -match 'FeatureNotAvailable|ItemTypeNotSupportedInThisRegion') {
+            Write-Host ""
+            Write-Host "  >>> Operations Agent preview must be enabled by your Fabric admin." -ForegroundColor Magenta
+            Write-Host "  >>> Go to Admin Portal > Tenant settings > enable 'Operations Agent'" -ForegroundColor Magenta
+            Write-Host "  >>> Also enable 'Copilot and Azure OpenAI Service'" -ForegroundColor Magenta
         }
         exit 1
     }
@@ -233,6 +235,7 @@ try {
 
         if ($updateResp.StatusCode -eq 202) {
             $opUrl = $updateResp.Headers['Location']
+            if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
             do {
                 Start-Sleep -Seconds 3
                 $poll = Invoke-RestMethod -Uri $opUrl -Headers $headers
@@ -242,15 +245,14 @@ try {
     }
 }
 catch {
-    $sr = $_.Exception.Response
-    if ($sr) {
-        $stream = $sr.GetResponseStream()
-        $reader = New-Object System.IO.StreamReader($stream)
-        Write-Host "  [WARN] Definition update: $([int]$sr.StatusCode): $($reader.ReadToEnd())" -ForegroundColor Yellow
-        Write-Host "  Goals/instructions can be set manually in the Fabric UI." -ForegroundColor Yellow
-    } else {
-        Write-Host "  [WARN] $($_.Exception.Message)" -ForegroundColor Yellow
-    }
+    $errBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errBody = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message }
+    } else { $errBody = $_.Exception.Message }
+    Write-Host "  [WARN] Definition update: $errBody" -ForegroundColor Yellow
+    Write-Host "  Goals/instructions can be set manually in the Fabric UI." -ForegroundColor Yellow
 }
 
 # ── Step 4: Verify ─────────────────────────────────────────────────────────

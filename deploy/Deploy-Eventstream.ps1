@@ -168,6 +168,7 @@ try {
     }
     elseif ($response.StatusCode -eq 202) {
         $opUrl = $response.Headers['Location']
+        if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
         Write-Host "LRO started, polling..." -ForegroundColor Yellow
         do {
             Start-Sleep -Seconds 3
@@ -186,30 +187,33 @@ try {
     }
 }
 catch {
-    $sr = $_.Exception.Response
-    if ($sr) {
-        $stream = $sr.GetResponseStream()
-        $reader = New-Object System.IO.StreamReader($stream)
-        $errBody = $reader.ReadToEnd()
-        Write-Host "[ERROR] $([int]$sr.StatusCode): $errBody" -ForegroundColor Red
+    $errBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errBody = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message }
+    } else { $errBody = $_.Exception.Message }
 
-        if ($errBody -match 'ItemDisplayNameAlreadyInUse') {
-            Write-Host "  Eventstream '$EventstreamName' already exists." -ForegroundColor Yellow
+    $sc = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    if ($sc) { Write-Host "[ERROR] $sc`: $errBody" -ForegroundColor Red }
+    else { Write-Host "[ERROR] $errBody" -ForegroundColor Red }
+
+    if ($errBody -match 'ItemDisplayNameAlreadyInUse') {
+        Write-Host "  Eventstream '$EventstreamName' already exists." -ForegroundColor Yellow
+        try {
+            $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
             $existing = $allItems | Where-Object { $_.displayName -eq $EventstreamName -and $_.type -eq 'Eventstream' }
             if ($existing) {
                 $eventstreamId = $existing.id
                 Write-Host "  Existing Eventstream ID: $eventstreamId" -ForegroundColor Gray
             }
-        }
-        elseif ($errBody -match 'FeatureNotAvailable') {
-            Write-Host ""
-            Write-Host ">>> BLOCKED: The Eventstream tenant setting may be disabled." -ForegroundColor Magenta
-            Write-Host ">>> Ask your Fabric admin to enable it in:" -ForegroundColor Magenta
-            Write-Host ">>>   Admin Portal > Tenant settings > Real-Time Intelligence" -ForegroundColor Magenta
-        }
+        } catch {}
     }
-    else {
-        Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    elseif ($errBody -match 'FeatureNotAvailable') {
+        Write-Host ""
+        Write-Host ">>> BLOCKED: The Eventstream tenant setting may be disabled." -ForegroundColor Magenta
+        Write-Host ">>> Ask your Fabric admin to enable it in:" -ForegroundColor Magenta
+        Write-Host ">>>   Admin Portal > Tenant settings > Real-Time Intelligence" -ForegroundColor Magenta
     }
 }
 

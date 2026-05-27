@@ -468,6 +468,7 @@ try {
         Write-Host "Ontology updated immediately!"
     } elseif ($resp.StatusCode -eq 202) {
         $opUrl = $resp.Headers["Location"]
+        if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
         Write-Host "LRO: $opUrl"
         Write-Host "Waiting for completion..."
         $maxWait = 120; $waited = 0
@@ -490,12 +491,12 @@ try {
         }
     }
 } catch {
-    $sr = $_.Exception.Response
-    if ($sr) {
-        $stream = $sr.GetResponseStream()
-        $reader = New-Object System.IO.StreamReader($stream)
-        Write-Host "ERROR $([int]$sr.StatusCode): $($reader.ReadToEnd())"
-    } else {
-        Write-Host "ERROR: $($_.Exception.Message)"
-    }
+    $errBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errBody = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message }
+    } else { $errBody = $_.Exception.Message }
+    $sc = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    if ($sc) { Write-Host "ERROR $sc`: $errBody" } else { Write-Host "ERROR: $errBody" }
 }

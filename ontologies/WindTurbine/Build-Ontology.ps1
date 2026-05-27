@@ -22,8 +22,8 @@ $entityTypes += @{
         @{ id = "2003"; name = "Location"; valueType = "String" },
         @{ id = "2004"; name = "Latitude"; valueType = "Double" },
         @{ id = "2005"; name = "Longitude"; valueType = "Double" },
-        @{ id = "2006"; name = "TotalTurbines"; valueType = "BigInt" },
-        @{ id = "2007"; name = "InstalledCapacityMW"; valueType = "BigInt" },
+        @{ id = "2006"; name = "TotalTurbines"; valueType = "Double" },
+        @{ id = "2007"; name = "InstalledCapacityMW"; valueType = "Double" },
         @{ id = "2008"; name = "CommissionDate"; valueType = "String" },
         @{ id = "2009"; name = "Operator"; valueType = "String" },
         @{ id = "2010"; name = "Status"; valueType = "String" }
@@ -39,9 +39,9 @@ $entityTypes += @{
         @{ id = "2103"; name = "WindFarmId"; valueType = "String" },
         @{ id = "2104"; name = "Model"; valueType = "String" },
         @{ id = "2105"; name = "Manufacturer"; valueType = "String" },
-        @{ id = "2106"; name = "RatedCapacityKW"; valueType = "BigInt" },
-        @{ id = "2107"; name = "HubHeightM"; valueType = "BigInt" },
-        @{ id = "2108"; name = "RotorDiameterM"; valueType = "BigInt" },
+        @{ id = "2106"; name = "RatedCapacityKW"; valueType = "Double" },
+        @{ id = "2107"; name = "HubHeightM"; valueType = "Double" },
+        @{ id = "2108"; name = "RotorDiameterM"; valueType = "Double" },
         @{ id = "2109"; name = "CommissionDate"; valueType = "String" },
         @{ id = "2110"; name = "Status"; valueType = "String" }
     )
@@ -68,7 +68,7 @@ $entityTypes += @{
         @{ id = "2204"; name = "GeneratorType"; valueType = "String" },
         @{ id = "2205"; name = "GearboxType"; valueType = "String" },
         @{ id = "2206"; name = "CoolingSystem"; valueType = "String" },
-        @{ id = "2207"; name = "WeightTons"; valueType = "BigInt" },
+        @{ id = "2207"; name = "WeightTons"; valueType = "Double" },
         @{ id = "2208"; name = "LastInspectionDate"; valueType = "String" },
         @{ id = "2209"; name = "Status"; valueType = "String" }
     )
@@ -81,8 +81,8 @@ $entityTypes += @{
         @{ id = "2301"; name = "BladeId"; valueType = "String" },
         @{ id = "2302"; name = "BladeName"; valueType = "String" },
         @{ id = "2303"; name = "TurbineId"; valueType = "String" },
-        @{ id = "2304"; name = "BladePosition"; valueType = "BigInt" },
-        @{ id = "2305"; name = "LengthM"; valueType = "BigInt" },
+        @{ id = "2304"; name = "BladePosition"; valueType = "String" },
+        @{ id = "2305"; name = "LengthM"; valueType = "Double" },
         @{ id = "2306"; name = "Material"; valueType = "String" },
         @{ id = "2307"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2308"; name = "InstallDate"; valueType = "String" },
@@ -98,9 +98,9 @@ $entityTypes += @{
         @{ id = "2401"; name = "TowerId"; valueType = "String" },
         @{ id = "2402"; name = "TowerName"; valueType = "String" },
         @{ id = "2403"; name = "TurbineId"; valueType = "String" },
-        @{ id = "2404"; name = "HeightM"; valueType = "BigInt" },
+        @{ id = "2404"; name = "HeightM"; valueType = "Double" },
         @{ id = "2405"; name = "Material"; valueType = "String" },
-        @{ id = "2406"; name = "Sections"; valueType = "BigInt" },
+        @{ id = "2406"; name = "Sections"; valueType = "Double" },
         @{ id = "2407"; name = "FoundationType"; valueType = "String" },
         @{ id = "2408"; name = "InstallDate"; valueType = "String" },
         @{ id = "2409"; name = "Status"; valueType = "String" }
@@ -134,7 +134,7 @@ $entityTypes += @{
         @{ id = "2604"; name = "CertificationLevel"; valueType = "String" },
         @{ id = "2605"; name = "WindFarmId"; valueType = "String" },
         @{ id = "2606"; name = "Shift"; valueType = "String" },
-        @{ id = "2607"; name = "YearsExperience"; valueType = "BigInt" },
+        @{ id = "2607"; name = "YearsExperience"; valueType = "Double" },
         @{ id = "2608"; name = "Status"; valueType = "String" }
     )
     tableName = "dimtechnician"
@@ -148,7 +148,7 @@ $entityTypes += @{
         @{ id = "2703"; name = "WindFarmId"; valueType = "String" },
         @{ id = "2704"; name = "Latitude"; valueType = "Double" },
         @{ id = "2705"; name = "Longitude"; valueType = "Double" },
-        @{ id = "2706"; name = "ElevationM"; valueType = "BigInt" },
+        @{ id = "2706"; name = "ElevationM"; valueType = "Double" },
         @{ id = "2707"; name = "InstallDate"; valueType = "String" },
         @{ id = "2708"; name = "Status"; valueType = "String" }
     )
@@ -161,8 +161,8 @@ $entityTypes += @{
         @{ id = "2801"; name = "TransformerId"; valueType = "String" },
         @{ id = "2802"; name = "TransformerName"; valueType = "String" },
         @{ id = "2803"; name = "WindFarmId"; valueType = "String" },
-        @{ id = "2804"; name = "RatingMVA"; valueType = "BigInt" },
-        @{ id = "2805"; name = "VoltageKV"; valueType = "BigInt" },
+        @{ id = "2804"; name = "RatingMVA"; valueType = "Double" },
+        @{ id = "2805"; name = "VoltageKV"; valueType = "Double" },
         @{ id = "2806"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2807"; name = "InstallDate"; valueType = "String" },
         @{ id = "2808"; name = "LastServiceDate"; valueType = "String" },
@@ -196,7 +196,7 @@ $entityTypes += @{
         @{ id = "2951"; name = "OutputId"; valueType = "String" },
         @{ id = "2952"; name = "TurbineId"; valueType = "String" },
         @{ id = "2953"; name = "Date"; valueType = "String" },
-        @{ id = "2954"; name = "Hour"; valueType = "BigInt" },
+        @{ id = "2954"; name = "Hour"; valueType = "Double" },
         @{ id = "2955"; name = "WindSpeedMs"; valueType = "Double" },
         @{ id = "2956"; name = "PowerOutputKW"; valueType = "Double" },
         @{ id = "2957"; name = "CapacityFactor"; valueType = "Double" },
@@ -305,9 +305,14 @@ try {
     $resp = Invoke-WebRequest -Uri "https://api.fabric.microsoft.com/v1/workspaces/$WorkspaceId/items/$OntologyId/updateDefinition" -Method POST -Headers $headers -Body $bodyStr -UseBasicParsing
     if ($resp.StatusCode -eq 200) { Write-Host "Ontology updated!" }
     elseif ($resp.StatusCode -eq 202) {
-        $opUrl = $resp.Headers["Location"]; $maxWait = 120; $waited = 0
+        $opUrl = $resp.Headers["Location"]; if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
+        $maxWait = 120; $waited = 0
         while ($waited -lt $maxWait) { Start-Sleep -Seconds 10; $waited += 10; $poll = Invoke-RestMethod -Uri $opUrl -Headers @{ Authorization = "Bearer $FabricToken" }; if ($poll.status -in @("Succeeded","Failed")) { Write-Host "Result: $($poll.status) ($waited`s)"; break }; Write-Host "  Status: $($poll.status) ($waited`s)..." }
     }
 } catch {
-    $sr = $_.Exception.Response; if ($sr) { $stream = $sr.GetResponseStream(); $reader = New-Object System.IO.StreamReader($stream); Write-Host "ERROR $([int]$sr.StatusCode): $($reader.ReadToEnd())" } else { Write-Host "ERROR: $($_.Exception.Message)" }
+    $errBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $errBody = $_.ErrorDetails.Message }
+    elseif ($_.Exception.Response) { try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message } }
+    else { $errBody = $_.Exception.Message }
+    Write-Host "ERROR: $errBody" -ForegroundColor Red
 }

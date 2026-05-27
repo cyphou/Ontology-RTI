@@ -60,6 +60,7 @@ Write-Host "`n[Step 1] Creating KQL tables..." -ForegroundColor Cyan
 
 $tables = @(
     @{ Name = "TurbineReading"; Schema = "(TurbineId:string, FarmId:string, SensorId:string, SensorType:string, Timestamp:datetime, Value:real, Unit:string, Quality:string, IsAnomaly:bool)" },
+    @{ Name = "TurbineTelemetry"; Schema = "(TurbineId:string, Timestamp:datetime, WindSpeedMs:real, PowerOutputKW:real, RotorRPM:real, PitchAngleDeg:real, VibrationMmS:real, GeneratorTempC:real)" },
     @{ Name = "TurbineAlert"; Schema = "(AlertId:string, TurbineId:string, FarmId:string, Timestamp:datetime, AlertType:string, Severity:string, MetricValue:real, ThresholdValue:real, Component:string, Message:string, IsAcknowledged:bool)" },
     @{ Name = "PowerOutputMetric"; Schema = "(TurbineId:string, FarmId:string, Timestamp:datetime, WindSpeedMs:real, PowerOutputKW:real, CapacityFactor:real, RotorRPM:real, PitchAngleDeg:real, YawAngleDeg:real, GridFrequencyHz:real)" },
     @{ Name = "WeatherMetric"; Schema = "(StationId:string, FarmId:string, Timestamp:datetime, WindSpeedMs:real, WindDirectionDeg:real, TemperatureC:real, HumidityPct:real, PressureHPa:real, VisibilityKm:real, IcingRisk:bool)" },
@@ -84,7 +85,7 @@ Write-Host "`n[Step 2] Enriching SensorTelemetry Ã¢â€ â€™ TurbineRead
 # Wind Turbine telemetry: Timestamp,TurbineId,SensorId,SensorType,Value,Unit,Quality
 $turbineLookup = @{}
 $turbineCsv = Join-Path $DataFolder "DimTurbine.csv"
-if (Test-Path $turbineCsv) { Import-Csv -Path $turbineCsv | ForEach-Object { $turbineLookup[$_.TurbineId] = $_.FarmId } }
+if (Test-Path $turbineCsv) { Import-Csv -Path $turbineCsv | ForEach-Object { $turbineLookup[$_.TurbineId] = $_.WindFarmId } }
 
 $sensorLookup = @{}
 $sensorCsv = Join-Path $DataFolder "DimSensor.csv"
@@ -106,7 +107,38 @@ for ($i = 0; $i -lt $lines.Count; $i += 50) {
 }
 Write-Host "  [OK] TurbineReading ($($lines.Count) rows)" -ForegroundColor Green
 
-# Ã¢â€â‚¬Ã¢â€â‚¬ INGEST TurbineAlert Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ── PIVOT SensorTelemetry → TurbineTelemetry (wide format for ontology timeseries) ──
+Write-Host "`n[Step 2b] Pivoting SensorTelemetry → TurbineTelemetry (ontology timeseries)..." -ForegroundColor Cyan
+
+# Group telemetry by TurbineId+Timestamp, pivot SensorType into wide columns
+$telemetryGrouped = @{}
+foreach ($row in $telemetry) {
+    $key = "$($row.TurbineId)|$($row.Timestamp)"
+    if (-not $telemetryGrouped.ContainsKey($key)) {
+        $telemetryGrouped[$key] = @{ TurbineId = $row.TurbineId; Timestamp = $row.Timestamp; WindSpeed = 0; Power = 0; RPM = 0; Pitch = 0; Vibration = 0; Temp = 0 }
+    }
+    $val = [double]$row.Value
+    switch ($row.SensorType) {
+        "Anemometer"    { $telemetryGrouped[$key].WindSpeed = $val }
+        "CurrentSensor" { $telemetryGrouped[$key].Power = [math]::Round($val * 0.69, 1) }
+        "Tachometer"    { $telemetryGrouped[$key].RPM = $val }
+        "Pitch Angle"   { $telemetryGrouped[$key].Pitch = $val }
+        "Accelerometer" { $telemetryGrouped[$key].Vibration = $val }
+        "Temperature"   { $telemetryGrouped[$key].Temp = $val }
+        "Thermometer"   { if ($telemetryGrouped[$key].Temp -eq 0) { $telemetryGrouped[$key].Temp = $val } }
+    }
+}
+$ttLines = @()
+foreach ($entry in $telemetryGrouped.Values) {
+    $ttLines += "$($entry.TurbineId),$($entry.Timestamp),$($entry.WindSpeed),$($entry.Power),$($entry.RPM),$($entry.Pitch),$($entry.Vibration),$($entry.Temp)"
+}
+for ($i = 0; $i -lt $ttLines.Count; $i += 50) {
+    $batch = $ttLines[$i..([Math]::Min($i + 49, $ttLines.Count - 1))]
+    try { Invoke-KustoMgmt -Command ".ingest inline into table TurbineTelemetry with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "TurbineTelemetry batch ingest failed (non-fatal): $($_.Exception.Message)" }
+}
+Write-Host "  [OK] TurbineTelemetry ($($ttLines.Count) rows)" -ForegroundColor Green
+
+# ── INGEST TurbineAlert ──────────────────────────────────────────────────
 Write-Host "`n[Step 3] Ingesting TurbineAlert sample data..." -ForegroundColor Cyan
 
 $alertData = @(

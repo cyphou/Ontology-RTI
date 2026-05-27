@@ -125,9 +125,10 @@ if ($existing) {
     Write-Host "  Creating new Operations Agent..." -ForegroundColor Gray
     try {
         $resp = Invoke-WebRequest -Method Post -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers -Body $body -UseBasicParsing
-        if ($resp.StatusCode -eq 202 -and $resp.Headers["Location"]) {
-            $loc = $resp.Headers["Location"]; $retryAfter = if ($resp.Headers["Retry-After"]) { [int]$resp.Headers["Retry-After"] } else { 5 }
-            for ($i = 0; $i -lt 30; $i++) { Start-Sleep -Seconds $retryAfter; try { $poll = Invoke-RestMethod -Uri $loc -Headers $headers; if ($poll.status -eq "Succeeded") { break } } catch {} }
+        if ($resp.StatusCode -eq 202) {
+            $loc = $resp.Headers["Location"]; if ($loc -is [array]) { $loc = $loc[0] }
+            $ra = $resp.Headers["Retry-After"]; if ($ra -is [array]) { $ra = $ra[0] }; $retryAfter = if ($ra) { [int]$ra } else { 5 }
+            if ($loc) { for ($i = 0; $i -lt 30; $i++) { Start-Sleep -Seconds $retryAfter; try { $poll = Invoke-RestMethod -Uri $loc -Headers $headers; if ($poll.status -eq "Succeeded") { break } } catch {} } }
         }
         Write-Host "  [OK] Operations Agent created: $AgentName" -ForegroundColor Green
     } catch { Write-Host "  [ERROR] Agent creation: $_" -ForegroundColor Red }

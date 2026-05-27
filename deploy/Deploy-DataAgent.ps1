@@ -52,6 +52,7 @@ try {
     }
     elseif ($response.StatusCode -eq 202) {
         $opUrl = $response.Headers['Location']
+        if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
         Write-Host "LRO started, polling..." -ForegroundColor Yellow
         do {
             Start-Sleep -Seconds 3
@@ -79,26 +80,26 @@ try {
     }
 }
 catch {
-    $sr = $_.Exception.Response
-    if ($sr) {
-        $stream = $sr.GetResponseStream()
-        $reader = New-Object System.IO.StreamReader($stream)
-        $errBody = $reader.ReadToEnd()
-        Write-Host "[ERROR] $([int]$sr.StatusCode): $errBody" -ForegroundColor Red
+    $errBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errBody = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody = $sr.ReadToEnd(); $sr.Close() } catch { $errBody = $_.Exception.Message }
+    } else { $errBody = $_.Exception.Message }
 
-        if ($errBody -match 'UnsupportedCapacitySKU') {
-            Write-Host ""
-            Write-Host ">>> Data Agents require Fabric capacity F64 or higher." -ForegroundColor Magenta
-            Write-Host ">>> Current workspace is on Trial (FTL64) which is not supported." -ForegroundColor Magenta
-            Write-Host ">>> Move the workspace to an F64+ capacity and re-run this script." -ForegroundColor Magenta
-        }
-        elseif ($errBody -match 'FeatureNotAvailable') {
-            Write-Host ""
-            Write-Host ">>> The 'Data Agent' tenant setting must be enabled by your Fabric admin." -ForegroundColor Magenta
-        }
+    $sc = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    if ($sc) { Write-Host "[ERROR] $sc`: $errBody" -ForegroundColor Red }
+    else { Write-Host "[ERROR] $errBody" -ForegroundColor Red }
+
+    if ($errBody -match 'UnsupportedCapacitySKU') {
+        Write-Host ""
+        Write-Host ">>> Data Agents require Fabric capacity F64 or higher." -ForegroundColor Magenta
+        Write-Host ">>> Current workspace is on Trial (FTL64) which is not supported." -ForegroundColor Magenta
+        Write-Host ">>> Move the workspace to an F64+ capacity and re-run this script." -ForegroundColor Magenta
     }
-    else {
-        Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    elseif ($errBody -match 'FeatureNotAvailable') {
+        Write-Host ""
+        Write-Host ">>> The 'Data Agent' tenant setting must be enabled by your Fabric admin." -ForegroundColor Magenta
     }
     exit 1
 }
@@ -238,6 +239,7 @@ try {
 
         if ($updateResponse.StatusCode -eq 202) {
             $opUrl2 = $updateResponse.Headers['Location']
+            if ($opUrl2 -is [array]) { $opUrl2 = $opUrl2[0] }
             Write-Host "  LRO started, polling..." -ForegroundColor Yellow
             do {
                 Start-Sleep -Seconds 3
@@ -255,16 +257,14 @@ try {
     }
 }
 catch {
-    $sr2 = $_.Exception.Response
-    if ($sr2) {
-        $s2 = $sr2.GetResponseStream()
-        $rd2 = New-Object System.IO.StreamReader($s2)
-        Write-Host "[WARN] Definition update: $([int]$sr2.StatusCode): $($rd2.ReadToEnd())" -ForegroundColor Yellow
-        Write-Host "  The Data Agent was created. Configure AI instructions in the UI." -ForegroundColor Yellow
-    }
-    else {
-        Write-Host "[WARN] Definition update: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
+    $errBody2 = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errBody2 = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr2 = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errBody2 = $sr2.ReadToEnd(); $sr2.Close() } catch { $errBody2 = $_.Exception.Message }
+    } else { $errBody2 = $_.Exception.Message }
+    Write-Host "[WARN] Definition update: $errBody2" -ForegroundColor Yellow
+    Write-Host "  The Data Agent was created. Configure AI instructions in the UI." -ForegroundColor Yellow
 }
 
 # ── Step 3: Verify ─────────────────────────────────────────────────────────
@@ -277,6 +277,7 @@ try {
     $verifyParts = $null
     if ($verifyResp.StatusCode -eq 202) {
         $vLoc = $verifyResp.Headers['Location']
+        if ($vLoc -is [array]) { $vLoc = $vLoc[0] }
         do { Start-Sleep -Seconds 2; $vPoll = Invoke-RestMethod -Uri $vLoc -Headers $headers } while ($vPoll.status -notin @('Succeeded','Failed'))
         if ($vPoll.status -eq 'Succeeded') {
             $vResult = Invoke-RestMethod -Uri "$vLoc/result" -Headers $headers
