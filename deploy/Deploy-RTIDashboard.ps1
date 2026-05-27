@@ -86,14 +86,14 @@ Write-Host "  KQL Database: $kqlDbName" -ForegroundColor Gray
 $dataSourceId = [guid]::NewGuid().ToString()
 $pageId       = [guid]::NewGuid().ToString()
 
-# Helper to create visual options with inference
+# Helper to create visual options (schema v52: null instead of infer)
 function New-VisualOptions {
     return @{
-        xColumn             = @{ type = "infer" }
-        yColumns            = @{ type = "infer" }
-        yAxisMinimumValue   = @{ type = "infer" }
-        yAxisMaximumValue   = @{ type = "infer" }
-        seriesColumns       = @{ type = "infer" }
+        xColumn             = $null
+        yColumns            = $null
+        yAxisMinimumValue   = $null
+        yAxisMaximumValue   = $null
+        seriesColumns       = $null
         hideLegend          = $false
         xColumnTitle        = ""
         yColumnTitle        = ""
@@ -106,6 +106,7 @@ function New-VisualOptions {
         multipleYAxes       = @{
             base       = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }
             additional = @()
+            showMultiplePanels = $false
         }
     }
 }
@@ -336,6 +337,17 @@ TankLevel
     }
 )
 
+# ── Transform tiles for schema v52: extract queries, use queryRef ───────────
+$queries = @()
+foreach ($t in $tiles) {
+    $qId = [guid]::NewGuid().ToString()
+    $queries += @{ id = $qId; text = $t.query; dataSource = @{ kind = "inline"; dataSourceId = $dataSourceId }; usedVariables = @() }
+    $t['queryRef'] = @{ kind = "query"; queryId = $qId }
+    $t.Remove('query')
+    $t.Remove('dataSourceId')
+    $t.Remove('usedParamVariables')
+}
+
 # ── Assemble full dashboard definition ──────────────────────────────────────
 $dashboardDef = @{
     schema_version = "52"
@@ -352,7 +364,7 @@ $dashboardDef = @{
             clusterUri = $QueryServiceUri
             database   = $kqlDbName
             kind       = "manual-kusto"
-            scopeId    = "KustoDatabaseResource"
+            scopeId    = "kusto"
         }
     )
     pages      = @(
@@ -361,8 +373,10 @@ $dashboardDef = @{
             name = "Refinery Overview"
         }
     )
-    tiles      = $tiles
-    parameters = @()
+    tiles       = $tiles
+    queries     = $queries
+    baseQueries = @()
+    parameters  = @()
 }
 
 # Serialize to JSON
@@ -391,6 +405,7 @@ try {
     }
     elseif ($response.StatusCode -eq 202) {
         $opUrl = $response.Headers['Location']
+        if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
         Write-Host "LRO started, polling..." -ForegroundColor Yellow
         do {
             Start-Sleep -Seconds 3
@@ -409,32 +424,31 @@ try {
     }
 }
 catch {
-    $sr = $_.Exception.Response
-    if ($sr) {
-        $stream = $sr.GetResponseStream()
-        $reader = New-Object System.IO.StreamReader($stream)
-        $errorBody = $reader.ReadToEnd()
-        Write-Host "[ERROR] $([int]$sr.StatusCode): $errorBody" -ForegroundColor Red
+    $errorBody = ""
+    if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+        $errorBody = $_.ErrorDetails.Message
+    } elseif ($_.Exception.Response) {
+        try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $errorBody = $sr.ReadToEnd(); $sr.Close() } catch { $errorBody = $_.Exception.Message }
+    } else { $errorBody = $_.Exception.Message }
 
-        if ($errorBody -match 'FeatureNotAvailable') {
-            Write-Host ""
-            Write-Host ">>> BLOCKED: The 'Create Real-Time dashboards' tenant setting is disabled." -ForegroundColor Magenta
-            Write-Host ">>> Ask your Fabric admin to enable it in:" -ForegroundColor Magenta
-            Write-Host ">>>   Admin Portal > Tenant settings > Real-Time Intelligence" -ForegroundColor Magenta
-            Write-Host ">>>   Setting: 'Create Real-Time Dashboards (preview)'" -ForegroundColor Magenta
-        }
-        elseif ($errorBody -match 'ItemDisplayNameAlreadyInUse') {
-            Write-Host "  Dashboard '$DashboardName' already exists. Will update definition..." -ForegroundColor Yellow
-            $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
-            $existing = $allItems | Where-Object { $_.displayName -eq $DashboardName -and $_.type -eq 'KQLDashboard' }
-            if ($existing) {
-                $dashboardId = $existing.id
-                Write-Host "  Existing Dashboard ID: $dashboardId" -ForegroundColor Gray
-            }
-        }
+    $sc = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    if ($sc) { Write-Host "[ERROR] $sc`: $errorBody" -ForegroundColor Red } else { Write-Host "[ERROR] $errorBody" -ForegroundColor Red }
+
+    if ($errorBody -match 'FeatureNotAvailable') {
+        Write-Host ""
+        Write-Host ">>> BLOCKED: The 'Create Real-Time dashboards' tenant setting is disabled." -ForegroundColor Magenta
+        Write-Host ">>> Ask your Fabric admin to enable it in:" -ForegroundColor Magenta
+        Write-Host ">>>   Admin Portal > Tenant settings > Real-Time Intelligence" -ForegroundColor Magenta
+        Write-Host ">>>   Setting: 'Create Real-Time Dashboards (preview)'" -ForegroundColor Magenta
     }
-    else {
-        Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    elseif ($errorBody -match 'ItemDisplayNameAlreadyInUse') {
+        Write-Host "  Dashboard '$DashboardName' already exists. Will update definition..." -ForegroundColor Yellow
+        $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
+        $existing = $allItems | Where-Object { $_.displayName -eq $DashboardName -and $_.type -eq 'KQLDashboard' }
+        if ($existing) {
+            $dashboardId = $existing.id
+            Write-Host "  Existing Dashboard ID: $dashboardId" -ForegroundColor Gray
+        }
     }
 }
 
@@ -465,6 +479,7 @@ if ($dashboardId) {
             if ($updResp.StatusCode -in @(200,202)) {
                 if ($updResp.StatusCode -eq 202) {
                     $opUrl2 = $updResp.Headers['Location']
+                    if ($opUrl2 -is [array]) { $opUrl2 = $opUrl2[0] }
                     do {
                         Start-Sleep -Seconds 3
                         $poll2 = Invoke-RestMethod -Uri $opUrl2 -Headers $headers

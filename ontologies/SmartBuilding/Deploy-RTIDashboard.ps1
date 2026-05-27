@@ -47,10 +47,10 @@ $pageId = [guid]::NewGuid().ToString()
 
 function New-VisualOptions {
     return @{
-        xColumn = @{ type = "infer" }; yColumns = @{ type = "infer" }; yAxisMinimumValue = @{ type = "infer" }; yAxisMaximumValue = @{ type = "infer" }
-        seriesColumns = @{ type = "infer" }; hideLegend = $false; xColumnTitle = ""; yColumnTitle = ""; horizontalLine = ""; verticalLine = ""
+        xColumn = $null; yColumns = $null; yAxisMinimumValue = $null; yAxisMaximumValue = $null
+        seriesColumns = $null; hideLegend = $false; xColumnTitle = ""; yColumnTitle = ""; horizontalLine = ""; verticalLine = ""
         xAxisScale = "linear"; yAxisScale = "linear"; crossFilterDisabled = $false; hideTileTitle = $false
-        multipleYAxes = @{ base = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }; additional = @() }
+        multipleYAxes = @{ base = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }; additional = @(); showMultiplePanels = $false }
     }
 }
 
@@ -122,12 +122,23 @@ EnergyConsumption
 "@ }
 )
 
+# ── Transform tiles for schema v52: extract queries, use queryRef ───────────
+$queries = @()
+foreach ($t in $tiles) {
+    $qId = [guid]::NewGuid().ToString()
+    $queries += @{ id = $qId; text = $t.query; dataSource = @{ kind = "inline"; dataSourceId = $dataSourceId }; usedVariables = @() }
+    $t['queryRef'] = @{ kind = "query"; queryId = $qId }
+    $t.Remove('query')
+    $t.Remove('dataSourceId')
+    $t.Remove('usedParamVariables')
+}
+
 $dashboardDef = @{
     schema_version = "52"; title = $DashboardName
     autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "10s" }
-    dataSources = @(@{ id = $dataSourceId; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto"; scopeId = "KustoDatabaseResource" })
+    dataSources = @(@{ id = $dataSourceId; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto"; scopeId = "kusto" })
     pages = @(@{ id = $pageId; name = "Building Overview" })
-    tiles = $tiles; parameters = @()
+    tiles = $tiles; queries = $queries; baseQueries = @(); parameters = @()
 }
 
 $dashJson = $dashboardDef | ConvertTo-Json -Depth 15 -Compress

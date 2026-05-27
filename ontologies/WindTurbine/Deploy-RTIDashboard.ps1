@@ -47,10 +47,10 @@ $pageId = [guid]::NewGuid().ToString()
 
 function New-VisualOptions {
     return @{
-        xColumn = @{ type = "infer" }; yColumns = @{ type = "infer" }; yAxisMinimumValue = @{ type = "infer" }; yAxisMaximumValue = @{ type = "infer" }
-        seriesColumns = @{ type = "infer" }; hideLegend = $false; xColumnTitle = ""; yColumnTitle = ""; horizontalLine = ""; verticalLine = ""
+        xColumn = $null; yColumns = $null; yAxisMinimumValue = $null; yAxisMaximumValue = $null
+        seriesColumns = $null; hideLegend = $false; xColumnTitle = ""; yColumnTitle = ""; horizontalLine = ""; verticalLine = ""
         xAxisScale = "linear"; yAxisScale = "linear"; crossFilterDisabled = $false; hideTileTitle = $false
-        multipleYAxes = @{ base = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }; additional = @() }
+        multipleYAxes = @{ base = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }; additional = @(); showMultiplePanels = $false }
     }
 }
 
@@ -122,12 +122,27 @@ WeatherMetric
 "@ }
 )
 
+# ── Transform tiles for schema v52: extract queries, use queryRef ───────────
+$queries = @()
+foreach ($t in $tiles) {
+    $qId = [guid]::NewGuid().ToString()
+    $queries += @{ id = $qId; text = $t.query; dataSource = @{ kind = "inline"; dataSourceId = $dataSourceId }; usedVariables = @() }
+    $t['queryRef'] = @{ kind = "query"; queryId = $qId }
+    $t.Remove('query')
+    $t.Remove('dataSourceId')
+    $t.Remove('usedParamVariables')
+}
+
 $dashboard = @{
-    autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "10s" }
-    pages = @( @{ id = $pageId; name = "Wind Turbine Overview"; tiles = $tiles } )
-    dataSources = @( @{ id = $dataSourceId; scopeId = "global"; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto" } )
-    parameters = @()
     schema_version = "52"
+    title = $DashboardName
+    autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "10s" }
+    dataSources = @( @{ id = $dataSourceId; scopeId = "kusto"; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto" } )
+    pages = @( @{ id = $pageId; name = "Wind Turbine Overview" } )
+    tiles = $tiles
+    queries = $queries
+    baseQueries = @()
+    parameters = @()
 }
 
 $dashboardJson = $dashboard | ConvertTo-Json -Depth 20 -Compress
@@ -159,9 +174,10 @@ if ($existingDashboard) {
     Write-Host "  Creating new dashboard..." -ForegroundColor Gray
     try {
         $resp = Invoke-WebRequest -Method Post -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers -Body $defBody -UseBasicParsing
-        if ($resp.StatusCode -eq 202 -and $resp.Headers["Location"]) {
-            $loc = $resp.Headers["Location"]; $retryAfter = if ($resp.Headers["Retry-After"]) { [int]$resp.Headers["Retry-After"] } else { 5 }
-            for ($i = 0; $i -lt 30; $i++) { Start-Sleep -Seconds $retryAfter; try { $poll = Invoke-RestMethod -Uri $loc -Headers $headers; if ($poll.status -eq "Succeeded") { break } } catch {} }
+        if ($resp.StatusCode -eq 202) {
+            $loc = $resp.Headers["Location"]; if ($loc -is [array]) { $loc = $loc[0] }
+            $ra = $resp.Headers["Retry-After"]; if ($ra -is [array]) { $ra = $ra[0] }; $retryAfter = if ($ra) { [int]$ra } else { 5 }
+            if ($loc) { for ($i = 0; $i -lt 30; $i++) { Start-Sleep -Seconds $retryAfter; try { $poll = Invoke-RestMethod -Uri $loc -Headers $headers; if ($poll.status -eq "Succeeded") { break } } catch {} } }
         }
         Write-Host "  [OK] Dashboard created: $DashboardName (10 tiles)" -ForegroundColor Green
     } catch { Write-Host "  [ERROR] Dashboard creation: $_" -ForegroundColor Red }

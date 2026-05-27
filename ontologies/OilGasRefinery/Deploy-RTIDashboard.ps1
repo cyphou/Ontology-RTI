@@ -86,14 +86,14 @@ Write-Host "  KQL Database: $kqlDbName" -ForegroundColor Gray
 $dataSourceId = [guid]::NewGuid().ToString()
 $pageId       = [guid]::NewGuid().ToString()
 
-# Helper to create visual options with inference
+# Helper to create visual options (schema v52: null instead of infer)
 function New-VisualOptions {
     return @{
-        xColumn             = @{ type = "infer" }
-        yColumns            = @{ type = "infer" }
-        yAxisMinimumValue   = @{ type = "infer" }
-        yAxisMaximumValue   = @{ type = "infer" }
-        seriesColumns       = @{ type = "infer" }
+        xColumn             = $null
+        yColumns            = $null
+        yAxisMinimumValue   = $null
+        yAxisMaximumValue   = $null
+        seriesColumns       = $null
         hideLegend          = $false
         xColumnTitle        = ""
         yColumnTitle        = ""
@@ -106,6 +106,7 @@ function New-VisualOptions {
         multipleYAxes       = @{
             base       = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }
             additional = @()
+            showMultiplePanels = $false
         }
     }
 }
@@ -336,6 +337,17 @@ TankLevel
     }
 )
 
+# ── Transform tiles for schema v52: extract queries, use queryRef ───────────
+$queries = @()
+foreach ($t in $tiles) {
+    $qId = [guid]::NewGuid().ToString()
+    $queries += @{ id = $qId; text = $t.query; dataSource = @{ kind = "inline"; dataSourceId = $dataSourceId }; usedVariables = @() }
+    $t['queryRef'] = @{ kind = "query"; queryId = $qId }
+    $t.Remove('query')
+    $t.Remove('dataSourceId')
+    $t.Remove('usedParamVariables')
+}
+
 # ── Assemble full dashboard definition ──────────────────────────────────────
 $dashboardDef = @{
     schema_version = "52"
@@ -352,7 +364,7 @@ $dashboardDef = @{
             clusterUri = $QueryServiceUri
             database   = $kqlDbName
             kind       = "manual-kusto"
-            scopeId    = "KustoDatabaseResource"
+            scopeId    = "kusto"
         }
     )
     pages      = @(
@@ -361,8 +373,10 @@ $dashboardDef = @{
             name = "Refinery Overview"
         }
     )
-    tiles      = $tiles
-    parameters = @()
+    tiles       = $tiles
+    queries     = $queries
+    baseQueries = @()
+    parameters  = @()
 }
 
 # Serialize to JSON

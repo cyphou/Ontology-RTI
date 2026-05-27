@@ -25,7 +25,7 @@ $kqlDbDetails = Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/kqlData
 $kqlDbName = $kqlDbDetails.displayName
 $dsId = [guid]::NewGuid().ToString(); $pgId = [guid]::NewGuid().ToString()
 
-function New-VO { return @{ xColumn=@{type="infer"}; yColumns=@{type="infer"}; yAxisMinimumValue=@{type="infer"}; yAxisMaximumValue=@{type="infer"}; seriesColumns=@{type="infer"}; hideLegend=$false; xColumnTitle=""; yColumnTitle=""; horizontalLine=""; verticalLine=""; xAxisScale="linear"; yAxisScale="linear"; crossFilterDisabled=$false; hideTileTitle=$false; multipleYAxes=@{base=@{id="-1";columns=@();label="";yAxisMinimumValue=$null;yAxisMaximumValue=$null;yAxisScale="linear";horizontalLines=@()};additional=@()} } }
+function New-VO { return @{ xColumn=$null; yColumns=$null; yAxisMinimumValue=$null; yAxisMaximumValue=$null; seriesColumns=$null; hideLegend=$false; xColumnTitle=""; yColumnTitle=""; horizontalLine=""; verticalLine=""; xAxisScale="linear"; yAxisScale="linear"; crossFilterDisabled=$false; hideTileTitle=$false; multipleYAxes=@{base=@{id="-1";columns=@();label="";yAxisMinimumValue=$null;yAxisMaximumValue=$null;yAxisScale="linear";horizontalLines=@()};additional=@();showMultiplePanels=$false} } }
 
 $tiles = @(
     @{ id=[guid]::NewGuid().ToString(); title="Server CPU & Memory Over Time"; layout=@{x=0;y=0;width=12;height=6}; pageId=$pgId; visualType="line"; dataSourceId=$dsId; visualOptions=New-VO; usedParamVariables=@()
@@ -50,10 +50,21 @@ $tiles = @(
        query="IncidentMetric`n| where Status == 'Resolved'`n| summarize AvgDurationHours = round(avg(DurationHours),1), IncidentCount = count() by Severity`n| order by AvgDurationHours desc" }
 )
 
+# ── Transform tiles for schema v52: extract queries, use queryRef ───────────
+$queries = @()
+foreach ($t in $tiles) {
+    $qId = [guid]::NewGuid().ToString()
+    $queries += @{ id = $qId; text = $t.query; dataSource = @{ kind = "inline"; dataSourceId = $dsId }; usedVariables = @() }
+    $t['queryRef'] = @{ kind = "query"; queryId = $qId }
+    $t.Remove('query')
+    $t.Remove('dataSourceId')
+    $t.Remove('usedParamVariables')
+}
+
 $dashDef = @{ schema_version="52"; title=$DashboardName
     autoRefresh=@{enabled=$true;defaultInterval="30s";minInterval="10s"}
-    dataSources=@(@{id=$dsId;name=$kqlDbName;clusterUri=$QueryServiceUri;database=$kqlDbName;kind="manual-kusto";scopeId="KustoDatabaseResource"})
-    pages=@(@{id=$pgId;name="IT Infrastructure Overview"}); tiles=$tiles; parameters=@() }
+    dataSources=@(@{id=$dsId;name=$kqlDbName;clusterUri=$QueryServiceUri;database=$kqlDbName;kind="manual-kusto";scopeId="kusto"})
+    pages=@(@{id=$pgId;name="IT Infrastructure Overview"}); tiles=$tiles; queries=$queries; baseQueries=@(); parameters=@() }
 
 $dashJson = $dashDef | ConvertTo-Json -Depth 15 -Compress
 $dashB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($dashJson))
