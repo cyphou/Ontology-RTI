@@ -53,7 +53,7 @@ $entityTypes += @{
         @{ id = "2005"; name = "City"; valueType = "String" },
         @{ id = "2006"; name = "Latitude"; valueType = "Double" },
         @{ id = "2007"; name = "Longitude"; valueType = "Double" },
-        @{ id = "2008"; name = "CapacityBPD"; valueType = "BigInt" },
+        @{ id = "2008"; name = "CapacityBPD"; valueType = "Double" },
         @{ id = "2009"; name = "YearBuilt"; valueType = "BigInt" },
         @{ id = "2010"; name = "Status"; valueType = "String" },
         @{ id = "2011"; name = "Operator"; valueType = "String" }
@@ -71,7 +71,7 @@ $entityTypes += @{
         @{ id = "2102"; name = "ProcessUnitName"; valueType = "String" },
         @{ id = "2103"; name = "ProcessUnitType"; valueType = "String" },
         @{ id = "2104"; name = "RefineryId"; valueType = "String" },
-        @{ id = "2105"; name = "CapacityBPD"; valueType = "BigInt" },
+        @{ id = "2105"; name = "CapacityBPD"; valueType = "Double" },
         @{ id = "2106"; name = "DesignTemperatureF"; valueType = "Double" },
         @{ id = "2107"; name = "DesignPressurePSI"; valueType = "Double" },
         @{ id = "2108"; name = "YearInstalled"; valueType = "BigInt" },
@@ -116,7 +116,7 @@ $entityTypes += @{
         @{ id = "2306"; name = "DiameterInches"; valueType = "Double" },
         @{ id = "2307"; name = "LengthFeet"; valueType = "Double" },
         @{ id = "2308"; name = "Material"; valueType = "String" },
-        @{ id = "2309"; name = "MaxFlowBPD"; valueType = "BigInt" },
+        @{ id = "2309"; name = "MaxFlowBPD"; valueType = "Double" },
         @{ id = "2310"; name = "InstalledDate"; valueType = "String" },
         @{ id = "2311"; name = "Status"; valueType = "String" }
     )
@@ -171,8 +171,8 @@ $entityTypes += @{
         @{ id = "2603"; name = "RefineryId"; valueType = "String" },
         @{ id = "2604"; name = "ProductId"; valueType = "String" },
         @{ id = "2605"; name = "TankType"; valueType = "String" },
-        @{ id = "2606"; name = "CapacityBarrels"; valueType = "BigInt" },
-        @{ id = "2607"; name = "CurrentLevelBarrels"; valueType = "BigInt" },
+        @{ id = "2606"; name = "CapacityBarrels"; valueType = "Double" },
+        @{ id = "2607"; name = "CurrentLevelBarrels"; valueType = "Double" },
         @{ id = "2608"; name = "DiameterFeet"; valueType = "String" },
         @{ id = "2609"; name = "HeightFeet"; valueType = "String" },
         @{ id = "2610"; name = "Material"; valueType = "String" },
@@ -287,7 +287,7 @@ $entityTypes += @{
         @{ id = "2982"; name = "ProcessUnitId"; valueType = "String" },
         @{ id = "2983"; name = "ProductId"; valueType = "String" },
         @{ id = "2984"; name = "ProductionDate"; valueType = "String" },
-        @{ id = "2985"; name = "OutputBarrels"; valueType = "BigInt" },
+        @{ id = "2985"; name = "OutputBarrels"; valueType = "Double" },
         @{ id = "2986"; name = "YieldPercent"; valueType = "Double" },
         @{ id = "2987"; name = "QualityGrade"; valueType = "String" },
         @{ id = "2988"; name = "EnergyConsumptionMMBTU"; valueType = "Double" },
@@ -305,7 +305,7 @@ $entityTypes += @{
         @{ id = "2991"; name = "BridgeId"; valueType = "String" },
         @{ id = "2992"; name = "CrudeOilId"; valueType = "String" },
         @{ id = "2993"; name = "ProcessUnitId"; valueType = "String" },
-        @{ id = "2994"; name = "FeedRateBPD"; valueType = "BigInt" },
+        @{ id = "2994"; name = "FeedRateBPD"; valueType = "Double" },
         @{ id = "2995"; name = "EffectiveDate"; valueType = "String" },
         @{ id = "2996"; name = "Notes"; valueType = "String" }
     )

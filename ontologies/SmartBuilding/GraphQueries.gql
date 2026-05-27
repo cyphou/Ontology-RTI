@@ -4,21 +4,21 @@
  * Graph Query Language (GQL) - ISO/IEC 39075:2024
  *
  * Graph Schema:
- *   Nodes: Building, Floor, Zone, HVACSystem, LightingSystem, Elevator,
+ *   Nodes: Building, Floor, Zone, HVAC, Lighting, Elevator,
  *          Sensor, EnergyMeter, Occupant, AccessPoint, MaintenanceTicket, Alert
  *
  *   Edges:
- *     Building -[HAS_FLOOR]-> Floor
- *     Floor -[HAS_ZONE]-> Zone
- *     Zone -[HAS_HVAC]-> HVACSystem
- *     Zone -[HAS_LIGHTING]-> LightingSystem
- *     Zone -[HAS_SENSOR]-> Sensor
- *     Zone -[HAS_ACCESS_POINT]-> AccessPoint
- *     Building -[HAS_ELEVATOR]-> Elevator
- *     Building -[HAS_ENERGY_METER]-> EnergyMeter
- *     Alert -[ALERT_FROM]-> Sensor
- *     MaintenanceTicket -[ASSIGNED_TO]-> Occupant
- *     Zone -[HAS_OCCUPANT]-> Occupant
+ *     Building -[BuildingHasFloor]-> Floor
+ *     Floor -[FloorHasZone]-> Zone
+ *     Zone -[ZoneHasHVAC]-> HVAC
+ *     Zone -[ZoneHasLighting]-> Lighting
+ *     Zone -[ZoneHasSensor]-> Sensor
+ *     Zone -[ZoneHasAccessPoint]-> AccessPoint
+ *     Building -[BuildingHasElevator]-> Elevator
+ *     Building -[BuildingHasEnergyMeter]-> EnergyMeter
+ *     Alert -[AlertFromSensor]-> Sensor
+ *     MaintenanceTicket -[TicketAssignedTo]-> Occupant
+ *     Building -[BuildingHasOccupant]-> Occupant
  */
 
 
@@ -31,9 +31,9 @@ LIMIT 200
 
 /* ===== Query 2: Building Floors and Zones ===== */
 
-MATCH (b:Building)-[:HAS_FLOOR]->(f:Floor)-[:HAS_ZONE]->(z:Zone)
+MATCH (b:Building)-[:BuildingHasFloor]->(f:Floor)-[:FloorHasZone]->(z:Zone)
 RETURN b.BuildingName AS Building,
-       f.FloorName AS Floor,
+       f.FloorNumber AS Floor,
        f.FloorNumber AS FloorNum,
        z.ZoneName AS Zone,
        z.ZoneType AS ZoneType,
@@ -43,8 +43,8 @@ LIMIT 100
 
 /* ===== Query 3: Zone HVAC and Lighting Systems ===== */
 
-MATCH (z:Zone)-[:HAS_HVAC]->(h:HVACSystem)
-MATCH (z)-[:HAS_LIGHTING]->(l:LightingSystem)
+MATCH (z:Zone)-[:ZoneHasHVAC]->(h:HVAC)
+MATCH (z)-[:ZoneHasLighting]->(l:Lighting)
 RETURN z.ZoneName AS Zone,
        h.HVACName AS HVAC,
        h.HVACType AS HVACType,
@@ -56,7 +56,7 @@ LIMIT 100
 
 /* ===== Query 4: Sensor Alerts by Severity ===== */
 
-MATCH (s:Sensor)<-[:ALERT_FROM]-(a:Alert)
+MATCH (s:Sensor)<-[:AlertFromSensor]-(a:Alert)
 RETURN s.SensorName AS Sensor,
        s.SensorType AS SensorType,
        a.AlertType AS AlertType,
@@ -70,21 +70,20 @@ LIMIT 50
 
 /* ===== Query 5: Building Elevator Inventory ===== */
 
-MATCH (b:Building)-[:HAS_ELEVATOR]->(e:Elevator)
+MATCH (b:Building)-[:BuildingHasElevator]->(e:Elevator)
 RETURN b.BuildingName AS Building,
        e.ElevatorName AS Elevator,
        e.ElevatorType AS Type,
        e.CapacityLbs AS CapacityLbs,
-       e.Manufacturer AS Manufacturer,
-       e.Status AS Status
+       e.MaxFloors AS MaxFloors
 LIMIT 50
 
 
 /* ===== Query 6: Maintenance Tickets by Assignee ===== */
 
-MATCH (occ:Occupant)<-[:ASSIGNED_TO]-(t:MaintenanceTicket)
-RETURN occ.FullName AS Assignee,
-       occ.Department AS Department,
+MATCH (occ:Occupant)<-[:TicketAssignedTo]-(t:MaintenanceTicket)
+RETURN occ.OccupantName AS Assignee,
+       occ.Company AS Company,
        t.TicketId AS Ticket,
        t.EquipmentType AS EquipmentType,
        t.Priority AS Priority,
@@ -97,18 +96,18 @@ LIMIT 50
 
 /* ===== Query 7: Building Energy Meters ===== */
 
-MATCH (b:Building)-[:HAS_ENERGY_METER]->(m:EnergyMeter)
+MATCH (b:Building)-[:BuildingHasEnergyMeter]->(m:EnergyMeter)
 RETURN b.BuildingName AS Building,
        m.MeterName AS Meter,
        m.MeterType AS Type,
        m.MeasurementUnit AS Unit,
-       m.Status AS Status
+       m.CoverageAreaSqFt AS CoverageArea
 LIMIT 50
 
 
 /* ===== Query 8: Sensors per Zone with Coverage ===== */
 
-MATCH (b:Building)-[:HAS_FLOOR]->(f:Floor)-[:HAS_ZONE]->(z:Zone)-[:HAS_SENSOR]->(s:Sensor)
+MATCH (b:Building)-[:BuildingHasFloor]->(f:Floor)-[:FloorHasZone]->(z:Zone)-[:ZoneHasSensor]->(s:Sensor)
 RETURN b.BuildingName AS Building,
        z.ZoneName AS Zone,
        z.ZoneType AS ZoneType,
@@ -118,10 +117,10 @@ LIMIT 50
 
 /* ===== Query 9: Critical Alerts with Full Path ===== */
 
-MATCH (b:Building)-[:HAS_FLOOR]->(f:Floor)-[:HAS_ZONE]->(z:Zone)-[:HAS_SENSOR]->(s:Sensor)<-[:ALERT_FROM]-(a:Alert)
+MATCH (b:Building)-[:BuildingHasFloor]->(f:Floor)-[:FloorHasZone]->(z:Zone)-[:ZoneHasSensor]->(s:Sensor)<-[:AlertFromSensor]-(a:Alert)
 WHERE a.Severity = 'Critical'
 RETURN b.BuildingName AS Building,
-       f.FloorName AS Floor,
+       f.FloorNumber AS Floor,
        z.ZoneName AS Zone,
        s.SensorName AS Sensor,
        a.AlertType AS AlertType,
@@ -132,19 +131,21 @@ LIMIT 50
 
 /* ===== Query 10: Zone Occupant Distribution ===== */
 
-MATCH (z:Zone)-[:HAS_OCCUPANT]->(o:Occupant)
-RETURN z.ZoneName AS Zone,
+MATCH (b:Building)-[:BuildingHasOccupant]->(o:Occupant)
+MATCH (b)-[:BuildingHasFloor]->(f:Floor)-[:FloorHasZone]->(z:Zone)
+RETURN b.BuildingName AS Building,
+       z.ZoneName AS Zone,
        z.ZoneType AS ZoneType,
        z.MaxOccupancy AS MaxCapacity,
-       COUNT(o) AS CurrentOccupants,
-       o.Department AS Department
+       COUNT(DISTINCT o) AS OccupantCount,
+       o.Company AS Company
 LIMIT 100
 
 
 /* ===== Query 11: HVAC Systems Needing Maintenance ===== */
 
-MATCH (z:Zone)-[:HAS_HVAC]->(h:HVACSystem)
-MATCH (z)-[:HAS_SENSOR]->(s:Sensor)<-[:ALERT_FROM]-(a:Alert)
+MATCH (z:Zone)-[:ZoneHasHVAC]->(h:HVAC)
+MATCH (z)-[:ZoneHasSensor]->(s:Sensor)<-[:AlertFromSensor]-(a:Alert)
 WHERE s.SensorType = 'Temperature' AND a.Severity IN ['Critical', 'High']
 RETURN z.ZoneName AS Zone,
        h.HVACName AS HVAC,
@@ -157,51 +158,50 @@ LIMIT 50
 
 /* ===== Query 12: WiFi Coverage per Zone ===== */
 
-MATCH (z:Zone)-[:HAS_ACCESS_POINT]->(ap:AccessPoint)
+MATCH (z:Zone)-[:ZoneHasAccessPoint]->(ap:AccessPoint)
 RETURN z.ZoneName AS Zone,
        z.AreaSqFt AS ZoneArea,
-       ap.AccessPointName AS AccessPoint,
-       ap.Protocol AS Protocol,
-       ap.CoverageAreaSqFt AS CoverageArea
+       ap.APName AS AccessPoint,
+       ap.BandSupport AS BandSupport,
+       ap.MaxConnections AS MaxConnections
 
 /* ===== Query 13: High-Cost Maintenance by Equipment Type ===== */
 
-MATCH (t:MaintenanceTicket)-[:ASSIGNED_TO]->(o:Occupant)
-WHERE t.CostUSD > 1000
-RETURN t.EquipmentType AS EquipmentType,
-       t.TicketType AS TicketType,
-       t.CostUSD AS Cost,
-       t.DurationHours AS Hours,
-       o.FullName AS Technician,
+MATCH (t:MaintenanceTicket)-[:TicketAssignedTo]->(o:Occupant)
+WHERE t.Priority = 'High'
+RETURN t.TicketType AS TicketType,
+       t.Priority AS Priority,
+       t.Status AS Status,
+       o.OccupantName AS Technician,
        t.Description AS Description
-ORDER BY t.CostUSD DESC
+ORDER BY t.Priority DESC
 LIMIT 20
 
 
 /* ===== Query 14: Elevator Status per Building ===== */
 
-MATCH (b:Building)-[:HAS_ELEVATOR]->(e:Elevator)
+MATCH (b:Building)-[:BuildingHasElevator]->(e:Elevator)
 RETURN b.BuildingName AS Building,
        e.ElevatorName AS Elevator,
        e.MaxFloors AS MaxFloors,
        e.CapacityLbs AS Capacity,
-       e.Status AS Status
+       e.ElevatorType AS Type
 ORDER BY b.BuildingName
 
 /* ===== Query 15: Energy Meter Readings per Building ===== */
 
-MATCH (b:Building)-[:HAS_ENERGY_METER]->(em:EnergyMeter)
+MATCH (b:Building)-[:BuildingHasEnergyMeter]->(em:EnergyMeter)
 RETURN b.BuildingName AS Building,
        em.MeterName AS Meter,
        em.MeterType AS MeterType,
-       em.Unit AS Unit,
-       em.Status AS Status
+       em.MeasurementUnit AS Unit,
+       em.CoverageAreaSqFt AS CoverageArea
 ORDER BY b.BuildingName
 
 /* ===== Query 16: Zones with No Sensors (gap detection) ===== */
 
 MATCH (z:Zone)
-WHERE NOT EXISTS { MATCH (z)-[:ZONE_HAS_SENSOR]->(:Sensor) }
+WHERE NOT EXISTS { MATCH (z)-[:ZoneHasSensor]->(:Sensor) }
 RETURN z.ZoneName AS Zone,
        z.ZoneType AS ZoneType,
        z.AreaSqFt AS Area,
@@ -209,9 +209,9 @@ RETURN z.ZoneName AS Zone,
 
 /* ===== Query 17: Full Building Asset Chain (4-hop) ===== */
 
-MATCH (b:Building)-[:HAS_FLOOR]->(f:Floor)-[:HAS_ZONE]->(z:Zone)-[:ZONE_HAS_SENSOR]->(s:Sensor)
+MATCH (b:Building)-[:BuildingHasFloor]->(f:Floor)-[:FloorHasZone]->(z:Zone)-[:ZoneHasSensor]->(s:Sensor)
 RETURN b.BuildingName AS Building,
-       f.FloorName AS Floor,
+       f.FloorNumber AS Floor,
        z.ZoneName AS Zone,
        s.SensorName AS Sensor,
        s.SensorType AS SensorType,
@@ -221,31 +221,29 @@ LIMIT 50
 
 /* ===== Query 18: Maintenance Cost by Building ===== */
 
-MATCH (t:MaintenanceTicket)-[:TICKET_IN_BUILDING]->(b:Building)
+MATCH (b:Building)-[:BuildingHasOccupant]->(o:Occupant)<-[:TicketAssignedTo]-(t:MaintenanceTicket)
 WHERE t.Status = 'Resolved'
 RETURN b.BuildingName AS Building,
-       COUNT(t) AS TicketCount,
-       SUM(t.CostUSD) AS TotalCost,
-       AVG(t.DurationHours) AS AvgDuration
-ORDER BY TotalCost DESC
+       COUNT(t) AS TicketCount
+ORDER BY TicketCount DESC
 
 /* ===== Query 19: HVAC Systems with High Capacity by Zone ===== */
 
-MATCH (z:Zone)-[:ZONE_HAS_HVAC]->(hvac:HVACSystem)
+MATCH (z:Zone)-[:ZoneHasHVAC]->(hvac:HVAC)
 WHERE hvac.CapacityBTU > 50000
 RETURN z.ZoneName AS Zone,
-       hvac.SystemName AS HVACSystem,
-       hvac.SystemType AS Type,
+       hvac.HVACName AS HVACSystem,
+       hvac.HVACType AS Type,
        hvac.CapacityBTU AS Capacity,
-       hvac.Status AS Status
+       hvac.EnergyRating AS EnergyRating
 ORDER BY hvac.CapacityBTU DESC
 
 /* ===== Query 20: Multi-System Zone Summary ===== */
 
 MATCH (z:Zone)
-OPTIONAL MATCH (z)-[:ZONE_HAS_SENSOR]->(s:Sensor)
-OPTIONAL MATCH (z)-[:ZONE_HAS_HVAC]->(hvac:HVACSystem)
-OPTIONAL MATCH (z)-[:HAS_ACCESS_POINT]->(ap:AccessPoint)
+OPTIONAL MATCH (z)-[:ZoneHasSensor]->(s:Sensor)
+OPTIONAL MATCH (z)-[:ZoneHasHVAC]->(hvac:HVAC)
+OPTIONAL MATCH (z)-[:ZoneHasAccessPoint]->(ap:AccessPoint)
 RETURN z.ZoneName AS Zone,
        z.ZoneType AS ZoneType,
        COUNT(DISTINCT s) AS Sensors,

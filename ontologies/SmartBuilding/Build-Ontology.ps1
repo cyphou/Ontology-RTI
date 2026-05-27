@@ -40,7 +40,7 @@ $entityTypes += @{
         @{ id = "2004"; name = "City"; valueType = "String" },
         @{ id = "2005"; name = "Country"; valueType = "String" },
         @{ id = "2006"; name = "Floors"; valueType = "BigInt" },
-        @{ id = "2007"; name = "TotalAreaSqFt"; valueType = "BigInt" },
+        @{ id = "2007"; name = "TotalAreaSqFt"; valueType = "Double" },
         @{ id = "2008"; name = "YearBuilt"; valueType = "BigInt" },
         @{ id = "2009"; name = "BuildingType"; valueType = "String" },
         @{ id = "2010"; name = "Status"; valueType = "String" },
@@ -59,7 +59,7 @@ $entityTypes += @{
         @{ id = "2102"; name = "FloorName"; valueType = "String" },
         @{ id = "2103"; name = "BuildingId"; valueType = "String" },
         @{ id = "2104"; name = "FloorNumber"; valueType = "BigInt" },
-        @{ id = "2105"; name = "AreaSqFt"; valueType = "BigInt" },
+        @{ id = "2105"; name = "AreaSqFt"; valueType = "Double" },
         @{ id = "2106"; name = "ZoneCount"; valueType = "BigInt" },
         @{ id = "2107"; name = "Status"; valueType = "String" }
     )
@@ -76,7 +76,7 @@ $entityTypes += @{
         @{ id = "2202"; name = "ZoneName"; valueType = "String" },
         @{ id = "2203"; name = "FloorId"; valueType = "String" },
         @{ id = "2204"; name = "ZoneType"; valueType = "String" },
-        @{ id = "2205"; name = "AreaSqFt"; valueType = "BigInt" },
+        @{ id = "2205"; name = "AreaSqFt"; valueType = "Double" },
         @{ id = "2206"; name = "MaxOccupancy"; valueType = "BigInt" },
         @{ id = "2207"; name = "Status"; valueType = "String" }
     )
@@ -93,7 +93,7 @@ $entityTypes += @{
         @{ id = "2302"; name = "HVACName"; valueType = "String" },
         @{ id = "2303"; name = "ZoneId"; valueType = "String" },
         @{ id = "2304"; name = "HVACType"; valueType = "String" },
-        @{ id = "2305"; name = "CapacityBTU"; valueType = "BigInt" },
+        @{ id = "2305"; name = "CapacityBTU"; valueType = "Double" },
         @{ id = "2306"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2307"; name = "Model"; valueType = "String" },
         @{ id = "2308"; name = "InstallDate"; valueType = "String" },
@@ -113,7 +113,7 @@ $entityTypes += @{
         @{ id = "2402"; name = "LightingName"; valueType = "String" },
         @{ id = "2403"; name = "ZoneId"; valueType = "String" },
         @{ id = "2404"; name = "LightingType"; valueType = "String" },
-        @{ id = "2405"; name = "WattageTotalW"; valueType = "BigInt" },
+        @{ id = "2405"; name = "WattageTotalW"; valueType = "Double" },
         @{ id = "2406"; name = "BulbCount"; valueType = "BigInt" },
         @{ id = "2407"; name = "InstallDate"; valueType = "String" },
         @{ id = "2408"; name = "Status"; valueType = "String" }
@@ -131,7 +131,7 @@ $entityTypes += @{
         @{ id = "2502"; name = "ElevatorName"; valueType = "String" },
         @{ id = "2503"; name = "BuildingId"; valueType = "String" },
         @{ id = "2504"; name = "ElevatorType"; valueType = "String" },
-        @{ id = "2505"; name = "CapacityLbs"; valueType = "BigInt" },
+        @{ id = "2505"; name = "CapacityLbs"; valueType = "Double" },
         @{ id = "2506"; name = "MaxFloors"; valueType = "BigInt" },
         @{ id = "2507"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2508"; name = "InstallDate"; valueType = "String" },
@@ -213,7 +213,7 @@ $entityTypes += @{
         @{ id = "2853"; name = "ZoneId"; valueType = "String" },
         @{ id = "2854"; name = "AccessPointType"; valueType = "String" },
         @{ id = "2855"; name = "Protocol"; valueType = "String" },
-        @{ id = "2856"; name = "CoverageAreaSqFt"; valueType = "BigInt" },
+        @{ id = "2856"; name = "CoverageAreaSqFt"; valueType = "Double" },
         @{ id = "2857"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2858"; name = "Status"; valueType = "String" }
     )

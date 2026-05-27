@@ -6,29 +6,29 @@ MATCH (p:Plant)
 RETURN p.PlantName, p.Location, p.City, p.Country, p.PlantType, p.Capacity, p.Status
 ORDER BY p.PlantName
 
-/* 2. Plant Ã¢â€ â€™ production lines Ã¢â€ â€™ machines hierarchy */
-MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:ProductionLineHasMachine]->(m:Machine)
+/* 2. Plant → production lines → machines hierarchy */
+MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:LineHasMachine]->(m:Machine)
 RETURN p.PlantName, pl.LineName, pl.LineType, m.MachineName, m.MachineType, m.Manufacturer, m.Status
 ORDER BY p.PlantName, pl.LineName, m.MachineName
 
-/* 3. Production lines producing products */
-MATCH (pl:ProductionLine)-[:ProductionLineProducesProduct]->(pr:Product)
-RETURN pl.LineName, pl.LineType, pr.ProductName, pr.ProductCategory, pr.UnitOfMeasure, pr.UnitCost
-ORDER BY pl.LineName, pr.ProductName
+/* 3. Production batches and their products */
+MATCH (pb:ProductionBatch)-[:BatchProducesProduct]->(pr:Product)
+RETURN pb.BatchNumber, pb.QuantityProduced, pb.Status, pr.ProductName, pr.ProductCategory, pr.UnitOfMeasure
+ORDER BY pb.BatchNumber, pr.ProductName
 
-/* 4. Materials used by products */
-MATCH (pr:Product)-[:ProductUsesMaterial]->(mat:Material)
-RETURN pr.ProductName, mat.MaterialName, mat.MaterialType, mat.UnitOfMeasure, mat.UnitCost, mat.Supplier, mat.Status
-ORDER BY pr.ProductName, mat.MaterialName
+/* 4. Materials inventory overview */
+MATCH (mat:Material)
+RETURN mat.MaterialName, mat.MaterialType, mat.UnitOfMeasure, mat.MinStockLevel, mat.CurrentStock
+ORDER BY mat.MaterialName
 
-/* 5. Operators assigned to production lines */
-MATCH (op:Operator)-[:OperatorAssignedToLine]->(pl:ProductionLine)
-RETURN op.OperatorName, op.Role, op.Shift, op.Certification, pl.LineName, pl.LineType
-ORDER BY pl.LineName, op.Shift
+/* 5. Operators assigned to plants */
+MATCH (p:Plant)-[:PlantHasOperator]->(op:Operator)
+RETURN p.PlantName, op.OperatorName, op.Role, op.Shift, op.CertificationLevel
+ORDER BY p.PlantName, op.Shift
 
 /* 6. Sensors on machines */
-MATCH (s:Sensor)-[:SensorOnMachine]->(m:Machine)
-RETURN m.MachineName, m.MachineType, s.SensorName, s.SensorType, s.Unit, s.MinThreshold, s.MaxThreshold, s.Status
+MATCH (m:Machine)-[:MachineHasSensor]->(s:Sensor)
+RETURN m.MachineName, m.MachineType, s.SensorName, s.SensorType, s.MeasurementUnit, s.MinRange, s.MaxRange
 ORDER BY m.MachineName, s.SensorType
 
 /* 7. Maintenance orders with machine details */
@@ -37,10 +37,10 @@ WHERE mo.Status <> 'Completed'
 RETURN mo.OrderId, mo.MaintenanceType, mo.Priority, m.MachineName, mo.ScheduledDate, mo.Description, mo.Status
 ORDER BY mo.Priority, mo.ScheduledDate
 
-/* 8. Quality checks per production batch */
-MATCH (qc:QualityCheck)-[:QualityCheckForBatch]->(pb:ProductionBatch)
-RETURN pb.BatchId, pb.ProductId, qc.CheckType, qc.MeasuredValue, qc.ExpectedValue, qc.Tolerance, qc.Result, qc.CheckDate
-ORDER BY pb.BatchId, qc.CheckDate
+/* 8. Quality checks per production line */
+MATCH (qc:QualityCheck)-[:QualityCheckOnLine]->(pl:ProductionLine)
+RETURN pl.LineName, qc.QCId, qc.InspectorName, qc.CheckType, qc.Result, qc.Timestamp
+ORDER BY pl.LineName, qc.Timestamp
 
 /* 9. Production batches linked to lines */
 MATCH (pb:ProductionBatch)-[:BatchOnLine]->(pl:ProductionLine)
@@ -48,15 +48,15 @@ RETURN pl.LineName, pb.BatchId, pb.ProductId, pb.Quantity, pb.StartTime, pb.EndT
 ORDER BY pl.LineName, pb.StartTime DESC
 
 /* 10. Active alerts per plant */
-MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:ProductionLineHasMachine]->(m:Machine), (al:Alert)
+MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:LineHasMachine]->(m:Machine), (al:Alert)
 WHERE al.MachineId = m.MachineId AND al.Status = 'Active'
 RETURN p.PlantName, m.MachineName, al.AlertType, al.Severity, al.Timestamp, al.Value, al.Threshold, al.Description
 ORDER BY al.Severity, al.Timestamp DESC
 
 /* 11. Full production chain: plant Ã¢â€ â€™ line Ã¢â€ â€™ machine Ã¢â€ â€™ batch Ã¢â€ â€™ quality */
-MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:ProductionLineHasMachine]->(m:Machine)
+MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:LineHasMachine]->(m:Machine)
 OPTIONAL MATCH (pb:ProductionBatch)-[:BatchOnLine]->(pl)
-OPTIONAL MATCH (qc:QualityCheck)-[:QualityCheckForBatch]->(pb)
+OPTIONAL MATCH (qc:QualityCheck)-[:QualityCheckOnLine]->(pl)
 RETURN p.PlantName, pl.LineName, m.MachineName, pb.BatchId, pb.YieldPercent, qc.Result
 ORDER BY p.PlantName, pl.LineName
 
@@ -66,19 +66,19 @@ WHERE mo.Status = 'Completed'
 RETURN m.MachineName, m.MachineType, COUNT(mo) AS MaintenanceCount, SUM(mo.EstimatedHours) AS TotalMaintenanceHours
 ORDER BY TotalMaintenanceHours DESC
 
-/* 13. Operator workload across lines */
-MATCH (op:Operator)-[:OperatorAssignedToLine]->(pl:ProductionLine)
-RETURN op.OperatorName, op.Shift, op.Certification, COUNT(pl) AS LinesAssigned
-ORDER BY LinesAssigned DESC
+/* 13. Operator workload across plants */
+MATCH (p:Plant)-[:PlantHasOperator]->(op:Operator)
+RETURN op.OperatorName, op.Shift, op.CertificationLevel, COUNT(p) AS PlantsAssigned
+ORDER BY PlantsAssigned DESC
 
 /* 14. Quality check failure rate by production line */
-MATCH (qc:QualityCheck)-[:QCOnLine]->(pl:ProductionLine)-[:LineInPlant]->(p:Plant)
+MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)<-[:QualityCheckOnLine]-(qc:QualityCheck)
 WHERE qc.Result = 'Fail'
-RETURN p.PlantName, pl.LineName, COUNT(qc) AS FailCount, SUM(qc.DefectCount) AS TotalDefects
+RETURN p.PlantName, pl.LineName, COUNT(qc) AS FailCount
 ORDER BY FailCount DESC
 
 /* 15. Material consumption across production batches */
-MATCH (pb:ProductionBatch)-[:BatchUsesProduct]->(pr:Product)
+MATCH (pb:ProductionBatch)-[:BatchProducesProduct]->(pr:Product)
 MATCH (pb)-[:BatchOnLine]->(pl:ProductionLine)
 RETURN pr.ProductName, pl.LineName, SUM(pb.QuantityProduced) AS TotalProduced, AVG(pb.DefectRate) AS AvgDefectRate
 ORDER BY TotalProduced DESC
@@ -90,22 +90,22 @@ RETURN m.MachineName, m.MachineType, m.Status, m.InstallDate
 ORDER BY m.InstallDate
 
 /* 17. Energy consumption by plant and production line */
-MATCH (pb:ProductionBatch)-[:BatchOnLine]->(pl:ProductionLine)-[:LineInPlant]->(p:Plant)
+MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)<-[:BatchOnLine]-(pb:ProductionBatch)
 RETURN p.PlantName, pl.LineName, SUM(pb.EnergyUsedKWh) AS TotalEnergy, COUNT(pb) AS BatchCount
 ORDER BY TotalEnergy DESC
 
 /* 18. Cross-line quality inspector workload */
-MATCH (qc:QualityCheck)-[:QCByInspector]->(op:Operator)
-RETURN op.OperatorName, op.Certification, COUNT(qc) AS InspectionCount, SUM(qc.DefectCount) AS DefectsFound
+MATCH (qc:QualityCheck)-[:QualityCheckOnLine]->(pl:ProductionLine)
+RETURN qc.InspectorName, pl.LineName, COUNT(qc) AS InspectionCount
 ORDER BY InspectionCount DESC
 
 /* 19. Alert severity distribution per sensor type */
-MATCH (al:Alert)-[:AlertFromSensor]->(s:Sensor)-[:SensorOnMachine]->(m:Machine)
+MATCH (al:Alert)-[:AlertFromSensor]->(s:Sensor)<-[:MachineHasSensor]-(m:Machine)
 RETURN s.SensorType, al.Severity, COUNT(al) AS AlertCount
 ORDER BY s.SensorType, al.Severity
 
 /* 20. Full asset hierarchy: plant to sensor with alert status */
-MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:ProductionLineHasMachine]->(m:Machine)-[:MachineHasSensor]->(s:Sensor)
+MATCH (p:Plant)-[:PlantHasProductionLine]->(pl:ProductionLine)-[:LineHasMachine]->(m:Machine)-[:MachineHasSensor]->(s:Sensor)
 OPTIONAL MATCH (al:Alert)-[:AlertFromSensor]->(s) WHERE al.Status = 'Active'
 RETURN p.PlantName, pl.LineName, m.MachineName, s.SensorName, s.SensorType, COUNT(al) AS ActiveAlerts
 ORDER BY ActiveAlerts DESC, p.PlantName

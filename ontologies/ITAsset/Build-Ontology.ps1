@@ -22,9 +22,9 @@ $entityTypes += @{
         @{ id = "2003"; name = "Location"; valueType = "String" },
         @{ id = "2004"; name = "City"; valueType = "String" },
         @{ id = "2005"; name = "Country"; valueType = "String" },
-        @{ id = "2006"; name = "TotalRackCapacity"; valueType = "BigInt" },
+        @{ id = "2006"; name = "TotalRackCapacity"; valueType = "Int32" },
         @{ id = "2007"; name = "TierLevel"; valueType = "String" },
-        @{ id = "2008"; name = "PowerCapacityKW"; valueType = "BigInt" },
+        @{ id = "2008"; name = "PowerCapacityKW"; valueType = "Double" },
         @{ id = "2009"; name = "Status"; valueType = "String" }
     )
     tableName = "dimdatacenter"
@@ -37,8 +37,8 @@ $entityTypes += @{
         @{ id = "2102"; name = "RackName"; valueType = "String" },
         @{ id = "2103"; name = "DataCenterId"; valueType = "String" },
         @{ id = "2104"; name = "RackSize"; valueType = "String" },
-        @{ id = "2105"; name = "MaxPowerW"; valueType = "BigInt" },
-        @{ id = "2106"; name = "CurrentPowerW"; valueType = "BigInt" },
+        @{ id = "2105"; name = "MaxPowerW"; valueType = "Double" },
+        @{ id = "2106"; name = "CurrentPowerW"; valueType = "Double" },
         @{ id = "2107"; name = "TemperatureZone"; valueType = "String" },
         @{ id = "2108"; name = "Status"; valueType = "String" }
     )
@@ -54,9 +54,9 @@ $entityTypes += @{
         @{ id = "2204"; name = "ServerType"; valueType = "String" },
         @{ id = "2205"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2206"; name = "Model"; valueType = "String" },
-        @{ id = "2207"; name = "CPUCores"; valueType = "BigInt" },
-        @{ id = "2208"; name = "MemoryGB"; valueType = "BigInt" },
-        @{ id = "2209"; name = "StorageTB"; valueType = "BigInt" },
+        @{ id = "2207"; name = "CPUCores"; valueType = "Int32" },
+        @{ id = "2208"; name = "MemoryGB"; valueType = "Double" },
+        @{ id = "2209"; name = "StorageTB"; valueType = "Double" },
         @{ id = "2210"; name = "OS"; valueType = "String" },
         @{ id = "2211"; name = "IPAddress"; valueType = "String" },
         @{ id = "2212"; name = "Status"; valueType = "String" }
@@ -67,7 +67,7 @@ $entityTypes += @{
         @{ id = "4001"; name = "Timestamp"; valueType = "DateTime" },
         @{ id = "4002"; name = "CPUPercent"; valueType = "Double" },
         @{ id = "4003"; name = "MemoryPercent"; valueType = "Double" },
-        @{ id = "4004"; name = "DiskIOPS"; valueType = "BigInt" },
+        @{ id = "4004"; name = "DiskIOPS"; valueType = "Double" },
         @{ id = "4005"; name = "NetworkMbps"; valueType = "Double" }
     )
     timestampColumn = "Timestamp"
@@ -82,7 +82,7 @@ $entityTypes += @{
         @{ id = "2304"; name = "DeviceType"; valueType = "String" },
         @{ id = "2305"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2306"; name = "Model"; valueType = "String" },
-        @{ id = "2307"; name = "Ports"; valueType = "BigInt" },
+        @{ id = "2307"; name = "Ports"; valueType = "Int32" },
         @{ id = "2308"; name = "IPAddress"; valueType = "String" },
         @{ id = "2309"; name = "Firmware"; valueType = "String" },
         @{ id = "2310"; name = "Status"; valueType = "String" }
@@ -113,7 +113,7 @@ $entityTypes += @{
         @{ id = "2502"; name = "DatabaseName"; valueType = "String" },
         @{ id = "2503"; name = "ServerId"; valueType = "String" },
         @{ id = "2504"; name = "DBType"; valueType = "String" },
-        @{ id = "2505"; name = "SizeGB"; valueType = "BigInt" },
+        @{ id = "2505"; name = "SizeGB"; valueType = "Double" },
         @{ id = "2506"; name = "Engine"; valueType = "String" },
         @{ id = "2507"; name = "Version"; valueType = "String" },
         @{ id = "2508"; name = "Status"; valueType = "String" }
@@ -127,9 +127,9 @@ $entityTypes += @{
         @{ id = "2601"; name = "VMId"; valueType = "String" },
         @{ id = "2602"; name = "VMName"; valueType = "String" },
         @{ id = "2603"; name = "ServerId"; valueType = "String" },
-        @{ id = "2604"; name = "vCPU"; valueType = "BigInt" },
-        @{ id = "2605"; name = "MemoryGB"; valueType = "BigInt" },
-        @{ id = "2606"; name = "DiskGB"; valueType = "BigInt" },
+        @{ id = "2604"; name = "vCPU"; valueType = "Int32" },
+        @{ id = "2605"; name = "MemoryGB"; valueType = "Double" },
+        @{ id = "2606"; name = "DiskGB"; valueType = "Double" },
         @{ id = "2607"; name = "OS"; valueType = "String" },
         @{ id = "2608"; name = "Status"; valueType = "String" }
     )
@@ -176,8 +176,8 @@ $entityTypes += @{
         @{ id = "2903"; name = "LicenseType"; valueType = "String" },
         @{ id = "2904"; name = "Vendor"; valueType = "String" },
         @{ id = "2905"; name = "ExpirationDate"; valueType = "String" },
-        @{ id = "2906"; name = "Seats"; valueType = "BigInt" },
-        @{ id = "2907"; name = "AssignedSeats"; valueType = "BigInt" },
+        @{ id = "2906"; name = "Seats"; valueType = "Int32" },
+        @{ id = "2907"; name = "AssignedSeats"; valueType = "Int32" },
         @{ id = "2908"; name = "CostUSD"; valueType = "Double" },
         @{ id = "2909"; name = "Status"; valueType = "String" }
     )

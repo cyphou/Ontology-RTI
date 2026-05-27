@@ -3,7 +3,7 @@
     Create KQL tables and ingest data for the IT Asset domain.
 .DESCRIPTION
     Creates 5 KQL tables for IT infrastructure telemetry:
-      - ServerMetric        (enriched from SensorTelemetry.csv with rack/datacenter context)
+      - ServerTelemetry        (enriched from SensorTelemetry.csv with rack/datacenter context)
       - InfraAlert          (alerts from FactAlert.csv with server/rack context)
       - ApplicationHealth   (application response time, error rate, throughput)
       - NetworkMetric       (network device bandwidth, packet loss, latency)
@@ -59,7 +59,7 @@ for ($w = 1; $w -le 6; $w++) { try { Invoke-KustoMgmt -Command ".show database" 
 Write-Host "`n[Step 1] Creating KQL tables..." -ForegroundColor Cyan
 
 $tables = @(
-    @{ Name = "ServerMetric"; Schema = "(ServerId:string, RackId:string, DataCenterId:string, Timestamp:datetime, CPUPercent:real, MemoryPercent:real, DiskIOPS:int, NetworkMbps:real, QualityFlag:string, IsAnomaly:bool)" },
+    @{ Name = "ServerTelemetry"; Schema = "(ServerId:string, RackId:string, DataCenterId:string, Timestamp:datetime, CPUPercent:real, MemoryPercent:real, DiskIOPS:real, NetworkMbps:real, QualityFlag:string, IsAnomaly:bool)" },
     @{ Name = "InfraAlert"; Schema = "(AlertId:string, ServerId:string, RackId:string, DataCenterId:string, Timestamp:datetime, AlertType:string, Severity:string, MetricValue:real, ThresholdValue:real, Message:string, IsAcknowledged:bool)" },
     @{ Name = "ApplicationHealth"; Schema = "(AppId:string, ServerId:string, Timestamp:datetime, ResponseTimeMs:real, ErrorRate:real, RequestsPerSec:real, ActiveConnections:int, HealthStatus:string)" },
     @{ Name = "NetworkMetric"; Schema = "(DeviceId:string, DataCenterId:string, Timestamp:datetime, BandwidthUtilPct:real, PacketLossPct:real, LatencyMs:real, ActivePorts:int, ErrorCount:int, Status:string)" },
@@ -78,14 +78,21 @@ foreach ($t in $tables) {
     catch { Write-Host "  [WARN] $($t.Name) streaming policy: $_" -ForegroundColor Yellow }
 }
 
-# Ã¢â€â‚¬Ã¢â€â‚¬ ENRICH SensorTelemetry Ã¢â€ â€™ ServerMetric Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-Write-Host "`n[Step 2] Enriching SensorTelemetry Ã¢â€ â€™ ServerMetric..." -ForegroundColor Cyan
+# Ã¢â€â‚¬Ã¢â€â‚¬ ENRICH SensorTelemetry Ã¢â€ â€™ ServerTelemetry Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+Write-Host "`n[Step 2] Enriching SensorTelemetry Ã¢â€ â€™ ServerTelemetry..." -ForegroundColor Cyan
 
 # IT Asset telemetry has: ReadingId,ServerId,Timestamp,CPUPercent,MemoryPercent,DiskIOPS,NetworkMbps,QualityFlag,IsAnomaly
+$rackLookup = @{}
+$rackCsvPath = Join-Path $DataFolder "DimRack.csv"
+if (Test-Path $rackCsvPath) { Import-Csv -Path $rackCsvPath | ForEach-Object { $rackLookup[$_.RackId] = $_.DataCenterId } }
+
 $serverLookup = @{}
 $serverCsvPath = Join-Path $DataFolder "DimServer.csv"
 if (Test-Path $serverCsvPath) {
-    Import-Csv -Path $serverCsvPath | ForEach-Object { $serverLookup[$_.ServerId] = @{ RackId = $_.RackId; DataCenterId = $_.DataCenterId } }
+    Import-Csv -Path $serverCsvPath | ForEach-Object {
+        $dcId = $rackLookup[$_.RackId]; if (-not $dcId) { $dcId = "UNKNOWN" }
+        $serverLookup[$_.ServerId] = @{ RackId = $_.RackId; DataCenterId = $dcId }
+    }
 }
 
 $telemetry = Import-Csv -Path (Join-Path $DataFolder "SensorTelemetry.csv")
@@ -98,9 +105,9 @@ foreach ($row in $telemetry) {
 }
 for ($i = 0; $i -lt $lines.Count; $i += 50) {
     $batch = $lines[$i..([Math]::Min($i + 49, $lines.Count - 1))]
-    try { Invoke-KustoMgmt -Command ".ingest inline into table ServerMetric with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $(    try { Invoke-KustoMgmt -Command ".ingest inline into table ServerMetric with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $($_.Exception.Message)" }.Exception.Message)" }
+    try { Invoke-KustoMgmt -Command ".ingest inline into table ServerTelemetry with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $($_.Exception.Message)" }
 }
-Write-Host "  [OK] ServerMetric ($($lines.Count) rows)" -ForegroundColor Green
+Write-Host "  [OK] ServerTelemetry ($($lines.Count) rows)" -ForegroundColor Green
 
 # Ã¢â€â‚¬Ã¢â€â‚¬ INGEST InfraAlert Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 Write-Host "`n[Step 3] Ingesting InfraAlert sample data..." -ForegroundColor Cyan

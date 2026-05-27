@@ -75,17 +75,16 @@ WHERE pat.Status = 'Admitted'
 RETURN w.WardName, w.WardType, COUNT(DISTINCT n) AS NurseCount, COUNT(DISTINCT pat) AS PatientCount
 ORDER BY w.WardName
 
-/* 14. Medication administration frequency by route */
-MATCH (ma:MedicationAdmin)-[:AdminForPatient]->(pat:Patient)
-MATCH (ma)-[:AdminOfMedication]->(med:Medication)
-RETURN med.MedicationName, med.Category, ma.Route, COUNT(ma) AS AdminCount
-ORDER BY AdminCount DESC
+/* 14. Medication inventory by category */
+MATCH (med:Medication)
+RETURN med.Category, med.DosageForm, COUNT(med) AS MedicationCount, COLLECT(med.MedicationName) AS Medications
+ORDER BY MedicationCount DESC
 
-/* 15. Lab result trends by test type */
-MATCH (lr:LabResult)-[:LabForPatient]->(pat:Patient)
-MATCH (lr)-[:LabOrderedBy]->(phy:Physician)
-RETURN lr.TestType, lr.Interpretation, COUNT(lr) AS ResultCount, AVG(lr.ResultValue) AS AvgValue
-ORDER BY ResultCount DESC
+/* 15. Patient distribution by blood type across wards */
+MATCH (d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasPatient]->(pat:Patient)
+WHERE pat.Status = 'Admitted'
+RETURN d.DepartmentName, w.WardName, pat.BloodType, COUNT(pat) AS PatientCount
+ORDER BY d.DepartmentName, w.WardName, PatientCount DESC
 
 /* 16. Ward bed occupancy analysis */
 MATCH (w:Ward)-[:WardHasPatient]->(pat:Patient)
@@ -93,21 +92,20 @@ WHERE pat.Status = 'Admitted'
 RETURN w.WardName, w.WardType, w.BedCount, COUNT(pat) AS OccupiedBeds
 ORDER BY OccupiedBeds DESC
 
-/* 17. Physician procedure performance */
-MATCH (proc:Procedure)-[:ProcedureByPhysician]->(phy:Physician)
-RETURN phy.PhysicianName, phy.Specialty, COUNT(proc) AS ProcedureCount, AVG(proc.DurationMinutes) AS AvgDuration
-ORDER BY ProcedureCount DESC
+/* 17. Physician specialty distribution by department */
+MATCH (d:Department)-[:DepartmentHasPhysician]->(p:Physician)
+RETURN d.DepartmentName, d.DepartmentType, p.Specialty, COUNT(p) AS PhysicianCount, AVG(p.YearsExperience) AS AvgExperience
+ORDER BY d.DepartmentName, PhysicianCount DESC
 
 /* 18. Medical device calibration status per ward */
 MATCH (w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)
 RETURN w.WardName, dev.DeviceName, dev.DeviceType, dev.LastCalibrationDate, COUNT(s) AS SensorCount
 ORDER BY dev.LastCalibrationDate
 
-/* 19. Cross-department physician assignments with patient load */
-MATCH (d:Department)-[:DepartmentHasPhysician]->(phy:Physician)
-OPTIONAL MATCH (proc:Procedure)-[:ProcedureByPhysician]->(phy)
-RETURN d.DepartmentName, phy.PhysicianName, phy.Specialty, COUNT(proc) AS Procedures
-ORDER BY d.DepartmentName, Procedures DESC
+/* 19. Sensor coverage analysis across hospital hierarchy (4-hop) */
+MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)
+RETURN h.HospitalName, d.DepartmentName, COUNT(DISTINCT w) AS Wards, COUNT(DISTINCT dev) AS Devices, COUNT(s) AS Sensors
+ORDER BY Sensors DESC
 
 /* 20. Full care chain: hospital to sensor readings */
 MATCH (h:Hospital)-[:HospitalHasDepartment]->(d:Department)-[:DepartmentHasWard]->(w:Ward)-[:WardHasDevice]->(dev:MedicalDevice)-[:DeviceHasSensor]->(s:Sensor)

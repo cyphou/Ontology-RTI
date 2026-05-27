@@ -29,9 +29,9 @@ $entityTypes += @{
         @{ id = "2003"; name = "Country"; valueType = "String" },
         @{ id = "2004"; name = "State"; valueType = "String" },
         @{ id = "2005"; name = "City"; valueType = "String" },
-        @{ id = "2006"; name = "TotalAreaSqFt"; valueType = "BigInt" },
+        @{ id = "2006"; name = "TotalAreaSqFt"; valueType = "Double" },
         @{ id = "2007"; name = "YearBuilt"; valueType = "BigInt" },
-        @{ id = "2008"; name = "ProductionCapacity"; valueType = "BigInt" },
+        @{ id = "2008"; name = "ProductionCapacity"; valueType = "Double" },
         @{ id = "2009"; name = "Status"; valueType = "String" },
         @{ id = "2010"; name = "Manager"; valueType = "String" }
     )
@@ -46,7 +46,7 @@ $entityTypes += @{
         @{ id = "2102"; name = "LineName"; valueType = "String" },
         @{ id = "2103"; name = "PlantId"; valueType = "String" },
         @{ id = "2104"; name = "LineType"; valueType = "String" },
-        @{ id = "2105"; name = "CapacityUnitsPerHour"; valueType = "BigInt" },
+        @{ id = "2105"; name = "CapacityUnitsPerHour"; valueType = "Double" },
         @{ id = "2106"; name = "InstallDate"; valueType = "String" },
         @{ id = "2107"; name = "Status"; valueType = "String" }
     )

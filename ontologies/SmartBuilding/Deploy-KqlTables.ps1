@@ -146,8 +146,11 @@ Import-Csv -Path (Join-Path $DataFolder "DimSensor.csv") | ForEach-Object {
     $sensorLookup[$_.SensorId] = @{ ZoneId = $_.ZoneId; SensorType = $_.SensorType; MeasurementUnit = $_.MeasurementUnit; MinRange = [double]$_.MinRange; MaxRange = [double]$_.MaxRange }
 }
 $zoneLookup = @{}
+$floorLookup = @{}
+Import-Csv -Path (Join-Path $DataFolder "DimFloor.csv") | ForEach-Object { $floorLookup[$_.FloorId] = $_.BuildingId }
 Import-Csv -Path (Join-Path $DataFolder "DimZone.csv") | ForEach-Object {
-    $zoneLookup[$_.ZoneId] = @{ FloorId = $_.FloorId; BuildingId = $_.BuildingId }
+    $bldId = $floorLookup[$_.FloorId]; if (-not $bldId) { $bldId = "UNKNOWN" }
+    $zoneLookup[$_.ZoneId] = @{ FloorId = $_.FloorId; BuildingId = $bldId }
 }
 
 $telemetry = Import-Csv -Path (Join-Path $DataFolder "SensorTelemetry.csv")

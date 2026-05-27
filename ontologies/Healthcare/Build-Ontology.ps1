@@ -22,7 +22,7 @@ $entityTypes += @{
         @{ id = "2003"; name = "City"; valueType = "String" },
         @{ id = "2004"; name = "State"; valueType = "String" },
         @{ id = "2005"; name = "Country"; valueType = "String" },
-        @{ id = "2006"; name = "BedCapacity"; valueType = "BigInt" },
+        @{ id = "2006"; name = "BedCapacity"; valueType = "Double" },
         @{ id = "2007"; name = "TierLevel"; valueType = "String" },
         @{ id = "2008"; name = "Status"; valueType = "String" }
     )
@@ -36,8 +36,8 @@ $entityTypes += @{
         @{ id = "2102"; name = "DepartmentName"; valueType = "String" },
         @{ id = "2103"; name = "HospitalId"; valueType = "String" },
         @{ id = "2104"; name = "DepartmentType"; valueType = "String" },
-        @{ id = "2105"; name = "Floor"; valueType = "BigInt" },
-        @{ id = "2106"; name = "BedCount"; valueType = "BigInt" },
+        @{ id = "2105"; name = "Floor"; valueType = "Double" },
+        @{ id = "2106"; name = "BedCount"; valueType = "Double" },
         @{ id = "2107"; name = "Status"; valueType = "String" }
     )
     tableName = "dimdepartment"
@@ -50,8 +50,8 @@ $entityTypes += @{
         @{ id = "2202"; name = "WardName"; valueType = "String" },
         @{ id = "2203"; name = "DepartmentId"; valueType = "String" },
         @{ id = "2204"; name = "WardType"; valueType = "String" },
-        @{ id = "2205"; name = "BedCount"; valueType = "BigInt" },
-        @{ id = "2206"; name = "NurseStations"; valueType = "BigInt" },
+        @{ id = "2205"; name = "BedCount"; valueType = "Double" },
+        @{ id = "2206"; name = "NurseStations"; valueType = "Double" },
         @{ id = "2207"; name = "Status"; valueType = "String" }
     )
     tableName = "dimward"
@@ -65,7 +65,7 @@ $entityTypes += @{
         @{ id = "2303"; name = "DepartmentId"; valueType = "String" },
         @{ id = "2304"; name = "Specialty"; valueType = "String" },
         @{ id = "2305"; name = "LicenseNumber"; valueType = "String" },
-        @{ id = "2306"; name = "YearsExperience"; valueType = "BigInt" },
+        @{ id = "2306"; name = "YearsExperience"; valueType = "Double" },
         @{ id = "2307"; name = "Status"; valueType = "String" }
     )
     tableName = "dimphysician"
@@ -79,7 +79,7 @@ $entityTypes += @{
         @{ id = "2403"; name = "WardId"; valueType = "String" },
         @{ id = "2404"; name = "Certification"; valueType = "String" },
         @{ id = "2405"; name = "ShiftPreference"; valueType = "String" },
-        @{ id = "2406"; name = "YearsExperience"; valueType = "BigInt" },
+        @{ id = "2406"; name = "YearsExperience"; valueType = "Double" },
         @{ id = "2407"; name = "Status"; valueType = "String" }
     )
     tableName = "dimnurse"

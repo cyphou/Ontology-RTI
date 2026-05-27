@@ -19,7 +19,7 @@ TABLE_DEFINITIONS = [
             StructField("City", StringType(), True),
             StructField("Country", StringType(), True),
             StructField("TotalRackCapacity", DoubleType(), True),
-            StructField("TierLevel", DoubleType(), True),
+            StructField("TierLevel", StringType(), True),
             StructField("PowerCapacityKW", DoubleType(), True),
             StructField("Status", StringType(), True),
         ])
@@ -30,7 +30,7 @@ TABLE_DEFINITIONS = [
             StructField("RackId", StringType(), False),
             StructField("RackName", StringType(), True),
             StructField("DataCenterId", StringType(), True),
-            StructField("RackSize", DoubleType(), True),
+            StructField("RackSize", StringType(), True),
             StructField("MaxPowerW", DoubleType(), True),
             StructField("CurrentPowerW", DoubleType(), True),
             StructField("TemperatureZone", StringType(), True),

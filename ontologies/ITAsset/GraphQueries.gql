@@ -73,7 +73,7 @@ RETURN u.FullName, u.Department, COUNT(inc) AS ResolvedCount, AVG(inc.DurationHo
 ORDER BY AvgResolutionHours
 
 /* 14. License cost analysis by application tier */
-MATCH (lic:License)-[:LicenseForApp]->(app:Application)-[:AppOnServer]->(s:Server)
+MATCH (s:Server)-[:ServerHostsApp]->(app:Application)-[:AppHasLicense]->(lic:License)
 RETURN app.AppName, app.Environment, SUM(lic.CostUSD) AS TotalLicenseCost, SUM(lic.Seats) AS TotalSeats
 ORDER BY TotalLicenseCost DESC
 
@@ -89,8 +89,8 @@ RETURN s.ServerName, s.CPUCores, s.MemoryGB, s.Status
 ORDER BY s.MemoryGB DESC
 
 /* 17. Cross-datacenter application dependencies */
-MATCH (app:Application)-[:AppOnServer]->(s:Server)-[:ServerInRack]->(r:Rack)-[:RackInDataCenter]->(dc:DataCenter)
-MATCH (db:Database)-[:DatabaseOnServer]->(s2:Server)-[:ServerInRack]->(r2:Rack)-[:RackInDataCenter]->(dc2:DataCenter)
+MATCH (dc:DataCenter)-[:DataCenterHasRack]->(r:Rack)-[:RackHasServer]->(s:Server)-[:ServerHostsApp]->(app:Application)
+MATCH (dc2:DataCenter)-[:DataCenterHasRack]->(r2:Rack)-[:RackHasServer]->(s2:Server)-[:ServerHostsDatabase]->(db:Database)
 WHERE dc.DataCenterId <> dc2.DataCenterId
 RETURN app.AppName, dc.DataCenterName AS AppDC, db.DatabaseName, dc2.DataCenterName AS DbDC
 
@@ -100,12 +100,12 @@ RETURN r.RackName, r.MaxPowerW, COUNT(DISTINCT s) AS Servers, COUNT(DISTINCT vm)
 ORDER BY TotalVMs DESC
 
 /* 19. Critical open incidents with full asset chain */
-MATCH (inc:Incident)-[:IncidentOnServer]->(s:Server)-[:ServerInRack]->(r:Rack)-[:RackInDataCenter]->(dc:DataCenter)
+MATCH (dc:DataCenter)-[:DataCenterHasRack]->(r:Rack)-[:RackHasServer]->(s:Server)<-[:IncidentOnServer]-(inc:Incident)
 WHERE inc.Severity = 'Critical' AND inc.Status = 'Open'
 RETURN dc.DataCenterName, r.RackName, s.ServerName, inc.IncidentId, inc.Description, inc.Timestamp
 ORDER BY inc.Timestamp DESC
 
 /* 20. Database storage distribution across data centers */
-MATCH (db:Database)-[:DatabaseOnServer]->(s:Server)-[:ServerInRack]->(r:Rack)-[:RackInDataCenter]->(dc:DataCenter)
+MATCH (dc:DataCenter)-[:DataCenterHasRack]->(r:Rack)-[:RackHasServer]->(s:Server)-[:ServerHostsDatabase]->(db:Database)
 RETURN dc.DataCenterName, COUNT(db) AS DatabaseCount, SUM(db.SizeGB) AS TotalSizeGB
 ORDER BY TotalSizeGB DESC

@@ -15,21 +15,21 @@
  *          MaintenanceEvent, SafetyAlarm, ProductionRecord, CrudeOilFeed
  *
  *   Edges:
- *     Refinery -[HAS_PROCESS_UNIT]-> ProcessUnit
- *     ProcessUnit -[HAS_EQUIPMENT]-> Equipment
- *     Equipment -[HAS_SENSOR]-> Sensor
- *     Refinery -[HAS_PIPELINE]-> Pipeline
- *     Pipeline -[PIPELINE_FROM]-> ProcessUnit
- *     Refinery -[HAS_STORAGE_TANK]-> StorageTank
- *     StorageTank -[HOLDS_PRODUCT]-> RefinedProduct
- *     Refinery -[EMPLOYS]-> Employee
- *     MaintenanceEvent -[MAINTENANCE_ON]-> Equipment
- *     MaintenanceEvent -[PERFORMED_BY]-> Employee
- *     SafetyAlarm -[ALARM_FROM]-> Sensor
- *     ProductionRecord -[PRODUCED_BY]-> ProcessUnit
- *     ProductionRecord -[PRODUCES]-> RefinedProduct
- *     CrudeOilFeed -[FEEDS_INTO]-> ProcessUnit
- *     CrudeOilFeed -[CRUDE_SOURCE]-> CrudeOil
+ *     Refinery -[RefineryHasProcessUnit]-> ProcessUnit
+ *     ProcessUnit -[ProcessUnitHasEquipment]-> Equipment
+ *     Equipment -[EquipmentHasSensor]-> Sensor
+ *     Refinery -[RefineryHasPipeline]-> Pipeline
+ *     Pipeline -[PipelineFromProcessUnit]-> ProcessUnit
+ *     Refinery -[RefineryHasStorageTank]-> StorageTank
+ *     StorageTank -[StorageTankHoldsProduct]-> RefinedProduct
+ *     Refinery -[RefineryHasEmployee]-> Employee
+ *     MaintenanceEvent -[MaintenanceOnEquipment]-> Equipment
+ *     MaintenanceEvent -[MaintenanceByEmployee]-> Employee
+ *     SafetyAlarm -[AlarmFromSensor]-> Sensor
+ *     ProductionRecord -[ProductionFromProcessUnit]-> ProcessUnit
+ *     ProductionRecord -[ProductionOfProduct]-> RefinedProduct
+ *     CrudeOilFeed -[CrudeFeedToProcessUnit]-> ProcessUnit
+ *     CrudeOilFeed -[CrudeFeedFromCrudeOil]-> CrudeOil
  */
 
 
@@ -42,7 +42,7 @@ LIMIT 200
 
 /* ===== Query 2: Refinery Process Units and Equipment ===== */
 
-MATCH (r:Refinery)-[:HAS_PROCESS_UNIT]->(pu:ProcessUnit)-[:HAS_EQUIPMENT]->(eq:Equipment)
+MATCH (r:Refinery)-[:RefineryHasProcessUnit]->(pu:ProcessUnit)-[:ProcessUnitHasEquipment]->(eq:Equipment)
 RETURN r.RefineryName AS Refinery,
        pu.ProcessUnitName AS ProcessUnit,
        pu.ProcessUnitType AS UnitType,
@@ -53,7 +53,7 @@ LIMIT 100
 
 /* ===== Query 3: Equipment Sensors and Safety Alarms ===== */
 
-MATCH (eq:Equipment)-[:HAS_SENSOR]->(s:Sensor)<-[:ALARM_FROM]-(sa:SafetyAlarm)
+MATCH (eq:Equipment)-[:EquipmentHasSensor]->(s:Sensor)<-[:AlarmFromSensor]-(sa:SafetyAlarm)
 RETURN eq.EquipmentName AS Equipment,
        s.SensorName AS Sensor,
        s.SensorType AS SensorType,
@@ -65,8 +65,8 @@ LIMIT 100
 
 /* ===== Query 4: Maintenance Events by Employee and Equipment ===== */
 
-MATCH (emp:Employee)<-[:PERFORMED_BY]-(me:MaintenanceEvent)-[:MAINTENANCE_ON]->(eq:Equipment)
-RETURN emp.FirstName AS Technician,
+MATCH (emp:Employee)<-[:MaintenanceByEmployee]-(me:MaintenanceEvent)-[:MaintenanceOnEquipment]->(eq:Equipment)
+RETURN emp.FullName AS Technician,
        emp.Role AS `Role`,
        me.MaintenanceType AS MaintenanceType,
        me.StartDate AS `Date`,
@@ -79,7 +79,7 @@ LIMIT 50
 
 /* ===== Query 5: Crude Oil Supply Chain ===== */
 
-MATCH (co:CrudeOil)<-[:CRUDE_SOURCE]-(cf:CrudeOilFeed)-[:FEEDS_INTO]->(pu:ProcessUnit)
+MATCH (co:CrudeOil)<-[:CrudeFeedFromCrudeOil]-(cf:CrudeOilFeed)-[:CrudeFeedToProcessUnit]->(pu:ProcessUnit)
 RETURN co.CrudeGradeName AS CrudeOil,
        co.APIGravity AS APIGravity,
        co.SulfurContentPct AS SulfurPct,
@@ -91,7 +91,7 @@ LIMIT 50
 
 /* ===== Query 6: Production Records by Product ===== */
 
-MATCH (pu:ProcessUnit)<-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
+MATCH (pu:ProcessUnit)<-[:ProductionFromProcessUnit]-(pr:ProductionRecord)-[:ProductionOfProduct]->(rp:RefinedProduct)
 RETURN pu.ProcessUnitName AS ProcessUnit,
        rp.ProductName AS Product,
        rp.ProductCategory AS Category,
@@ -103,7 +103,7 @@ LIMIT 50
 
 /* ===== Query 7: Storage Tanks and Products ===== */
 
-MATCH (r:Refinery)-[:HAS_STORAGE_TANK]->(st:StorageTank)-[:HOLDS_PRODUCT]->(rp:RefinedProduct)
+MATCH (r:Refinery)-[:RefineryHasStorageTank]->(st:StorageTank)-[:StorageTankHoldsProduct]->(rp:RefinedProduct)
 RETURN r.RefineryName AS Refinery,
        st.TankName AS Tank,
        st.CapacityBarrels AS CapacityBBL,
@@ -114,7 +114,7 @@ LIMIT 50
 
 /* ===== Query 8: Pipeline Network ===== */
 
-MATCH (r:Refinery)-[:HAS_PIPELINE]->(p:Pipeline)-[:PIPELINE_FROM]->(pu:ProcessUnit)
+MATCH (r:Refinery)-[:RefineryHasPipeline]->(p:Pipeline)-[:PipelineFromProcessUnit]->(pu:ProcessUnit)
 RETURN r.RefineryName AS Refinery,
        p.PipelineName AS Pipeline,
        p.DiameterInches AS Diameter,
@@ -125,7 +125,7 @@ LIMIT 50
 
 /* ===== Query 9: End-to-End Crude Oil to Refined Product ===== */
 
-MATCH (co:CrudeOil)<-[:CRUDE_SOURCE]-(cf:CrudeOilFeed)-[:FEEDS_INTO]->(pu:ProcessUnit)<-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
+MATCH (co:CrudeOil)<-[:CrudeFeedFromCrudeOil]-(cf:CrudeOilFeed)-[:CrudeFeedToProcessUnit]->(pu:ProcessUnit)<-[:ProductionFromProcessUnit]-(pr:ProductionRecord)-[:ProductionOfProduct]->(rp:RefinedProduct)
 RETURN co.CrudeGradeName AS CrudeSource,
        co.Origin AS Origin,
        pu.ProcessUnitName AS ProcessUnit,
@@ -136,9 +136,9 @@ LIMIT 50
 
 /* ===== Query 10: Workforce and Maintenance Activity ===== */
 
-MATCH (r:Refinery)-[:EMPLOYS]->(emp:Employee)<-[:PERFORMED_BY]-(me:MaintenanceEvent)
+MATCH (r:Refinery)-[:RefineryHasEmployee]->(emp:Employee)<-[:MaintenanceByEmployee]-(me:MaintenanceEvent)
 RETURN r.RefineryName AS Refinery,
-       emp.FirstName AS Employee,
+       emp.FullName AS Employee,
        emp.Department AS Department,
        COUNT(me) AS MaintenanceCount
 LIMIT 50
@@ -154,14 +154,14 @@ LIMIT 50
 /* 4-hop: Refinery -> ProcessUnit -> Equipment -> MaintenanceEvent -> Employee
    Filters on corrective maintenance with cost > 5000 on critical equipment */
 
-MATCH (r:Refinery)-[:HAS_PROCESS_UNIT]->(pu:ProcessUnit)-[:HAS_EQUIPMENT]->(eq:Equipment)<-[:MAINTENANCE_ON]-(me:MaintenanceEvent)-[:PERFORMED_BY]->(emp:Employee)
+MATCH (r:Refinery)-[:RefineryHasProcessUnit]->(pu:ProcessUnit)-[:ProcessUnitHasEquipment]->(eq:Equipment)<-[:MaintenanceOnEquipment]-(me:MaintenanceEvent)-[:MaintenanceByEmployee]->(emp:Employee)
 WHERE eq.CriticalityLevel = 'High' AND me.MaintenanceType = 'Corrective' AND me.CostUSD > 5000
 RETURN r.RefineryName AS Refinery,
        pu.ProcessUnitName AS ProcessUnit,
        eq.EquipmentName AS Equipment,
        me.CostUSD AS Cost,
        me.DurationHours AS DowntimeHrs,
-       emp.FirstName AS Technician,
+       emp.FullName AS Technician,
        me.StartDate AS StartedOn
 ORDER BY me.CostUSD DESC
 LIMIT 50
@@ -171,8 +171,8 @@ LIMIT 50
 /* Two-pattern match: finds equipment that triggered safety alarms
    AND had maintenance events, correlating alarm severity with repair cost */
 
-MATCH (eq:Equipment)-[:HAS_SENSOR]->(s:Sensor)<-[:ALARM_FROM]-(sa:SafetyAlarm)
-MATCH (me:MaintenanceEvent)-[:MAINTENANCE_ON]->(eq)
+MATCH (eq:Equipment)-[:EquipmentHasSensor]->(s:Sensor)<-[:AlarmFromSensor]-(sa:SafetyAlarm)
+MATCH (me:MaintenanceEvent)-[:MaintenanceOnEquipment]->(eq)
 RETURN eq.EquipmentName AS Equipment,
        eq.CriticalityLevel AS Criticality,
        sa.AlarmType AS AlarmType,
@@ -188,7 +188,7 @@ LIMIT 50
 /* 4-hop: Refinery -> ProcessUnit -> ProductionRecord -> RefinedProduct
    Aggregates total output and average yield per refinery and product */
 
-MATCH (r:Refinery)-[:HAS_PROCESS_UNIT]->(pu:ProcessUnit)<-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
+MATCH (r:Refinery)-[:RefineryHasProcessUnit]->(pu:ProcessUnit)<-[:ProductionFromProcessUnit]-(pr:ProductionRecord)-[:ProductionOfProduct]->(rp:RefinedProduct)
 RETURN r.RefineryName AS Refinery,
        rp.ProductName AS Product,
        rp.ProductCategory AS Category,
@@ -203,7 +203,7 @@ LIMIT 50
 /* 5-hop end-to-end: CrudeOil -> CrudeOilFeed -> ProcessUnit -> ProductionRecord -> RefinedProduct
    Compares crude input cost with refined product output value */
 
-MATCH (co:CrudeOil)<-[:CRUDE_SOURCE]-(cf:CrudeOilFeed)-[:FEEDS_INTO]->(pu:ProcessUnit)<-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
+MATCH (co:CrudeOil)<-[:CrudeFeedFromCrudeOil]-(cf:CrudeOilFeed)-[:CrudeFeedToProcessUnit]->(pu:ProcessUnit)<-[:ProductionFromProcessUnit]-(pr:ProductionRecord)-[:ProductionOfProduct]->(rp:RefinedProduct)
 RETURN co.CrudeGradeName AS CrudeGrade,
        co.Classification AS CrudeClass,
        co.PricePerBarrelUSD AS CrudePriceUSD,
@@ -220,7 +220,7 @@ LIMIT 50
 /* Finds equipment that has NO sensors or sensors in non-Active status
    by traversing Refinery -> ProcessUnit -> Equipment -> Sensor */
 
-MATCH (r:Refinery)-[:HAS_PROCESS_UNIT]->(pu:ProcessUnit)-[:HAS_EQUIPMENT]->(eq:Equipment)-[:HAS_SENSOR]->(s:Sensor)
+MATCH (r:Refinery)-[:RefineryHasProcessUnit]->(pu:ProcessUnit)-[:ProcessUnitHasEquipment]->(eq:Equipment)-[:EquipmentHasSensor]->(s:Sensor)
 WHERE s.Status <> 'Active'
 RETURN r.RefineryName AS Refinery,
        eq.EquipmentName AS Equipment,
@@ -237,7 +237,7 @@ LIMIT 50
 /* Traces high-sulfur (sour) crude through the refinery to final products
    Filters on sulfur content > 1.0% (sour crude threshold) */
 
-MATCH (co:CrudeOil)<-[:CRUDE_SOURCE]-(cf:CrudeOilFeed)-[:FEEDS_INTO]->(pu:ProcessUnit)-[:HAS_EQUIPMENT]->(eq:Equipment)
+MATCH (co:CrudeOil)<-[:CrudeFeedFromCrudeOil]-(cf:CrudeOilFeed)-[:CrudeFeedToProcessUnit]->(pu:ProcessUnit)-[:ProcessUnitHasEquipment]->(eq:Equipment)
 WHERE co.SulfurContentPct > 1.0
 RETURN co.CrudeGradeName AS SourCrude,
        co.SulfurContentPct AS SulfurPct,
@@ -255,7 +255,7 @@ LIMIT 50
 /* 3-hop: Refinery -> StorageTank -> RefinedProduct
    Calculates fill percentage and inventory value */
 
-MATCH (r:Refinery)-[:HAS_STORAGE_TANK]->(st:StorageTank)-[:HOLDS_PRODUCT]->(rp:RefinedProduct)
+MATCH (r:Refinery)-[:RefineryHasStorageTank]->(st:StorageTank)-[:StorageTankHoldsProduct]->(rp:RefinedProduct)
 WHERE st.Status = 'Active'
 RETURN r.RefineryName AS Refinery,
        st.TankName AS Tank,
@@ -272,10 +272,10 @@ LIMIT 50
 /* 4-hop: Refinery -> Employee -> MaintenanceEvent -> Equipment -> ProcessUnit
    Groups by employee to find top maintainers with cost and equipment diversity */
 
-MATCH (r:Refinery)-[:EMPLOYS]->(emp:Employee)<-[:PERFORMED_BY]-(me:MaintenanceEvent)-[:MAINTENANCE_ON]->(eq:Equipment)
+MATCH (r:Refinery)-[:RefineryHasEmployee]->(emp:Employee)<-[:MaintenanceByEmployee]-(me:MaintenanceEvent)-[:MaintenanceOnEquipment]->(eq:Equipment)
 WHERE emp.CertificationLevel = 'Expert'
 RETURN r.RefineryName AS Refinery,
-       emp.FirstName AS Technician,
+       emp.FullName AS Technician,
        emp.Department AS Department,
        emp.ShiftPattern AS Shift,
        COUNT(me) AS JobCount,
@@ -289,8 +289,8 @@ LIMIT 50
 /* Explores which process units are connected via pipelines
    and what products they produce, revealing material flow */
 
-MATCH (pu1:ProcessUnit)<-[:PIPELINE_FROM]-(p:Pipeline)<-[:HAS_PIPELINE]-(r:Refinery)
-MATCH (pu1)<-[:PRODUCED_BY]-(pr:ProductionRecord)-[:PRODUCES]->(rp:RefinedProduct)
+MATCH (pu1:ProcessUnit)<-[:PipelineFromProcessUnit]-(p:Pipeline)<-[:RefineryHasPipeline]-(r:Refinery)
+MATCH (pu1)<-[:ProductionFromProcessUnit]-(pr:ProductionRecord)-[:ProductionOfProduct]->(rp:RefinedProduct)
 RETURN r.RefineryName AS Refinery,
        p.PipelineName AS Pipeline,
        p.DiameterInches AS Diameter,
@@ -306,7 +306,7 @@ LIMIT 50
 /* 5-hop: Refinery -> ProcessUnit -> Equipment -> Sensor -> SafetyAlarm
    Aggregates alarm counts per refinery to build a risk heatmap */
 
-MATCH (r:Refinery)-[:HAS_PROCESS_UNIT]->(pu:ProcessUnit)-[:HAS_EQUIPMENT]->(eq:Equipment)-[:HAS_SENSOR]->(s:Sensor)<-[:ALARM_FROM]-(sa:SafetyAlarm)
+MATCH (r:Refinery)-[:RefineryHasProcessUnit]->(pu:ProcessUnit)-[:ProcessUnitHasEquipment]->(eq:Equipment)-[:EquipmentHasSensor]->(s:Sensor)<-[:AlarmFromSensor]-(sa:SafetyAlarm)
 WHERE sa.Severity IN ['Critical', 'High']
 RETURN r.RefineryName AS Refinery,
        r.City AS City,

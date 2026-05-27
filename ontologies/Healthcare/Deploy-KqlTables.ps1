@@ -59,7 +59,7 @@ for ($w = 1; $w -le 6; $w++) { try { Invoke-KustoMgmt -Command ".show database" 
 Write-Host "`n[Step 1] Creating KQL tables..." -ForegroundColor Cyan
 
 $tables = @(
-    @{ Name = "PatientVitals"; Schema = "(PatientId:string, WardId:string, DepartmentId:string, Timestamp:datetime, HeartRateBPM:real, BloodPressureSystolic:real, BloodPressureDiastolic:real, TemperatureC:real, OxygenSaturation:real, RespiratoryRate:real, QualityFlag:string, IsAnomaly:bool)" },
+    @{ Name = "PatientVitals"; Schema = "(SensorId:string, PatientId:string, WardId:string, DepartmentId:string, Timestamp:datetime, HeartRateBPM:real, BloodPressureSystolic:real, BloodPressureDiastolic:real, TemperatureC:real, OxygenSaturation:real, RespiratoryRate:real, QualityFlag:string, IsAnomaly:bool)" },
     @{ Name = "ClinicalAlert"; Schema = "(AlertId:string, PatientId:string, WardId:string, DepartmentId:string, Timestamp:datetime, AlertType:string, Severity:string, MetricValue:real, ThresholdValue:real, Message:string, IsAcknowledged:bool)" },
     @{ Name = "LabMetric"; Schema = "(LabId:string, PatientId:string, PhysicianId:string, Timestamp:datetime, TestType:string, ResultValue:real, Unit:string, ReferenceMin:real, ReferenceMax:real, Interpretation:string)" },
     @{ Name = "MedicationEvent"; Schema = "(EventId:string, PatientId:string, MedicationId:string, NurseId:string, Timestamp:datetime, Dosage:string, Route:string, AdverseReaction:string, Status:string)" },
@@ -99,7 +99,7 @@ $telemetry = Import-Csv -Path (Join-Path $DataFolder "SensorTelemetry.csv")
 $vitalGroups = @{}
 foreach ($row in $telemetry) {
     $key = "$($row.DeviceId)|$($row.Timestamp)"
-    if (-not $vitalGroups[$key]) { $vitalGroups[$key] = @{ DeviceId = $row.DeviceId; Timestamp = $row.Timestamp; HR = ""; BP = ""; SpO2 = ""; Temp = ""; RR = ""; Quality = $row.Quality } }
+    if (-not $vitalGroups[$key]) { $vitalGroups[$key] = @{ DeviceId = $row.DeviceId; SensorId = $row.SensorId; Timestamp = $row.Timestamp; HR = ""; BP = ""; SpO2 = ""; Temp = ""; RR = ""; Quality = $row.Quality } }
     switch ($row.SensorType) {
         "HeartRate"         { $vitalGroups[$key].HR = $row.Value }
         "BloodPressure"     { $vitalGroups[$key].BP = $row.Value }
@@ -125,11 +125,11 @@ foreach ($g in $vitalGroups.Values) {
     $anomaly = "false"
     if ($hr -and ([double]$hr -gt 120 -or [double]$hr -lt 50)) { $anomaly = "true" }
     if ($spo2 -and [double]$spo2 -lt 90) { $anomaly = "true" }
-    $lines += "$pid,$wid,$did,$($g.Timestamp),$hr,$bp,$bpd,$temp,$spo2,$rr,$($g.Quality),$anomaly"
+    $lines += "$($g.SensorId),$pid,$wid,$did,$($g.Timestamp),$hr,$bp,$bpd,$temp,$spo2,$rr,$($g.Quality),$anomaly"
 }
 for ($i = 0; $i -lt $lines.Count; $i += 50) {
     $batch = $lines[$i..([Math]::Min($i + 49, $lines.Count - 1))]
-    try { Invoke-KustoMgmt -Command ".ingest inline into table PatientVitals with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $(    try { Invoke-KustoMgmt -Command ".ingest inline into table PatientVitals with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $($_.Exception.Message)" }.Exception.Message)" }
+    try { Invoke-KustoMgmt -Command ".ingest inline into table PatientVitals with (format='csv') <|`n$($batch -join "`n")" | Out-Null } catch { Write-Warning "Batch ingest failed (non-fatal): $($_.Exception.Message)" }
 }
 Write-Host "  [OK] PatientVitals ($($lines.Count) rows)" -ForegroundColor Green
 

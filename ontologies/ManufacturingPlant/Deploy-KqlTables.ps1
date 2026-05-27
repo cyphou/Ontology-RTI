@@ -86,7 +86,12 @@ Import-Csv -Path (Join-Path $DataFolder "DimSensor.csv") | ForEach-Object {
     $sensorLookup[$_.SensorId] = @{ MachineId = $_.MachineId; SensorType = $_.SensorType; MeasurementUnit = $_.MeasurementUnit; MinRange = [double]$_.MinRange; MaxRange = [double]$_.MaxRange }
 }
 $machineLookup = @{}
-Import-Csv -Path (Join-Path $DataFolder "DimMachine.csv") | ForEach-Object { $machineLookup[$_.MachineId] = @{ LineId = $_.LineId; PlantId = $_.PlantId } }
+$lineLookup = @{}
+Import-Csv -Path (Join-Path $DataFolder "DimProductionLine.csv") | ForEach-Object { $lineLookup[$_.LineId] = $_.PlantId }
+Import-Csv -Path (Join-Path $DataFolder "DimMachine.csv") | ForEach-Object {
+    $plantId = $lineLookup[$_.LineId]; if (-not $plantId) { $plantId = "UNKNOWN" }
+    $machineLookup[$_.MachineId] = @{ LineId = $_.LineId; PlantId = $plantId }
+}
 
 $telemetry = Import-Csv -Path (Join-Path $DataFolder "SensorTelemetry.csv")
 $lines = @()
