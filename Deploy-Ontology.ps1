@@ -79,7 +79,7 @@ $domains = @{
     }
     SmartBuilding = @{
         DisplayName  = "Smart Building"
-        Emoji        = [char]0x1F3E2  # office building
+        Emoji        = [char]::ConvertFromUtf32(0x1F3E2)  # office building
         Description  = "Buildings, floors, zones, HVAC, lighting, elevators, occupancy, energy"
         Lakehouse    = "SmartBuildingLH"
         Eventhouse   = "BuildingTelemetryEH"
@@ -91,7 +91,7 @@ $domains = @{
     }
     ManufacturingPlant = @{
         DisplayName  = "Manufacturing Plant"
-        Emoji        = [char]0x1F3ED  # factory
+        Emoji        = [char]::ConvertFromUtf32(0x1F3ED)  # factory
         Description  = "Plants, production lines, machines, quality checks, materials, batches"
         Lakehouse    = "ManufacturingPlantLH"
         Eventhouse   = "PlantTelemetryEH"
@@ -103,7 +103,7 @@ $domains = @{
     }
     ITAsset = @{
         DisplayName  = "IT Asset Management"
-        Emoji        = [char]0x1F5A5  # desktop computer
+        Emoji        = [char]::ConvertFromUtf32(0x1F5A5)  # desktop computer
         Description  = "Datacenters, racks, servers, VMs, applications, incidents, licenses"
         Lakehouse    = "ITAssetLH"
         Eventhouse   = "ITTelemetryEH"
@@ -115,7 +115,7 @@ $domains = @{
     }
     WindTurbine = @{
         DisplayName  = "Wind Turbine / Wind Farm"
-        Emoji        = [char]0x1F32C  # wind
+        Emoji        = [char]::ConvertFromUtf32(0x1F32C)  # wind
         Description  = "Wind farms, turbines, nacelles, blades, towers, power output, weather"
         Lakehouse    = "WindTurbineLH"
         Eventhouse   = "WindTelemetryEH"
@@ -127,7 +127,7 @@ $domains = @{
     }
     Healthcare = @{
         DisplayName  = "Healthcare"
-        Emoji        = [char]0x1F3E5  # hospital
+        Emoji        = [char]::ConvertFromUtf32(0x1F3E5)  # hospital
         Description  = "Hospitals, departments, wards, patients, physicians, devices, medications"
         Lakehouse    = "HealthcareLH"
         Eventhouse   = "HealthcareTelemetryEH"
