@@ -19,13 +19,3 @@ TKT-017,HVAC,HVAC-005,Preventive,Low,OCC-001,2024-09-01,2024-09-01,1.5,200,Execu
 TKT-018,Elevator,ELV-001,Emergency,Critical,OCC-001,2024-09-15,2024-09-16,12.0,8000,Main cable replacement after safety sensor triggered,Completed
 TKT-019,HVAC,HVAC-007,Corrective,High,OCC-011,2024-10-01,2024-10-02,6.0,2800,Campus AHU cooling coil leak repair,In Progress
 TKT-020,Lighting,LIT-014,Corrective,High,OCC-014,2024-10-10,,0,0,ER surgical light flickering - awaiting parts,Open
-"MT-001",,,"HVAC Repair","Emergency",,"2024-10-05",,"19.9","4774.86","HVAC Repair in zone ZN-024","Completed"
-"MT-002",,,"Electrical","Emergency",,"2024-10-08",,"32.6","4181.58","Electrical in zone ZN-011","Completed"
-"MT-003",,,"HVAC Repair","Emergency",,"2024-10-11",,"35","1282.06","HVAC Repair in zone ZN-019","InProgress"
-"MT-004",,,"Plumbing","High",,"2024-10-14",,"9.4","555.45","Plumbing in zone ZN-014","Completed"
-"MT-005",,,"Electrical","Medium",,"2024-10-17",,"38.8","1516.99","Electrical in zone ZN-004","Scheduled"
-"MT-006",,,"Elevator Service","Medium",,"2024-10-20",,"26.3","957.18","Elevator Service in zone ZN-007","InProgress"
-"MT-007",,,"Cleaning","Low",,"2024-10-23",,"28.1","2713.91","Cleaning in zone ZN-012","InProgress"
-"MT-008",,,"Lighting Replacement","Emergency",,"2024-10-26",,"2","2695.26","Lighting Replacement in zone ZN-009","Completed"
-"MT-009",,,"Electrical","Medium",,"2024-10-29",,"23.6","1147.2","Electrical in zone ZN-001","Scheduled"
-"MT-010",,,"Lighting Replacement","High",,"2024-11-01",,"34.2","684.7","Lighting Replacement in zone ZN-018","InProgress"

@@ -11,13 +11,3 @@ ME-009,WT-007,TECH-005,Preventive,Low,2024-12-01,,4,Tower,Tower bolt torque chec
 ME-010,WT-011,TECH-009,Preventive,Medium,2024-09-30,2024-09-30,6,Generator,Generator winding resistance check,2800,Completed
 ME-011,WT-014,TECH-011,Corrective,High,2024-10-28,2024-10-29,14,Converter,Power converter module replacement,22000,Completed
 ME-012,WT-008,TECH-006,Preventive,Low,2024-11-10,2024-11-10,3,Sensors,Anemometer calibration and replacement,1500,Completed
-"ME-013","WT-002","TN-004","Emergency",,,,"6.3","BladeHub",,"14886.92","Completed"
-"ME-014","WT-014","TN-012","Overhaul",,,,"44.5","Transformer",,"23547.28","Completed"
-"ME-015","WT-010","TN-005","Corrective",,,,"11.9","YawDrive",,"24435.8","Completed"
-"ME-016","WT-002","TN-004","Corrective",,,,"45.9","Gearbox",,"7213.09","Completed"
-"ME-017","WT-007","TN-012","Inspection",,,,"7.1","Tower",,"12536.33","Scheduled"
-"ME-018","WT-006","TN-002","Overhaul",,,,"16.8","Generator",,"5720.21","Scheduled"
-"ME-019","WT-003","TN-005","Emergency",,,,"27","Gearbox",,"17609.63","Scheduled"
-"ME-020","WT-012","TN-001","Corrective",,,,"21","SCADA",,"12339.46","Completed"
-"ME-021","WT-004","TN-006","Corrective",,,,"39.3","SCADA",,"22427.87","Completed"
-"ME-022","WT-013","TN-010","Inspection",,,,"21.8","YawDrive",,"13960.84","Completed"
