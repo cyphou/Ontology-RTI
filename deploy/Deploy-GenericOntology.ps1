@@ -74,8 +74,12 @@ Write-Info "Found $($lakehouseFiles.Count) lakehouse CSV files + $(if ($telemetr
 # Step 0: Authenticate
 # ------------------------------------------------------------------
 Write-Step "Step 0: Authenticating to Azure / Fabric"
-$account = Get-AzContext
-if (-not $account) { Write-Info "No active session. Launching login..."; Connect-AzAccount } else { Write-Info "Using: $($account.Account.Id)" }
+$azAccount = az account show --query user.name -o tsv 2>$null
+if ($azAccount) { Write-Info "Using (az cli): $azAccount" }
+else {
+    $account = Get-AzContext
+    if (-not $account) { Write-Info "No active session. Launching login..."; Connect-AzAccount } else { Write-Info "Using (Az PS): $($account.Account.Id)" }
+}
 $fabricToken = Get-FabricToken
 $storageToken = Get-StorageToken
 Write-Success "Authenticated"
@@ -213,6 +217,7 @@ for ($a = 1; $a -le 3; $a++) {
         if ($nbResp.StatusCode -eq 201) { $notebookId = ($nbResp.Content | ConvertFrom-Json).id }
         elseif ($nbResp.StatusCode -eq 202) {
             $nbOpUrl = $nbResp.Headers["Location"]
+            if ($nbOpUrl -is [array]) { $nbOpUrl = $nbOpUrl[0] }
             if ($nbOpUrl) { for ($p = 1; $p -le 12; $p++) { Start-Sleep -Seconds 5; $poll = Invoke-RestMethod -Uri $nbOpUrl -Headers @{Authorization = "Bearer $fabricToken"}; if ($poll.status -eq "Succeeded") { break } } }
             Start-Sleep -Seconds 3
             $nbItems = (Invoke-RestMethod -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" -Headers @{Authorization = "Bearer $fabricToken"}).value
@@ -221,8 +226,10 @@ for ($a = 1; $a -le 3; $a++) {
         }
         if ($notebookId) { Write-Success "Notebook created: $notebookId"; break }
     } catch {
-        $nbErr = ""; try { $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $nbErr = $sr.ReadToEnd(); $sr.Close() } catch {}
-        if ("$($_.Exception.Message) $nbErr" -like "*ItemDisplayNameAlreadyInUse*") {
+        $errRecord = $_; $nbErr = ""
+        if ($errRecord.ErrorDetails -and $errRecord.ErrorDetails.Message) { $nbErr = $errRecord.ErrorDetails.Message }
+        else { try { $sr = New-Object System.IO.StreamReader($errRecord.Exception.Response.GetResponseStream()); $nbErr = $sr.ReadToEnd(); $sr.Close() } catch {} }
+        if ("$($errRecord.Exception.Message) $nbErr" -like "*ItemDisplayNameAlreadyInUse*") {
             $nbItems = (Invoke-RestMethod -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" -Headers @{Authorization = "Bearer $fabricToken"}).value
             $nbFound = $nbItems | Where-Object { $_.displayName -eq $nbName } | Select-Object -First 1
             if ($nbFound) { $notebookId = $nbFound.id; Write-Info "Using existing: $notebookId" }; break
@@ -259,6 +266,7 @@ if ($notebookId) {
                 $runResp = Invoke-WebRequest -Method Post -Uri "$FabricApiBase/workspaces/$WorkspaceId/items/$notebookId/jobs/instances?jobType=RunNotebook" -Headers @{ Authorization = "Bearer $fabricToken"; "Content-Type" = "application/json" } -UseBasicParsing
                 if ($runResp.StatusCode -eq 202) {
                     $jobLoc = $runResp.Headers["Location"]
+                    if ($jobLoc -is [array]) { $jobLoc = $jobLoc[0] }
                     if ($jobLoc) {
                         for ($w = 15; $w -le 600; $w += 15) {
                             Start-Sleep -Seconds 15
@@ -386,8 +394,8 @@ if (Test-Path $tmdlRoot) {
             if ($smResponse.StatusCode -eq 202) {
                 Write-Info "Semantic model creation accepted (202). Waiting..."
                 $smOpUrl = $null
-                try { $smOpUrl = $smResponse.Headers["Location"] } catch {}
-                if (-not $smOpUrl) { try { $opId = $smResponse.Headers["x-ms-operation-id"]; if ($opId) { $smOpUrl = "$FabricApiBase/operations/$opId" } } catch {} }
+                try { $smOpUrl = $smResponse.Headers["Location"]; if ($smOpUrl -is [array]) { $smOpUrl = $smOpUrl[0] } } catch {}
+                if (-not $smOpUrl) { try { $opId = $smResponse.Headers["x-ms-operation-id"]; if ($opId -is [array]) { $opId = $opId[0] }; if ($opId) { $smOpUrl = "$FabricApiBase/operations/$opId" } } catch {} }
                 if ($smOpUrl) {
                     for ($p = 10; $p -le 120; $p += 10) {
                         Start-Sleep -Seconds 10

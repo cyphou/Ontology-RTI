@@ -4,10 +4,12 @@
 .DESCRIPTION
     Provides common functions used across all deployment scripts:
     - Write-Step, Write-Info, Write-Success, Write-Warn (formatted output)
-    - Get-FabricToken, Get-StorageToken (authentication)
-    - Invoke-FabricApi (REST API with retry/LRO handling)
+    - Get-FabricToken, Get-StorageToken (authentication — az cli preferred, Az PS fallback)
+    - Invoke-FabricApi (REST API with retry/LRO handling, PS7 header array fix)
     - Wait-FabricOperation (long-running operation polling)
-    - Upload-FileToOneLake (DFS protocol file upload)
+    - Upload-FileToOneLake (DFS protocol file upload with retry)
+    - DeterministicGuid (MD5-based idempotent GUID generation)
+    - ToBase64 (UTF-8 string to Base64 encoding)
 
     Dot-source this file from any deployment script:
         . (Join-Path $PSScriptRoot "helpers.ps1")
@@ -48,19 +50,27 @@ function Get-FabricToken {
     <#
     .SYNOPSIS
         Retrieves a bearer token for Fabric REST API.
-        Supports Service Principal auth when $script:ClientId, $script:ClientSecret, $script:TenantId are set.
+        Priority: Service Principal > az cli (MFA/CAE) > Az PowerShell.
     #>
     if ($script:ClientId -and $script:ClientSecret -and $script:TenantId) {
         $secPwd = ConvertTo-SecureString $script:ClientSecret -AsPlainText -Force
         $cred = New-Object System.Management.Automation.PSCredential($script:ClientId, $secPwd)
         Connect-AzAccount -ServicePrincipal -Credential $cred -TenantId $script:TenantId -ErrorAction Stop | Out-Null
+        $token = Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com"
+        return $token.Token
     }
+    # Prefer az cli (handles MFA/CAE better than Az PowerShell)
+    try {
+        $token = az account get-access-token --resource "https://api.fabric.microsoft.com" --query accessToken -o tsv 2>$null
+        if ($token) { return $token }
+    } catch {}
+    # Fallback to Az PowerShell
     try {
         $token = Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com"
         return $token.Token
     }
     catch {
-        Write-Error "Failed to get Fabric API token. Run 'Connect-AzAccount' first. Error: $_"
+        Write-Error "Failed to get Fabric API token. Run 'az login' or 'Connect-AzAccount' first. Error: $_"
         throw
     }
 }
@@ -69,13 +79,20 @@ function Get-StorageToken {
     <#
     .SYNOPSIS
         Retrieves a bearer token for OneLake (Storage) API.
+        Priority: az cli > Az PowerShell.
     #>
+    # Prefer az cli
+    try {
+        $token = az account get-access-token --resource "https://storage.azure.com/" --query accessToken -o tsv 2>$null
+        if ($token) { return $token }
+    } catch {}
+    # Fallback to Az PowerShell
     try {
         $token = Get-AzAccessToken -ResourceTypeName Storage
         return $token.Token
     }
     catch {
-        Write-Error "Failed to get Storage token. Run 'Connect-AzAccount' first. Error: $_"
+        Write-Error "Failed to get Storage token. Run 'az login' first. Error: $_"
         throw
     }
 }
@@ -125,7 +142,9 @@ function Invoke-FabricApi {
             # Handle 202 Accepted (Long Running Operation)
             if ($statusCode -eq 202) {
                 $loc = $webResponse.Headers["Location"]
+                if ($loc -is [array]) { $loc = $loc[0] }
                 $opId = $webResponse.Headers["x-ms-operation-id"]
+                if ($opId -is [array]) { $opId = $opId[0] }
                 if ($loc) {
                     $operationUrl = $loc
                 }
@@ -148,16 +167,24 @@ function Invoke-FabricApi {
             return $null
         }
         catch {
-            $ex = $_.Exception
+            $errRecord = $_
+            $ex = $errRecord.Exception
             $sc = $null
             $errorBody = ""
             if ($ex -and $ex.Response) {
                 $sc = [int]$ex.Response.StatusCode
-                try {
-                    $sr = New-Object System.IO.StreamReader($ex.Response.GetResponseStream())
-                    $errorBody = $sr.ReadToEnd()
-                    $sr.Close()
-                } catch { }
+                # PS 7: ErrorDetails.Message has the response body; PS 5: use GetResponseStream
+                if ($errRecord.ErrorDetails -and $errRecord.ErrorDetails.Message) {
+                    $errorBody = $errRecord.ErrorDetails.Message
+                } else {
+                    try {
+                        $sr = New-Object System.IO.StreamReader($ex.Response.GetResponseStream())
+                        $errorBody = $sr.ReadToEnd()
+                        $sr.Close()
+                    } catch { }
+                }
+                # Fallback: exception message itself (PS 7 includes body in message)
+                if (-not $errorBody -and $ex.Message) { $errorBody = $ex.Message }
             }
 
             $isRetriable = ($errorBody -like "*isRetriable*true*" -or $errorBody -like "*NotAvailableYet*")
@@ -205,8 +232,9 @@ function Wait-FabricOperation {
             Write-Info "  Operation status: $($status.status) ($elapsed`s elapsed)"
 
             if ($status.status -eq "Succeeded") { return $status }
-            if ($status.status -eq "Failed") {
-                throw "Fabric operation failed: $($status | ConvertTo-Json -Depth 5 -Compress)"
+            if ($status.status -in @("Failed","Cancelled")) {
+                $errMsg = if ($status.error) { $status.error.message } else { $status.status }
+                throw "Fabric operation $($status.status): $errMsg"
             }
         }
         catch {
@@ -228,6 +256,7 @@ function Upload-FileToOneLake {
     <#
     .SYNOPSIS
         Uploads a local file to OneLake via DFS API (PUT + PATCH append + PATCH flush).
+        Includes retry logic with exponential backoff.
     #>
     param(
         [string]$LocalFilePath,
@@ -237,26 +266,46 @@ function Upload-FileToOneLake {
 
     $fileBytes = [System.IO.File]::ReadAllBytes($LocalFilePath)
     $fileName = [System.IO.Path]::GetFileName($LocalFilePath)
+    $fileSize = $fileBytes.Length
+    $headers = @{ "Authorization" = "Bearer $Token" }
 
-    # Step 1: Create the file (PUT with resource=file)
-    $createUri = "${OneLakePath}/${fileName}?resource=file"
-    Invoke-RestMethod -Method Put -Uri $createUri -Headers @{
-        "Authorization" = "Bearer $Token"
-        "Content-Length" = "0"
-    } | Out-Null
+    $maxRetries = 3
+    for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+        try {
+            # Step 1: Create the file (PUT with resource=file)
+            Invoke-RestMethod -Method Put -Uri "${OneLakePath}/${fileName}?resource=file" -Headers ($headers + @{ "Content-Length" = "0" }) | Out-Null
 
-    # Step 2: Append data (PATCH with action=append)
-    $appendUri = "${OneLakePath}/${fileName}?action=append&position=0"
-    Invoke-RestMethod -Method Patch -Uri $appendUri -Headers @{
-        "Authorization"  = "Bearer $Token"
-        "Content-Type"   = "application/octet-stream"
-        "Content-Length"  = $fileBytes.Length.ToString()
-    } -Body $fileBytes | Out-Null
+            # Step 2: Append data (PATCH with action=append)
+            Invoke-RestMethod -Method Patch -Uri "${OneLakePath}/${fileName}?action=append&position=0" -Headers ($headers + @{ "Content-Length" = $fileSize.ToString() }) -Body $fileBytes | Out-Null
 
-    # Step 3: Flush (PATCH with action=flush)
-    $flushUri = "${OneLakePath}/${fileName}?action=flush&position=$($fileBytes.Length)"
-    Invoke-RestMethod -Method Patch -Uri $flushUri -Headers @{
-        "Authorization" = "Bearer $Token"
-        "Content-Length" = "0"
-    } | Out-Null
+            # Step 3: Flush (PATCH with action=flush)
+            Invoke-RestMethod -Method Patch -Uri "${OneLakePath}/${fileName}?action=flush&position=$fileSize" -Headers ($headers + @{ "Content-Length" = "0" }) | Out-Null
+            return
+        } catch {
+            if ($attempt -eq $maxRetries) { throw }
+            Write-Warn "Upload attempt $attempt failed: $($_.Exception.Message) — retrying in $($attempt * 5)s..."
+            Start-Sleep -Seconds ($attempt * 5)
+        }
+    }
+}
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+function DeterministicGuid([string]$seed) {
+    <#
+    .SYNOPSIS
+        Generates a deterministic GUID from a seed string (MD5-based, idempotent deployments).
+    #>
+    $hash = [System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($seed))
+    return ([guid]::new($hash)).ToString()
+}
+
+function ToBase64([string]$text) {
+    <#
+    .SYNOPSIS
+        Base64-encodes a UTF-8 string.
+    #>
+    return [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($text))
 }
