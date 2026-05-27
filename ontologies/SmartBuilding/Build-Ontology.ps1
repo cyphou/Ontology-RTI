@@ -277,7 +277,7 @@ $relationships = @(
     @{ id = "3008"; name = "BuildingHasEnergyMeter"; sourceId = "1001"; targetId = "1008" },
     @{ id = "3009"; name = "AlertFromSensor"; sourceId = "1012"; targetId = "1007" },
     @{ id = "3010"; name = "TicketAssignedTo"; sourceId = "1011"; targetId = "1009" },
-    @{ id = "3011"; name = "BuildingHasOccupant"; sourceId = "1003"; targetId = "1009" }
+    @{ id = "3011"; name = "BuildingHasOccupant"; sourceId = "1001"; targetId = "1009" }
 )
 
 # ============================================================================

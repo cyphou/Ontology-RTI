@@ -4,14 +4,14 @@
  * Graph Query Language (GQL) - ISO/IEC 39075:2024
  *
  * Graph Schema:
- *   Nodes: Building, Floor, Zone, HVAC, Lighting, Elevator,
+ *   Nodes: Building, Floor, Zone, HVACSystem, LightingSystem, Elevator,
  *          Sensor, EnergyMeter, Occupant, AccessPoint, MaintenanceTicket, Alert
  *
  *   Edges:
  *     Building -[BuildingHasFloor]-> Floor
  *     Floor -[FloorHasZone]-> Zone
- *     Zone -[ZoneHasHVAC]-> HVAC
- *     Zone -[ZoneHasLighting]-> Lighting
+ *     Zone -[ZoneHasHVAC]-> HVACSystem
+ *     Zone -[ZoneHasLighting]-> LightingSystem
  *     Zone -[ZoneHasSensor]-> Sensor
  *     Zone -[ZoneHasAccessPoint]-> AccessPoint
  *     Building -[BuildingHasElevator]-> Elevator
@@ -43,8 +43,8 @@ LIMIT 100
 
 /* ===== Query 3: Zone HVAC and Lighting Systems ===== */
 
-MATCH (z:Zone)-[:ZoneHasHVAC]->(h:HVAC)
-MATCH (z)-[:ZoneHasLighting]->(l:Lighting)
+MATCH (z:Zone)-[:ZoneHasHVAC]->(h:HVACSystem)
+MATCH (z)-[:ZoneHasLighting]->(l:LightingSystem)
 RETURN z.ZoneName AS Zone,
        h.HVACName AS HVAC,
        h.HVACType AS HVACType,
@@ -144,7 +144,7 @@ LIMIT 100
 
 /* ===== Query 11: HVAC Systems Needing Maintenance ===== */
 
-MATCH (z:Zone)-[:ZoneHasHVAC]->(h:HVAC)
+MATCH (z:Zone)-[:ZoneHasHVAC]->(h:HVACSystem)
 MATCH (z)-[:ZoneHasSensor]->(s:Sensor)<-[:AlertFromSensor]-(a:Alert)
 WHERE s.SensorType = 'Temperature' AND a.Severity IN ['Critical', 'High']
 RETURN z.ZoneName AS Zone,
@@ -229,7 +229,7 @@ ORDER BY TicketCount DESC
 
 /* ===== Query 19: HVAC Systems with High Capacity by Zone ===== */
 
-MATCH (z:Zone)-[:ZoneHasHVAC]->(hvac:HVAC)
+MATCH (z:Zone)-[:ZoneHasHVAC]->(hvac:HVACSystem)
 WHERE hvac.CapacityBTU > 50000
 RETURN z.ZoneName AS Zone,
        hvac.HVACName AS HVACSystem,
@@ -242,7 +242,7 @@ ORDER BY hvac.CapacityBTU DESC
 
 MATCH (z:Zone)
 OPTIONAL MATCH (z)-[:ZoneHasSensor]->(s:Sensor)
-OPTIONAL MATCH (z)-[:ZoneHasHVAC]->(hvac:HVAC)
+OPTIONAL MATCH (z)-[:ZoneHasHVAC]->(hvac:HVACSystem)
 OPTIONAL MATCH (z)-[:ZoneHasAccessPoint]->(ap:AccessPoint)
 RETURN z.ZoneName AS Zone,
        z.ZoneType AS ZoneType,
