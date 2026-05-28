@@ -113,6 +113,7 @@ TABLE_DEFINITIONS = [
             StructField("FullName", StringType(), True),
             StructField("Department", StringType(), True),
             StructField("ZoneId", StringType(), True),
+            StructField("BuildingId", StringType(), True),
             StructField("AccessLevel", StringType(), True),
             StructField("BadgeId", StringType(), True),
             StructField("Status", StringType(), True),

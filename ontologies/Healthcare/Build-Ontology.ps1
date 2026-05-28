@@ -155,6 +155,57 @@ $entityTypes += @{
     timestampColumn = "Timestamp"
 }
 
+# --- FactLabResult (ID: 1010) ---
+$entityTypes += @{
+    id = "1010"; name = "LabResult"; entityIdParts = @("2901"); displayNamePropertyId = "2904"
+    properties = @(
+        @{ id = "2901"; name = "LabResultId"; valueType = "String" },
+        @{ id = "2902"; name = "PatientId"; valueType = "String" },
+        @{ id = "2903"; name = "PhysicianId"; valueType = "String" },
+        @{ id = "2904"; name = "TestType"; valueType = "String" },
+        @{ id = "2905"; name = "TestDate"; valueType = "String" },
+        @{ id = "2906"; name = "ResultValue"; valueType = "Double" },
+        @{ id = "2907"; name = "Unit"; valueType = "String" },
+        @{ id = "2908"; name = "ReferenceRange"; valueType = "String" },
+        @{ id = "2909"; name = "Interpretation"; valueType = "String" },
+        @{ id = "2910"; name = "Status"; valueType = "String" }
+    )
+    tableName = "factlabresult"
+}
+
+# --- FactMedicationAdmin (ID: 1011) ---
+$entityTypes += @{
+    id = "1011"; name = "MedicationAdmin"; entityIdParts = @("5001"); displayNamePropertyId = "5001"
+    properties = @(
+        @{ id = "5001"; name = "AdminId"; valueType = "String" },
+        @{ id = "5002"; name = "PatientId"; valueType = "String" },
+        @{ id = "5003"; name = "MedicationId"; valueType = "String" },
+        @{ id = "5004"; name = "NurseId"; valueType = "String" },
+        @{ id = "5005"; name = "AdminDate"; valueType = "String" },
+        @{ id = "5006"; name = "Dosage"; valueType = "String" },
+        @{ id = "5007"; name = "Route"; valueType = "String" },
+        @{ id = "5008"; name = "Status"; valueType = "String" }
+    )
+    tableName = "factmedicationadmin"
+}
+
+# --- FactProcedure (ID: 1012) ---
+$entityTypes += @{
+    id = "1012"; name = "Procedure"; entityIdParts = @("5101"); displayNamePropertyId = "5104"
+    properties = @(
+        @{ id = "5101"; name = "ProcedureId"; valueType = "String" },
+        @{ id = "5102"; name = "PatientId"; valueType = "String" },
+        @{ id = "5103"; name = "PhysicianId"; valueType = "String" },
+        @{ id = "5104"; name = "ProcedureType"; valueType = "String" },
+        @{ id = "5105"; name = "ProcedureDate"; valueType = "String" },
+        @{ id = "5106"; name = "DurationMinutes"; valueType = "Double" },
+        @{ id = "5107"; name = "Outcome"; valueType = "String" },
+        @{ id = "5108"; name = "Room"; valueType = "String" },
+        @{ id = "5109"; name = "Status"; valueType = "String" }
+    )
+    tableName = "factprocedure"
+}
+
 $relationships = @(
     @{ id = "3001"; name = "HospitalHasDepartment"; sourceId = "1001"; targetId = "1002" },
     @{ id = "3002"; name = "DepartmentHasWard"; sourceId = "1002"; targetId = "1003" },
@@ -162,7 +213,14 @@ $relationships = @(
     @{ id = "3004"; name = "WardHasNurse"; sourceId = "1003"; targetId = "1005" },
     @{ id = "3005"; name = "WardHasPatient"; sourceId = "1003"; targetId = "1006" },
     @{ id = "3006"; name = "WardHasDevice"; sourceId = "1003"; targetId = "1007" },
-    @{ id = "3007"; name = "DeviceHasSensor"; sourceId = "1007"; targetId = "1009" }
+    @{ id = "3007"; name = "DeviceHasSensor"; sourceId = "1007"; targetId = "1009" },
+    @{ id = "3008"; name = "PatientHasLabResult"; sourceId = "1006"; targetId = "1010" },
+    @{ id = "3009"; name = "PatientHasMedicationAdmin"; sourceId = "1006"; targetId = "1011" },
+    @{ id = "3010"; name = "PatientHasProcedure"; sourceId = "1006"; targetId = "1012" },
+    @{ id = "3011"; name = "PhysicianOrdersLabResult"; sourceId = "1004"; targetId = "1010" },
+    @{ id = "3012"; name = "PhysicianPerformsProcedure"; sourceId = "1004"; targetId = "1012" },
+    @{ id = "3013"; name = "MedicationAdminUsesMedication"; sourceId = "1011"; targetId = "1008" },
+    @{ id = "3014"; name = "NurseAdministersMedicationAdmin"; sourceId = "1005"; targetId = "1011" }
 )
 
 # BUILD PARTS (reusable pattern)
@@ -183,7 +241,7 @@ foreach ($et in $entityTypes) {
 
     $bindGuid = DeterministicGuid "NonTimeSeries-$($et.id)"
     $propBindings = ($et.properties | ForEach-Object { '{"sourceColumnName":"' + $_.name + '","targetPropertyId":"' + $_.id + '"}' }) -join ','
-    $bindJson = '{"id":"' + $bindGuid + '","dataBindingConfiguration":{"dataBindingType":"NonTimeSeries","propertyBindings":[' + $propBindings + '],"sourceTableProperties":{"sourceType":"LakehouseTable","workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $et.tableName + '","sourceSchema":"dbo"}}}'
+    $bindJson = '{"id":"' + $bindGuid + '","dataBindingConfiguration":{"dataBindingType":"NonTimeSeries","propertyBindings":[' + $propBindings + '],"sourceTableProperties":{"sourceType":"LakehouseTable","workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $et.tableName + '"}}}'
     $parts += @{ path = "EntityTypes/$($et.id)/DataBindings/$bindGuid.json"; payload = (ToBase64 $bindJson); payloadType = "InlineBase64" }
 
     if ($et.timeseriesTable) {
@@ -205,17 +263,17 @@ foreach ($rel in $relationships) {
     $sourcePkPropId = $sourceEntity.entityIdParts[0]; $sourcePkName = ($sourceEntity.properties | Where-Object { $_.id -eq $sourcePkPropId }).name
     $targetPkPropId = $targetEntity.entityIdParts[0]; $targetPkName = ($targetEntity.properties | Where-Object { $_.id -eq $targetPkPropId }).name
     $fkProp = $sourceEntity.properties | Where-Object { $_.name -eq $targetPkName }
-    if (-not $fkProp) { $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" } }
+    if (-not $fkProp) { $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" } | Select-Object -First 1 }
     if ($fkProp) {
         $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
-        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
+        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
         $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
     } else {
         $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -eq $sourcePkName }
-        if (-not $fkPropInTarget) { $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" } }
+        if (-not $fkPropInTarget) { $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" } | Select-Object -First 1 }
         if ($fkPropInTarget) {
             $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
-            $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
+            $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
             $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
         } else { Write-Warning "No FK found for relationship $($rel.name)" }
     }

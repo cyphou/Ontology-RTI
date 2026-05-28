@@ -46,12 +46,18 @@ if (-not $EventhouseId -or -not $KqlDatabaseId -or -not $QueryServiceUri) {
     Write-Host "Auto-detecting Eventhouse and KQL Database..." -ForegroundColor Yellow
     $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $fabricHeaders).value
     if (-not $KqlDatabaseId) {
-        $kqlDb = $allItems | Where-Object { $_.type -eq 'KQLDatabase' } | Select-Object -First 1
+        $kqlDbs = $allItems | Where-Object { $_.type -eq 'KQLDatabase' }
+        $kqlDb = $null
+        if ($KqlDatabaseName) { $kqlDb = $kqlDbs | Where-Object { $_.displayName -eq $KqlDatabaseName } | Select-Object -First 1 }
+        if (-not $kqlDb) { $kqlDb = $kqlDbs | Select-Object -First 1 }
         if ($kqlDb) { $KqlDatabaseId = $kqlDb.id; Write-Host "  Found KQL Database: $($kqlDb.displayName)" -ForegroundColor Gray }
         else { Write-Host "[ERROR] No KQL Database found." -ForegroundColor Red; exit 1 }
     }
     if (-not $EventhouseId) {
-        $eh = $allItems | Where-Object { $_.type -eq 'Eventhouse' } | Select-Object -First 1
+        $ehs = $allItems | Where-Object { $_.type -eq 'Eventhouse' }
+        $eh = $null
+        if ($KqlDatabaseName) { $eh = $ehs | Where-Object { $_.displayName -eq $KqlDatabaseName } | Select-Object -First 1 }
+        if (-not $eh) { $eh = $ehs | Select-Object -First 1 }
         if ($eh) { $EventhouseId = $eh.id }
     }
     if (-not $QueryServiceUri -and $EventhouseId) {

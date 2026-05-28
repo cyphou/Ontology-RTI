@@ -18,8 +18,8 @@ TABLE_DEFINITIONS = [
             StructField("Location", StringType(), True),
             StructField("Latitude", DoubleType(), True),
             StructField("Longitude", DoubleType(), True),
-            StructField("TotalTurbines", DoubleType(), True),
-            StructField("InstalledCapacityMW", DoubleType(), True),
+            StructField("TotalTurbines", LongType(), True),
+            StructField("InstalledCapacityMW", LongType(), True),
             StructField("CommissionDate", StringType(), True),
             StructField("Operator", StringType(), True),
             StructField("Status", StringType(), True),
@@ -33,9 +33,9 @@ TABLE_DEFINITIONS = [
             StructField("WindFarmId", StringType(), True),
             StructField("Model", StringType(), True),
             StructField("Manufacturer", StringType(), True),
-            StructField("RatedCapacityKW", DoubleType(), True),
-            StructField("HubHeightM", DoubleType(), True),
-            StructField("RotorDiameterM", DoubleType(), True),
+            StructField("RatedCapacityKW", LongType(), True),
+            StructField("HubHeightM", LongType(), True),
+            StructField("RotorDiameterM", LongType(), True),
             StructField("CommissionDate", StringType(), True),
             StructField("Status", StringType(), True),
         ])
@@ -47,7 +47,7 @@ TABLE_DEFINITIONS = [
             StructField("BladeName", StringType(), True),
             StructField("TurbineId", StringType(), True),
             StructField("BladePosition", StringType(), True),
-            StructField("LengthM", DoubleType(), True),
+            StructField("LengthM", LongType(), True),
             StructField("Material", StringType(), True),
             StructField("Manufacturer", StringType(), True),
             StructField("InstallDate", StringType(), True),
@@ -64,7 +64,7 @@ TABLE_DEFINITIONS = [
             StructField("GeneratorType", StringType(), True),
             StructField("GearboxType", StringType(), True),
             StructField("CoolingSystem", StringType(), True),
-            StructField("WeightTons", DoubleType(), True),
+            StructField("WeightTons", LongType(), True),
             StructField("LastInspectionDate", StringType(), True),
             StructField("Status", StringType(), True),
         ])
@@ -75,9 +75,9 @@ TABLE_DEFINITIONS = [
             StructField("TowerId", StringType(), False),
             StructField("TowerName", StringType(), True),
             StructField("TurbineId", StringType(), True),
-            StructField("HeightM", DoubleType(), True),
+            StructField("HeightM", LongType(), True),
             StructField("Material", StringType(), True),
-            StructField("Sections", DoubleType(), True),
+            StructField("Sections", LongType(), True),
             StructField("FoundationType", StringType(), True),
             StructField("InstallDate", StringType(), True),
             StructField("Status", StringType(), True),
@@ -107,7 +107,7 @@ TABLE_DEFINITIONS = [
             StructField("CertificationLevel", StringType(), True),
             StructField("WindFarmId", StringType(), True),
             StructField("Shift", StringType(), True),
-            StructField("YearsExperience", DoubleType(), True),
+            StructField("YearsExperience", LongType(), True),
             StructField("Status", StringType(), True),
         ])
     ),
@@ -119,7 +119,7 @@ TABLE_DEFINITIONS = [
             StructField("WindFarmId", StringType(), True),
             StructField("Latitude", DoubleType(), True),
             StructField("Longitude", DoubleType(), True),
-            StructField("ElevationM", DoubleType(), True),
+            StructField("ElevationM", LongType(), True),
             StructField("InstallDate", StringType(), True),
             StructField("Status", StringType(), True),
         ])
@@ -130,12 +130,96 @@ TABLE_DEFINITIONS = [
             StructField("TransformerId", StringType(), False),
             StructField("TransformerName", StringType(), True),
             StructField("WindFarmId", StringType(), True),
-            StructField("RatingMVA", DoubleType(), True),
-            StructField("VoltageKV", DoubleType(), True),
+            StructField("RatingMVA", LongType(), True),
+            StructField("VoltageKV", LongType(), True),
             StructField("Manufacturer", StringType(), True),
             StructField("InstallDate", StringType(), True),
             StructField("LastServiceDate", StringType(), True),
             StructField("Status", StringType(), True),
+        ])
+    ),
+    (
+        "BridgeTurbineSensor.csv", "bridgeturbinesensor",
+        StructType([
+            StructField("TurbineId", StringType(), False),
+            StructField("SensorId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeTurbineNacelle.csv", "bridgeturbinenacelle",
+        StructType([
+            StructField("TurbineId", StringType(), False),
+            StructField("NacelleId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeTurbineBlade.csv", "bridgeturbineblade",
+        StructType([
+            StructField("TurbineId", StringType(), False),
+            StructField("BladeId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeTurbineTower.csv", "bridgeturbinetower",
+        StructType([
+            StructField("TurbineId", StringType(), False),
+            StructField("TowerId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeWindFarmTurbine.csv", "bridgewindfarmturbine",
+        StructType([
+            StructField("WindFarmId", StringType(), False),
+            StructField("TurbineId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeWindFarmTechnician.csv", "bridgewindfarmtechnician",
+        StructType([
+            StructField("WindFarmId", StringType(), False),
+            StructField("TechnicianId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeWindFarmWeatherStation.csv", "bridgewindfarmweatherstation",
+        StructType([
+            StructField("WindFarmId", StringType(), False),
+            StructField("StationId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeWindFarmTransformer.csv", "bridgewindfarmtransformer",
+        StructType([
+            StructField("WindFarmId", StringType(), False),
+            StructField("TransformerId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeMaintenanceEventTurbine.csv", "bridgemaintenanceeventturbine",
+        StructType([
+            StructField("EventId", StringType(), False),
+            StructField("TurbineId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeMaintenanceEventTechnician.csv", "bridgemaintenanceeventtechnician",
+        StructType([
+            StructField("EventId", StringType(), False),
+            StructField("TechnicianId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgePowerOutputTurbine.csv", "bridgepoweroutputturbine",
+        StructType([
+            StructField("OutputId", StringType(), False),
+            StructField("TurbineId", StringType(), False),
+        ])
+    ),
+    (
+        "BridgeAlertTurbine.csv", "bridgealertturbine",
+        StructType([
+            StructField("AlertId", StringType(), False),
+            StructField("TurbineId", StringType(), False),
         ])
     ),
     (
@@ -144,7 +228,7 @@ TABLE_DEFINITIONS = [
             StructField("OutputId", StringType(), False),
             StructField("TurbineId", StringType(), True),
             StructField("Date", StringType(), True),
-            StructField("Hour", DoubleType(), True),
+            StructField("Hour", LongType(), True),
             StructField("WindSpeedMs", DoubleType(), True),
             StructField("PowerOutputKW", DoubleType(), True),
             StructField("CapacityFactor", DoubleType(), True),

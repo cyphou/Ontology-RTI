@@ -37,6 +37,12 @@ relationship dimoccupant_ZoneId_dimzone
 	toColumn: dimzone.ZoneId
 	crossFilteringBehavior: oneDirection
 
+relationship dimoccupant_BuildingId_dimbuilding
+	isActive: false
+	fromColumn: dimoccupant.BuildingId
+	toColumn: dimbuilding.BuildingId
+	crossFilteringBehavior: oneDirection
+
 relationship dimelevator_BuildingId_dimbuilding
 	isActive: false
 	fromColumn: dimelevator.BuildingId

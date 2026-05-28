@@ -308,7 +308,7 @@ $kqlScript = Join-Path $OntologyFolder "Deploy-KqlTables.ps1"
 if (-not (Test-Path $kqlScript)) { $kqlScript = Join-Path $scriptDir "Deploy-KqlTables.ps1" }
 if ($telemetryFile -and (Test-Path $kqlScript)) {
     try {
-        & $kqlScript -WorkspaceId $WorkspaceId -EventhouseId $eventhouseId -DataFolder $DataFolder
+        & $kqlScript -WorkspaceId $WorkspaceId -EventhouseId $eventhouseId -KqlDatabaseName $EventhouseName -DataFolder $DataFolder
         Write-Success "KQL tables created"
     } catch { Write-Warn "KQL table issue: $_" }
 }

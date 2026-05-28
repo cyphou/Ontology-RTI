@@ -29,8 +29,18 @@ $apiBase = "https://api.fabric.microsoft.com/v1"
 
 if (-not $EventhouseId -or -not $KqlDatabaseId -or -not $QueryServiceUri) {
     $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $fabricHeaders).value
-    if (-not $KqlDatabaseId) { $kqlDb = $allItems | Where-Object { $_.type -eq 'KQLDatabase' } | Select-Object -First 1; if ($kqlDb) { $KqlDatabaseId = $kqlDb.id } else { exit 1 } }
-    if (-not $EventhouseId) { $eh = $allItems | Where-Object { $_.type -eq 'Eventhouse' } | Select-Object -First 1; if ($eh) { $EventhouseId = $eh.id } }
+    if (-not $KqlDatabaseId) {
+        $kqlDbs = $allItems | Where-Object { $_.type -eq 'KQLDatabase' }
+        if ($KqlDatabaseName) { $kqlDb = $kqlDbs | Where-Object { $_.displayName -eq $KqlDatabaseName } | Select-Object -First 1 }
+        if (-not $kqlDb) { $kqlDb = $kqlDbs | Select-Object -First 1 }
+        if ($kqlDb) { $KqlDatabaseId = $kqlDb.id } else { exit 1 }
+    }
+    if (-not $EventhouseId) {
+        $ehs = $allItems | Where-Object { $_.type -eq 'Eventhouse' }
+        if ($KqlDatabaseName) { $eh = $ehs | Where-Object { $_.displayName -eq $KqlDatabaseName } | Select-Object -First 1 }
+        if (-not $eh) { $eh = $ehs | Select-Object -First 1 }
+        if ($eh) { $EventhouseId = $eh.id }
+    }
     if (-not $QueryServiceUri -and $EventhouseId) { $ehD = Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/eventhouses/$EventhouseId" -Headers $fabricHeaders; $QueryServiceUri = $ehD.properties.queryServiceUri }
 }
 if (-not $QueryServiceUri) { exit 1 }

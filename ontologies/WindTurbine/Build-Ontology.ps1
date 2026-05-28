@@ -22,8 +22,8 @@ $entityTypes += @{
         @{ id = "2003"; name = "Location"; valueType = "String" },
         @{ id = "2004"; name = "Latitude"; valueType = "Double" },
         @{ id = "2005"; name = "Longitude"; valueType = "Double" },
-        @{ id = "2006"; name = "TotalTurbines"; valueType = "Double" },
-        @{ id = "2007"; name = "InstalledCapacityMW"; valueType = "Double" },
+        @{ id = "2006"; name = "TotalTurbines"; valueType = "BigInt" },
+        @{ id = "2007"; name = "InstalledCapacityMW"; valueType = "BigInt" },
         @{ id = "2008"; name = "CommissionDate"; valueType = "String" },
         @{ id = "2009"; name = "Operator"; valueType = "String" },
         @{ id = "2010"; name = "Status"; valueType = "String" }
@@ -39,9 +39,9 @@ $entityTypes += @{
         @{ id = "2103"; name = "WindFarmId"; valueType = "String" },
         @{ id = "2104"; name = "Model"; valueType = "String" },
         @{ id = "2105"; name = "Manufacturer"; valueType = "String" },
-        @{ id = "2106"; name = "RatedCapacityKW"; valueType = "Double" },
-        @{ id = "2107"; name = "HubHeightM"; valueType = "Double" },
-        @{ id = "2108"; name = "RotorDiameterM"; valueType = "Double" },
+        @{ id = "2106"; name = "RatedCapacityKW"; valueType = "BigInt" },
+        @{ id = "2107"; name = "HubHeightM"; valueType = "BigInt" },
+        @{ id = "2108"; name = "RotorDiameterM"; valueType = "BigInt" },
         @{ id = "2109"; name = "CommissionDate"; valueType = "String" },
         @{ id = "2110"; name = "Status"; valueType = "String" }
     )
@@ -68,7 +68,7 @@ $entityTypes += @{
         @{ id = "2204"; name = "GeneratorType"; valueType = "String" },
         @{ id = "2205"; name = "GearboxType"; valueType = "String" },
         @{ id = "2206"; name = "CoolingSystem"; valueType = "String" },
-        @{ id = "2207"; name = "WeightTons"; valueType = "Double" },
+        @{ id = "2207"; name = "WeightTons"; valueType = "BigInt" },
         @{ id = "2208"; name = "LastInspectionDate"; valueType = "String" },
         @{ id = "2209"; name = "Status"; valueType = "String" }
     )
@@ -81,8 +81,8 @@ $entityTypes += @{
         @{ id = "2301"; name = "BladeId"; valueType = "String" },
         @{ id = "2302"; name = "BladeName"; valueType = "String" },
         @{ id = "2303"; name = "TurbineId"; valueType = "String" },
-        @{ id = "2304"; name = "BladePosition"; valueType = "String" },
-        @{ id = "2305"; name = "LengthM"; valueType = "Double" },
+        @{ id = "2304"; name = "BladePosition"; valueType = "BigInt" },
+        @{ id = "2305"; name = "LengthM"; valueType = "BigInt" },
         @{ id = "2306"; name = "Material"; valueType = "String" },
         @{ id = "2307"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2308"; name = "InstallDate"; valueType = "String" },
@@ -98,9 +98,9 @@ $entityTypes += @{
         @{ id = "2401"; name = "TowerId"; valueType = "String" },
         @{ id = "2402"; name = "TowerName"; valueType = "String" },
         @{ id = "2403"; name = "TurbineId"; valueType = "String" },
-        @{ id = "2404"; name = "HeightM"; valueType = "Double" },
+        @{ id = "2404"; name = "HeightM"; valueType = "BigInt" },
         @{ id = "2405"; name = "Material"; valueType = "String" },
-        @{ id = "2406"; name = "Sections"; valueType = "Double" },
+        @{ id = "2406"; name = "Sections"; valueType = "BigInt" },
         @{ id = "2407"; name = "FoundationType"; valueType = "String" },
         @{ id = "2408"; name = "InstallDate"; valueType = "String" },
         @{ id = "2409"; name = "Status"; valueType = "String" }
@@ -134,7 +134,7 @@ $entityTypes += @{
         @{ id = "2604"; name = "CertificationLevel"; valueType = "String" },
         @{ id = "2605"; name = "WindFarmId"; valueType = "String" },
         @{ id = "2606"; name = "Shift"; valueType = "String" },
-        @{ id = "2607"; name = "YearsExperience"; valueType = "Double" },
+        @{ id = "2607"; name = "YearsExperience"; valueType = "BigInt" },
         @{ id = "2608"; name = "Status"; valueType = "String" }
     )
     tableName = "dimtechnician"
@@ -148,7 +148,7 @@ $entityTypes += @{
         @{ id = "2703"; name = "WindFarmId"; valueType = "String" },
         @{ id = "2704"; name = "Latitude"; valueType = "Double" },
         @{ id = "2705"; name = "Longitude"; valueType = "Double" },
-        @{ id = "2706"; name = "ElevationM"; valueType = "Double" },
+        @{ id = "2706"; name = "ElevationM"; valueType = "BigInt" },
         @{ id = "2707"; name = "InstallDate"; valueType = "String" },
         @{ id = "2708"; name = "Status"; valueType = "String" }
     )
@@ -161,8 +161,8 @@ $entityTypes += @{
         @{ id = "2801"; name = "TransformerId"; valueType = "String" },
         @{ id = "2802"; name = "TransformerName"; valueType = "String" },
         @{ id = "2803"; name = "WindFarmId"; valueType = "String" },
-        @{ id = "2804"; name = "RatingMVA"; valueType = "Double" },
-        @{ id = "2805"; name = "VoltageKV"; valueType = "Double" },
+        @{ id = "2804"; name = "RatingMVA"; valueType = "BigInt" },
+        @{ id = "2805"; name = "VoltageKV"; valueType = "BigInt" },
         @{ id = "2806"; name = "Manufacturer"; valueType = "String" },
         @{ id = "2807"; name = "InstallDate"; valueType = "String" },
         @{ id = "2808"; name = "LastServiceDate"; valueType = "String" },
@@ -196,7 +196,7 @@ $entityTypes += @{
         @{ id = "2951"; name = "OutputId"; valueType = "String" },
         @{ id = "2952"; name = "TurbineId"; valueType = "String" },
         @{ id = "2953"; name = "Date"; valueType = "String" },
-        @{ id = "2954"; name = "Hour"; valueType = "Double" },
+        @{ id = "2954"; name = "Hour"; valueType = "BigInt" },
         @{ id = "2955"; name = "WindSpeedMs"; valueType = "Double" },
         @{ id = "2956"; name = "PowerOutputKW"; valueType = "Double" },
         @{ id = "2957"; name = "CapacityFactor"; valueType = "Double" },
@@ -226,18 +226,78 @@ $entityTypes += @{
 }
 
 $relationships = @(
-    @{ id = "3001"; name = "WindFarmHasTurbine"; sourceId = "1001"; targetId = "1002" },
-    @{ id = "3002"; name = "TurbineHasNacelle"; sourceId = "1002"; targetId = "1003" },
-    @{ id = "3003"; name = "TurbineHasBlade"; sourceId = "1002"; targetId = "1004" },
-    @{ id = "3004"; name = "TurbineHasTower"; sourceId = "1002"; targetId = "1005" },
-    @{ id = "3005"; name = "TurbineHasSensor"; sourceId = "1002"; targetId = "1006" },
-    @{ id = "3006"; name = "WindFarmHasTechnician"; sourceId = "1001"; targetId = "1007" },
-    @{ id = "3007"; name = "WindFarmHasWeatherStation"; sourceId = "1001"; targetId = "1008" },
-    @{ id = "3008"; name = "WindFarmHasTransformer"; sourceId = "1001"; targetId = "1009" },
-    @{ id = "3009"; name = "MaintenanceOnTurbine"; sourceId = "1010"; targetId = "1002" },
-    @{ id = "3010"; name = "MaintenanceByTechnician"; sourceId = "1010"; targetId = "1007" },
-    @{ id = "3011"; name = "PowerOutputFromTurbine"; sourceId = "1011"; targetId = "1002" },
-    @{ id = "3012"; name = "AlertOnTurbine"; sourceId = "1012"; targetId = "1002" }
+    @{ 
+        id = "3001"; name = "WindFarmHasTurbine"; sourceId = "1001"; targetId = "1002"
+        ctxTable = "bridgewindfarmturbine"
+        srcKeys = @( @{ col = "WindFarmId"; propId = "2001" } )
+        tgtKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+    },
+    @{ 
+        id = "3002"; name = "TurbineHasNacelle"; sourceId = "1002"; targetId = "1003"
+        ctxTable = "bridgeturbinenacelle"
+        srcKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+        tgtKeys = @( @{ col = "NacelleId"; propId = "2201" } )
+    },
+    @{ 
+        id = "3003"; name = "TurbineHasBlade"; sourceId = "1002"; targetId = "1004"
+        ctxTable = "bridgeturbineblade"
+        srcKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+        tgtKeys = @( @{ col = "BladeId"; propId = "2301" } )
+    },
+    @{ 
+        id = "3004"; name = "TurbineHasTower"; sourceId = "1002"; targetId = "1005"
+        ctxTable = "bridgeturbinetower"
+        srcKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+        tgtKeys = @( @{ col = "TowerId"; propId = "2401" } )
+    },
+    @{ 
+        id = "3005"; name = "TurbineHasSensor"; sourceId = "1002"; targetId = "1006"
+        ctxTable = "bridgeturbinesensor"
+        srcKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+        tgtKeys = @( @{ col = "SensorId"; propId = "2501" } )
+    },
+    @{ 
+        id = "3006"; name = "WindFarmHasTechnician"; sourceId = "1001"; targetId = "1007"
+        ctxTable = "bridgewindfarmtechnician"
+        srcKeys = @( @{ col = "WindFarmId"; propId = "2001" } )
+        tgtKeys = @( @{ col = "TechnicianId"; propId = "2601" } )
+    },
+    @{ 
+        id = "3007"; name = "WindFarmHasWeatherStation"; sourceId = "1001"; targetId = "1008"
+        ctxTable = "bridgewindfarmweatherstation"
+        srcKeys = @( @{ col = "WindFarmId"; propId = "2001" } )
+        tgtKeys = @( @{ col = "StationId"; propId = "2701" } )
+    },
+    @{ 
+        id = "3008"; name = "WindFarmHasTransformer"; sourceId = "1001"; targetId = "1009"
+        ctxTable = "bridgewindfarmtransformer"
+        srcKeys = @( @{ col = "WindFarmId"; propId = "2001" } )
+        tgtKeys = @( @{ col = "TransformerId"; propId = "2801" } )
+    },
+    @{ 
+        id = "3009"; name = "MaintenanceOnTurbine"; sourceId = "1010"; targetId = "1002"
+        ctxTable = "bridgemaintenanceeventturbine"
+        srcKeys = @( @{ col = "EventId"; propId = "2901" } )
+        tgtKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+    },
+    @{ 
+        id = "3010"; name = "MaintenanceByTechnician"; sourceId = "1010"; targetId = "1007"
+        ctxTable = "bridgemaintenanceeventtechnician"
+        srcKeys = @( @{ col = "EventId"; propId = "2901" } )
+        tgtKeys = @( @{ col = "TechnicianId"; propId = "2601" } )
+    },
+    @{ 
+        id = "3011"; name = "PowerOutputFromTurbine"; sourceId = "1011"; targetId = "1002"
+        ctxTable = "bridgepoweroutputturbine"
+        srcKeys = @( @{ col = "OutputId"; propId = "2951" } )
+        tgtKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+    },
+    @{ 
+        id = "3012"; name = "AlertOnTurbine"; sourceId = "1012"; targetId = "1002"
+        ctxTable = "bridgealertturbine"
+        srcKeys = @( @{ col = "AlertId"; propId = "2981" } )
+        tgtKeys = @( @{ col = "TurbineId"; propId = "2101" } )
+    }
 )
 
 # BUILD PARTS
@@ -258,7 +318,7 @@ foreach ($et in $entityTypes) {
 
     $bindGuid = DeterministicGuid "NonTimeSeries-$($et.id)"
     $propBindings = ($et.properties | ForEach-Object { '{"sourceColumnName":"' + $_.name + '","targetPropertyId":"' + $_.id + '"}' }) -join ','
-    $bindJson = '{"id":"' + $bindGuid + '","dataBindingConfiguration":{"dataBindingType":"NonTimeSeries","propertyBindings":[' + $propBindings + '],"sourceTableProperties":{"sourceType":"LakehouseTable","workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $et.tableName + '","sourceSchema":"dbo"}}}'
+    $bindJson = '{"id":"' + $bindGuid + '","dataBindingConfiguration":{"dataBindingType":"NonTimeSeries","propertyBindings":[' + $propBindings + '],"sourceTableProperties":{"sourceType":"LakehouseTable","workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $et.tableName + '"}}}'
     $parts += @{ path = "EntityTypes/$($et.id)/DataBindings/$bindGuid.json"; payload = (ToBase64 $bindJson); payloadType = "InlineBase64" }
 
     if ($et.timeseriesTable) {
@@ -275,22 +335,36 @@ foreach ($et in $entityTypes) {
 foreach ($rel in $relationships) {
     $relJson = '{"namespace":"usertypes","id":"' + $rel.id + '","name":"' + $rel.name + '","namespaceType":"Custom","source":{"entityTypeId":"' + $rel.sourceId + '"},"target":{"entityTypeId":"' + $rel.targetId + '"}}'
     $parts += @{ path = "RelationshipTypes/$($rel.id)/definition.json"; payload = (ToBase64 $relJson); payloadType = "InlineBase64" }
+
+    if ($rel.ctxTable -and $rel.srcKeys -and $rel.tgtKeys) {
+        $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
+        $srcBindings = ($rel.srcKeys | ForEach-Object {
+            '{"sourceColumnName":"' + $_.col + '","targetPropertyId":"' + $_.propId + '"}'
+        }) -join ','
+        $tgtBindings = ($rel.tgtKeys | ForEach-Object {
+            '{"sourceColumnName":"' + $_.col + '","targetPropertyId":"' + $_.propId + '"}'
+        }) -join ','
+        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $rel.ctxTable + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[' + $srcBindings + '],"targetKeyRefBindings":[' + $tgtBindings + ']}'
+        $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
+        continue
+    }
+
     $sourceEntity = $entityTypes | Where-Object { $_.id -eq $rel.sourceId }
     $targetEntity = $entityTypes | Where-Object { $_.id -eq $rel.targetId }
     $sourcePkPropId = $sourceEntity.entityIdParts[0]; $sourcePkName = ($sourceEntity.properties | Where-Object { $_.id -eq $sourcePkPropId }).name
     $targetPkPropId = $targetEntity.entityIdParts[0]; $targetPkName = ($targetEntity.properties | Where-Object { $_.id -eq $targetPkPropId }).name
     $fkProp = $sourceEntity.properties | Where-Object { $_.name -eq $targetPkName }
-    if (-not $fkProp) { $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" } }
+    if (-not $fkProp) { $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" } | Select-Object -First 1 }
     if ($fkProp) {
         $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
-        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
+        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
         $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
     } else {
         $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -eq $sourcePkName }
-        if (-not $fkPropInTarget) { $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" } }
+        if (-not $fkPropInTarget) { $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" } | Select-Object -First 1 }
         if ($fkPropInTarget) {
             $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
-            $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
+            $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
             $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
         } else { Write-Warning "No FK found for relationship $($rel.name)" }
     }
@@ -307,7 +381,24 @@ try {
     elseif ($resp.StatusCode -eq 202) {
         $opUrl = $resp.Headers["Location"]; if ($opUrl -is [array]) { $opUrl = $opUrl[0] }
         $maxWait = 120; $waited = 0
-        while ($waited -lt $maxWait) { Start-Sleep -Seconds 10; $waited += 10; $poll = Invoke-RestMethod -Uri $opUrl -Headers @{ Authorization = "Bearer $FabricToken" }; if ($poll.status -in @("Succeeded","Failed")) { Write-Host "Result: $($poll.status) ($waited`s)"; break }; Write-Host "  Status: $($poll.status) ($waited`s)..." }
+        $poll = $null
+        while ($waited -lt $maxWait) {
+            Start-Sleep -Seconds 10
+            $waited += 10
+            $poll = Invoke-RestMethod -Uri $opUrl -Headers @{ Authorization = "Bearer $FabricToken" }
+            if ($poll.status -in @("Succeeded","Failed")) {
+                Write-Host "Result: $($poll.status) ($waited`s)"
+                break
+            }
+            Write-Host "  Status: $($poll.status) ($waited`s)..."
+        }
+        if (-not $poll -or $poll.status -ne "Succeeded") {
+            if ($poll) {
+                Write-Host "Ontology operation diagnostic:" -ForegroundColor Yellow
+                Write-Host ($poll | ConvertTo-Json -Depth 20) -ForegroundColor Yellow
+            }
+            throw "Ontology updateDefinition operation failed."
+        }
     }
 } catch {
     $errBody = ""

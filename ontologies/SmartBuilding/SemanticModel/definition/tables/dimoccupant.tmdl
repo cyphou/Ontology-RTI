@@ -37,6 +37,14 @@ table dimoccupant
 
 		annotation SummarizationSetBy = Automatic
 
+	column BuildingId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: BuildingId
+		lineageTag: 20000008-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
 	column AccessLevel
 		dataType: string
 		summarizeBy: none

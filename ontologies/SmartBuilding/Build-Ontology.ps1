@@ -195,6 +195,7 @@ $entityTypes += @{
         @{ id = "2802"; name = "FullName"; valueType = "String" },
         @{ id = "2803"; name = "Department"; valueType = "String" },
         @{ id = "2804"; name = "ZoneId"; valueType = "String" },
+        @{ id = "2808"; name = "BuildingId"; valueType = "String" },
         @{ id = "2805"; name = "AccessLevel"; valueType = "String" },
         @{ id = "2806"; name = "BadgeId"; valueType = "String" },
         @{ id = "2807"; name = "Status"; valueType = "String" }
@@ -320,7 +321,7 @@ foreach ($et in $entityTypes) {
         '{"sourceColumnName":"' + $colName + '","targetPropertyId":"' + $_.id + '"}'
     }) -join ','
 
-    $bindJson = '{"id":"' + $bindGuid + '","dataBindingConfiguration":{"dataBindingType":"NonTimeSeries","propertyBindings":[' + $propBindings + '],"sourceTableProperties":{"sourceType":"LakehouseTable","workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $et.tableName + '","sourceSchema":"dbo"}}}'
+    $bindJson = '{"id":"' + $bindGuid + '","dataBindingConfiguration":{"dataBindingType":"NonTimeSeries","propertyBindings":[' + $propBindings + '],"sourceTableProperties":{"sourceType":"LakehouseTable","workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $et.tableName + '"}}}'
 
     $parts += @{ path = "EntityTypes/$($et.id)/DataBindings/$bindGuid.json"; payload = (ToBase64 $bindJson); payloadType = "InlineBase64" }
 
@@ -354,21 +355,21 @@ foreach ($rel in $relationships) {
 
     $fkProp = $sourceEntity.properties | Where-Object { $_.name -eq $targetPkName }
     if (-not $fkProp) {
-        $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" }
+        $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" } | Select-Object -First 1
     }
 
     if ($fkProp) {
         $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
-        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
+        $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourcePkName + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $fkProp.name + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
         $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
     } else {
         $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -eq $sourcePkName }
         if (-not $fkPropInTarget) {
-            $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" }
+            $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" } | Select-Object -First 1
         }
         if ($fkPropInTarget) {
             $ctxGuid = DeterministicGuid "Ctx-$($rel.id)"
-            $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceSchema":"dbo","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
+            $ctxJson = '{"id":"' + $ctxGuid + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $targetEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $fkPropInTarget.name + '","targetPropertyId":"' + $sourcePkPropId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $targetPkName + '","targetPropertyId":"' + $targetPkPropId + '"}]}'
             $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
         } else {
             Write-Warning "No FK found for relationship $($rel.name) ($($rel.id))"
