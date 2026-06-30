@@ -104,40 +104,99 @@ function projectLatToZ(lat: number) {
     return ((90 - lat) / 180) * 52 - 26;
 }
 
-// Coarse continent outlines in [lon, lat]. Intentionally simplified so each landmass
-// reads as a recognizable world map behind the refineries.
+// Stylized continent + major-island outlines in [lon, lat]. Detailed enough that each
+// landmass reads as a recognizable world map behind the refineries, while staying light
+// to draw onto the equirectangular canvas texture.
 const WORLD: number[][][] = [
     // North America
     [
-        [-168, 65], [-140, 68], [-95, 70], [-80, 62], [-64, 60], [-60, 48],
-        [-70, 42], [-81, 25], [-97, 18], [-105, 23], [-117, 32], [-125, 40],
-        [-130, 55], [-150, 60], [-168, 65],
+        [-165, 60], [-160, 66], [-156, 71], [-130, 70], [-110, 69], [-95, 70],
+        [-82, 73], [-78, 63], [-64, 60], [-56, 52], [-67, 45], [-70, 41], [-74, 40],
+        [-76, 35], [-81, 31], [-80, 25], [-83, 25], [-90, 29], [-97, 26], [-97, 20],
+        [-91, 18], [-88, 21], [-94, 16], [-105, 20], [-110, 23], [-114, 30], [-117, 33],
+        [-122, 37], [-124, 42], [-124, 48], [-131, 53], [-140, 59], [-150, 59],
+        [-160, 58], [-165, 60],
+    ],
+    // Greenland
+    [
+        [-46, 60], [-30, 60], [-20, 70], [-22, 76], [-32, 83], [-50, 82], [-58, 76],
+        [-54, 68], [-50, 60], [-46, 60],
     ],
     // South America
     [
-        [-80, 9], [-60, 11], [-50, 0], [-35, -8], [-40, -23], [-58, -35],
-        [-66, -45], [-74, -52], [-72, -30], [-70, -18], [-81, -5], [-80, 9],
+        [-78, 8], [-72, 11], [-62, 10], [-50, 5], [-50, 0], [-44, -2], [-35, -6],
+        [-35, -12], [-39, -18], [-48, -25], [-54, -34], [-58, -39], [-65, -42],
+        [-69, -45], [-74, -50], [-72, -52], [-70, -45], [-71, -37], [-73, -30],
+        [-71, -18], [-77, -12], [-81, -5], [-79, 2], [-78, 8],
     ],
     // Europe
     [
-        [-10, 43], [-9, 38], [3, 40], [18, 40], [28, 41], [40, 48], [30, 60],
-        [25, 66], [10, 63], [5, 58], [-5, 50], [-10, 43],
+        [-9, 43], [-9, 38], [-6, 36], [0, 39], [3, 42], [8, 44], [12, 44], [16, 41],
+        [18, 40], [24, 40], [27, 41], [33, 45], [40, 46], [38, 54], [30, 60], [24, 66],
+        [18, 69], [12, 66], [10, 60], [5, 61], [8, 57], [5, 53], [0, 51], [-2, 49],
+        [-5, 48], [-9, 43],
+    ],
+    // British Isles
+    [
+        [-6, 50], [-3, 51], [1, 52], [-1, 55], [-3, 58], [-6, 58], [-8, 55],
+        [-10, 52], [-6, 50],
+    ],
+    // Iceland
+    [
+        [-24, 65], [-19, 66], [-14, 65], [-18, 64], [-22, 64], [-24, 65],
     ],
     // Africa
     [
-        [-17, 21], [10, 35], [24, 32], [34, 31], [43, 11], [51, 12], [40, -5],
-        [40, -18], [32, -28], [20, -35], [12, -18], [8, 4], [-8, 5], [-17, 14], [-17, 21],
+        [-16, 15], [-16, 21], [-10, 30], [0, 34], [10, 34], [11, 37], [20, 33],
+        [25, 32], [32, 31], [35, 27], [37, 22], [43, 12], [51, 12], [45, 5], [42, -2],
+        [40, -10], [35, -18], [32, -26], [26, -34], [20, -35], [18, -30], [15, -22],
+        [12, -16], [9, -5], [5, 4], [-4, 5], [-8, 10], [-12, 13], [-16, 15],
+    ],
+    // Madagascar
+    [
+        [43, -12], [46, -15], [50, -18], [48, -23], [45, -25], [44, -20], [43, -16], [43, -12],
     ],
     // Asia
     [
-        [28, 41], [40, 48], [50, 45], [60, 55], [90, 73], [140, 73], [145, 60],
-        [160, 62], [142, 48], [135, 35], [122, 30], [120, 22], [108, 10], [100, 6],
-        [92, 20], [80, 8], [70, 22], [57, 25], [45, 12], [43, 30], [34, 31], [28, 41],
+        [28, 40], [36, 37], [44, 39], [50, 38], [58, 38], [66, 37], [70, 30], [72, 21],
+        [76, 9], [78, 8], [82, 17], [88, 21], [90, 16], [95, 16], [98, 10], [104, 9],
+        [106, 11], [109, 15], [108, 21], [112, 22], [118, 24], [121, 31], [122, 38],
+        [128, 42], [135, 46], [143, 50], [150, 59], [160, 62], [170, 66], [178, 68],
+        [160, 72], [140, 74], [110, 76], [90, 74], [70, 70], [60, 68], [55, 58],
+        [50, 50], [44, 46], [36, 44], [28, 40],
+    ],
+    // Arabian Peninsula
+    [
+        [35, 30], [40, 31], [48, 30], [57, 25], [56, 20], [52, 16], [45, 13], [43, 17],
+        [40, 21], [36, 25], [35, 30],
+    ],
+    // Japan
+    [
+        [130, 31], [133, 34], [138, 36], [141, 40], [140, 43], [143, 44], [141, 38],
+        [138, 35], [135, 33], [131, 31], [130, 31],
+    ],
+    // Sumatra
+    [
+        [95, 5], [100, 2], [104, -2], [106, -6], [101, -4], [97, 1], [95, 5],
+    ],
+    // Borneo
+    [
+        [109, 2], [114, 4], [118, 5], [119, 0], [116, -4], [110, -3], [109, 2],
+    ],
+    // New Guinea
+    [
+        [131, -1], [138, -3], [144, -4], [150, -7], [146, -8], [140, -8], [134, -6], [131, -1],
     ],
     // Australia
     [
-        [114, -22], [130, -12], [142, -11], [150, -25], [153, -32], [140, -38],
-        [128, -32], [115, -34], [114, -22],
+        [114, -22], [122, -18], [130, -12], [137, -12], [142, -11], [145, -15],
+        [147, -20], [153, -26], [150, -33], [145, -38], [140, -38], [134, -35],
+        [129, -32], [123, -34], [115, -34], [114, -28], [114, -22],
+    ],
+    // New Zealand
+    [
+        [173, -35], [176, -38], [178, -41], [174, -42], [171, -44], [167, -46],
+        [170, -42], [172, -38], [173, -35],
     ],
 ];
 
@@ -278,51 +337,81 @@ function createMapTexture(sites: SolarPlantSite[]) {
     };
 
     ctx.lineJoin = "round";
+    ctx.lineCap = "round";
 
-    // Pass 1 - shallow-water coastal halo.
+    // Pass 1 - soft shallow-water halo hugging every coastline.
     ctx.save();
-    ctx.shadowColor = "rgba(120, 235, 205, 0.85)";
-    ctx.shadowBlur = 26;
-    ctx.fillStyle = "rgba(70, 137, 95, 1)";
+    ctx.shadowColor = "rgba(96, 214, 192, 0.7)";
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = "rgba(58, 120, 86, 0.9)";
     WORLD.forEach((poly) => {
         tracePoly(poly);
         ctx.fill();
     });
     ctx.restore();
 
-    // Pass 2 - crisp land with subtle relief gradient + coastline stroke.
+    // Pass 2 - landmass with a north-lit relief gradient.
     const landGrad = ctx.createLinearGradient(0, 0, 0, h);
-    landGrad.addColorStop(0, "#56a06f");
-    landGrad.addColorStop(0.5, "#46895f");
-    landGrad.addColorStop(1, "#37774f");
+    landGrad.addColorStop(0, "#6cae7f");
+    landGrad.addColorStop(0.45, "#4f9268");
+    landGrad.addColorStop(0.75, "#3f8159");
+    landGrad.addColorStop(1, "#356f4d");
     WORLD.forEach((poly) => {
         tracePoly(poly);
         ctx.fillStyle = landGrad;
         ctx.fill();
-        ctx.strokeStyle = "rgba(205, 255, 230, 0.85)";
-        ctx.lineWidth = 2.5;
+    });
+
+    // Pass 3 - inner coast shading for depth (clipped to each landmass).
+    WORLD.forEach((poly) => {
+        ctx.save();
+        tracePoly(poly);
+        ctx.clip();
+        tracePoly(poly);
+        ctx.strokeStyle = "rgba(10, 40, 30, 0.5)";
+        ctx.lineWidth = 7;
+        ctx.stroke();
+        ctx.restore();
+    });
+
+    // Pass 4 - crisp luminous coastline.
+    WORLD.forEach((poly) => {
+        tracePoly(poly);
+        ctx.strokeStyle = "rgba(208, 255, 232, 0.9)";
+        ctx.lineWidth = 2;
         ctx.stroke();
     });
 
+    // Refinery site pins: glow ring + colored disc + bright core + label.
+    ctx.font = "600 22px 'Segoe UI', system-ui, sans-serif";
     sites.forEach((site, idx) => {
         const [x, y] = toPx(site.lon, site.lat);
         const color = SITE_COLORS[idx % SITE_COLORS.length];
 
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fill();
-
         ctx.strokeStyle = color;
-        ctx.globalAlpha = 0.75;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(x, y, 24, 0, Math.PI * 2);
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
 
-        ctx.fillStyle = "#ecfeff";
-        ctx.font = "20px sans-serif";
-        ctx.fillText(site.name, x + 14, y - 12);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(x, y, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = "#eefcff";
+        ctx.fillText(site.name, x + 16, y - 12);
+        ctx.restore();
     });
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -563,7 +652,8 @@ function SolarFleetScene({
         sun.shadow.mapSize.height = 1024;
         const rim = new THREE.DirectionalLight(0x4fa3ff, 0.22);
         rim.position.set(-24, 18, -24);
-        scene.add(ambient, sun, rim);
+        const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x16324a, 0.35);
+        scene.add(ambient, sun, rim, hemi);
 
         // Single unified lit ocean plane (large enough to fill the horizon).
         const oceanTexture = createOceanTexture();
@@ -628,41 +718,69 @@ function SolarFleetScene({
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
 
-        const columnGeo = new THREE.CylinderGeometry(0.28, 0.34, 2.6, 14);
-        const tankGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.7, 18);
-        const stackGeo = new THREE.CylinderGeometry(0.08, 0.11, 2.0, 10);
-        const flameGeo = new THREE.ConeGeometry(0.15, 0.55, 10);
-        const baseGeo = new THREE.BoxGeometry(1.9, 0.12, 1.25);
-        const ringGeoUnit = new THREE.TorusGeometry(0.3, 0.04, 8, 18);
+        // ---- Shared refinery-unit geometry (created once, instanced per unit) ----
+        const padGeo = new THREE.BoxGeometry(2.0, 0.14, 1.4);
+        const colBaseGeo = new THREE.CylinderGeometry(0.34, 0.4, 1.2, 18);
+        const colMidGeo = new THREE.CylinderGeometry(0.27, 0.32, 1.05, 18);
+        const colTopGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.75, 18);
+        const colDomeGeo = new THREE.SphereGeometry(0.2, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+        const ventGeo = new THREE.CylinderGeometry(0.04, 0.05, 0.5, 8);
+        const platformRingGeo = new THREE.TorusGeometry(0.33, 0.035, 8, 22);
+        const sphereTankGeo = new THREE.SphereGeometry(0.4, 20, 16);
+        const legGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.45, 6);
+        const tankGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.6, 22);
+        const tankRimGeo = new THREE.TorusGeometry(0.5, 0.04, 8, 24);
+        const tankTopGeo = new THREE.CylinderGeometry(0.34, 0.5, 0.18, 22);
+        const pipeGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.25, 8);
+        const pipeSupportGeo = new THREE.BoxGeometry(0.08, 0.5, 0.08);
+        const stackGeo = new THREE.CylinderGeometry(0.07, 0.11, 2.6, 12);
+        const flameOuterGeo = new THREE.ConeGeometry(0.2, 0.8, 14);
+        const flameInnerGeo = new THREE.ConeGeometry(0.11, 0.5, 12);
+        const beaconGeo = new THREE.SphereGeometry(0.15, 14, 14);
+        const ringGeoUnit = new THREE.RingGeometry(0.95, 1.25, 36);
+        const pickGeo = new THREE.BoxGeometry(2.3, 3.0, 1.7);
 
-        // Refinery hardware materials: brushed-steel column, pale storage tank,
-        // grey flare stack and a self-lit flame so units read against the dark scene.
-        const columnMat = new THREE.MeshStandardMaterial({ color: "#b8c2cf", roughness: 0.4, metalness: 0.7 });
-        const tankMat = new THREE.MeshStandardMaterial({ color: "#d8dee6", roughness: 0.5, metalness: 0.4 });
-        const stackMat = new THREE.MeshStandardMaterial({ color: "#8a939f", roughness: 0.6, metalness: 0.5 });
-        const flameMat = new THREE.MeshStandardMaterial({ color: "#ff9b3d", emissive: "#ff5a1f", emissiveIntensity: 0.95, roughness: 0.4 });
-        const baseMat = new THREE.MeshStandardMaterial({ color: "#5a6675", roughness: 0.7, metalness: 0.2 });
-        const trimMat = new THREE.MeshStandardMaterial({ color: "#9aa6b4", roughness: 0.5, metalness: 0.55 });
+        // Refinery hardware materials: brushed-steel column, pale tanks, grey stacks
+        // and a layered self-lit flame so units pop against the dark ocean scene.
+        const columnMat = new THREE.MeshStandardMaterial({ color: "#c2ccd9", roughness: 0.34, metalness: 0.78 });
+        const tankMat = new THREE.MeshStandardMaterial({ color: "#dde3ea", roughness: 0.48, metalness: 0.42 });
+        const sphereMat = new THREE.MeshStandardMaterial({ color: "#cfd8e1", roughness: 0.3, metalness: 0.62 });
+        const stackMat = new THREE.MeshStandardMaterial({ color: "#7e8794", roughness: 0.58, metalness: 0.5 });
+        const trimMat = new THREE.MeshStandardMaterial({ color: "#8b97a6", roughness: 0.5, metalness: 0.6 });
+        const pipeMat = new THREE.MeshStandardMaterial({ color: "#9aa6b4", roughness: 0.5, metalness: 0.55 });
+        const padMat = new THREE.MeshStandardMaterial({ color: "#4a5462", roughness: 0.78, metalness: 0.15 });
+        const flameOuterMat = new THREE.MeshStandardMaterial({ color: "#ff8a3d", emissive: "#ff5a1f", emissiveIntensity: 1.0, transparent: true, opacity: 0.82, roughness: 0.5 });
+        const flameInnerMat = new THREE.MeshStandardMaterial({ color: "#ffe08a", emissive: "#ffcc55", emissiveIntensity: 1.25, roughness: 0.4 });
 
-        // A process unit: a tall distillation column with platform rings, carried on
-        // the pad. Returns the column group plus the flare flame (animated as a flicker).
-        const buildProcessUnit = () => {
+        // A distillation column: stacked steel segments, domed top, vent pipe and
+        // catwalk platform rings - the signature refinery silhouette.
+        const buildColumn = () => {
             const unit = new THREE.Group();
-
-            const column = new THREE.Mesh(columnGeo, columnMat);
-            column.position.y = 1.3;
-            column.castShadow = true;
-            unit.add(column);
-
-            // Two platform rings around the column.
-            [0.7, 1.7].forEach((y) => {
-                const ringTrim = new THREE.Mesh(ringGeoUnit, trimMat);
-                ringTrim.rotation.x = Math.PI / 2;
-                ringTrim.position.y = y;
-                unit.add(ringTrim);
+            const base = new THREE.Mesh(colBaseGeo, columnMat); base.position.y = 0.74; base.castShadow = true; unit.add(base);
+            const mid = new THREE.Mesh(colMidGeo, columnMat); mid.position.y = 1.72; mid.castShadow = true; unit.add(mid);
+            const top = new THREE.Mesh(colTopGeo, columnMat); top.position.y = 2.55; top.castShadow = true; unit.add(top);
+            const dome = new THREE.Mesh(colDomeGeo, columnMat); dome.position.y = 2.92; unit.add(dome);
+            const vent = new THREE.Mesh(ventGeo, stackMat); vent.position.y = 3.25; unit.add(vent);
+            [1.15, 2.05, 2.7].forEach((y) => {
+                const r = new THREE.Mesh(platformRingGeo, trimMat);
+                r.rotation.x = Math.PI / 2;
+                r.position.y = y;
+                unit.add(r);
             });
-
             return unit;
+        };
+
+        // A spherical LPG pressure store carried on four short legs.
+        const buildSphereTank = () => {
+            const g = new THREE.Group();
+            const ball = new THREE.Mesh(sphereTankGeo, sphereMat); ball.position.y = 0.62; ball.castShadow = true; g.add(ball);
+            for (let k = 0; k < 4; k += 1) {
+                const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+                const leg = new THREE.Mesh(legGeo, trimMat);
+                leg.position.set(Math.cos(a) * 0.26, 0.22, Math.sin(a) * 0.26);
+                g.add(leg);
+            }
+            return g;
         };
 
         turbines.forEach((t) => {
@@ -671,30 +789,56 @@ function SolarFleetScene({
             scene.add(group);
 
             // Concrete pad.
-            const pad = new THREE.Mesh(baseGeo, baseMat);
-            pad.position.y = 0.09;
+            const pad = new THREE.Mesh(padGeo, padMat);
+            pad.position.y = 0.08;
             pad.receiveShadow = true;
             group.add(pad);
 
-            // Storage tank beside the column.
+            // Distillation column (rear-centre).
+            const column = buildColumn();
+            column.position.set(-0.1, 0, -0.15);
+            group.add(column);
+
+            // Floating-roof storage tank (front-left) with rim + domed roof.
             const tank = new THREE.Mesh(tankGeo, tankMat);
-            tank.position.set(-0.62, 0.5, 0.2);
+            tank.position.set(-0.66, 0.44, 0.34);
             tank.castShadow = true;
             group.add(tank);
+            const tankRim = new THREE.Mesh(tankRimGeo, trimMat);
+            tankRim.rotation.x = Math.PI / 2;
+            tankRim.position.set(-0.66, 0.74, 0.34);
+            group.add(tankRim);
+            const tankTop = new THREE.Mesh(tankTopGeo, tankMat);
+            tankTop.position.set(-0.66, 0.83, 0.34);
+            group.add(tankTop);
 
-            // Distillation column on the pad.
-            const processUnit = buildProcessUnit();
-            group.add(processUnit);
+            // LPG sphere (front-right).
+            const sphere = buildSphereTank();
+            sphere.position.set(0.66, 0, -0.42);
+            group.add(sphere);
 
-            // Flare stack with a flickering flame (animated by live telemetry).
+            // Pipe bridge linking the tank and the column.
+            const pipe = new THREE.Mesh(pipeGeo, pipeMat);
+            pipe.rotation.z = Math.PI / 2;
+            pipe.position.set(-0.3, 0.62, 0.34);
+            group.add(pipe);
+            [-0.66, 0.05].forEach((px) => {
+                const sup = new THREE.Mesh(pipeSupportGeo, pipeMat);
+                sup.position.set(px, 0.37, 0.34);
+                group.add(sup);
+            });
+
+            // Flare stack with a layered, flickering flame (animated by telemetry).
             const stack = new THREE.Mesh(stackGeo, stackMat);
-            stack.position.set(0.78, 1.15, 0.35);
+            stack.position.set(0.74, 1.3, 0.5);
             group.add(stack);
-            const flame = new THREE.Mesh(flameGeo, flameMat);
-            flame.position.set(0.78, 2.4, 0.35);
+            const flame = new THREE.Group();
+            flame.position.set(0.74, 2.6, 0.5);
+            const flameOuter = new THREE.Mesh(flameOuterGeo, flameOuterMat); flameOuter.position.y = 0.4; flame.add(flameOuter);
+            const flameInner = new THREE.Mesh(flameInnerGeo, flameInnerMat); flameInner.position.y = 0.3; flame.add(flameInner);
             group.add(flame);
 
-            // Status beacon on the array (color driven by live telemetry).
+            // Status beacon on the column crown (color driven by live telemetry).
             const nacelleMat = new THREE.MeshStandardMaterial({
                 color: STATUS_COLORS[t.status],
                 emissive: STATUS_COLORS[t.status],
@@ -702,15 +846,15 @@ function SolarFleetScene({
                 roughness: 0.3,
                 metalness: 0.2,
             });
-            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), nacelleMat);
-            beacon.position.set(0.95, 1.0, 0.55);
+            const beacon = new THREE.Mesh(beaconGeo, nacelleMat);
+            beacon.position.set(-0.1, 3.55, -0.15);
             group.add(beacon);
 
             const pickMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(2.2, 2.2, 1.6),
+                pickGeo,
                 new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
             );
-            pickMesh.position.y = 1.0;
+            pickMesh.position.y = 1.4;
             pickMesh.userData.turbineId = t.id;
             pickables.push(pickMesh);
             group.add(pickMesh);
@@ -720,7 +864,7 @@ function SolarFleetScene({
                 transparent: true,
                 opacity: t.id === selectedId ? 0.9 : 0.55,
             });
-            const ring = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.25, 32), ringMat);
+            const ring = new THREE.Mesh(ringGeoUnit, ringMat);
             ring.rotation.x = -Math.PI / 2;
             ring.position.y = 0.03;
             group.add(ring);
