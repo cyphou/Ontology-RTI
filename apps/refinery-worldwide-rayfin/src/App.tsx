@@ -416,6 +416,7 @@ function createMapTexture(sites: SolarPlantSite[]) {
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.anisotropy = 4;
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.needsUpdate = true;
     return texture;
 }
@@ -448,6 +449,7 @@ function createSkyTexture() {
     ctx.globalAlpha = 1;
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.needsUpdate = true;
     return texture;
 }
@@ -501,6 +503,7 @@ function createOceanTexture() {
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(2, 1.4);
     texture.anisotropy = 4;
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.needsUpdate = true;
     return texture;
 }
@@ -641,18 +644,36 @@ function SolarFleetScene({
         renderer.setSize(host.clientWidth, host.clientHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.16;
         host.innerHTML = "";
         host.appendChild(renderer.domElement);
 
-        const ambient = new THREE.AmbientLight(0xaec6ff, 0.47);
-        const sun = new THREE.DirectionalLight(0xd6ecff, 1.08);
+        // Image-based lighting from the sky gradient so steel columns and LPG
+        // spheres pick up soft, realistic reflections.
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        const envRT = pmrem.fromEquirectangular(skyTexture);
+        scene.environment = envRT.texture;
+        pmrem.dispose();
+
+        const ambient = new THREE.AmbientLight(0xaec6ff, 0.42);
+        const sun = new THREE.DirectionalLight(0xd6ecff, 1.18);
         sun.position.set(34, 52, 18);
         sun.castShadow = true;
-        sun.shadow.mapSize.width = 1024;
-        sun.shadow.mapSize.height = 1024;
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.22);
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 1;
+        sun.shadow.camera.far = 220;
+        sun.shadow.camera.left = -70;
+        sun.shadow.camera.right = 70;
+        sun.shadow.camera.top = 46;
+        sun.shadow.camera.bottom = -46;
+        sun.shadow.bias = -0.0004;
+        sun.shadow.normalBias = 0.02;
+        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.24);
         rim.position.set(-24, 18, -24);
-        const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x16324a, 0.35);
+        const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x16324a, 0.38);
         scene.add(ambient, sun, rim, hemi);
 
         // Single unified lit ocean plane (large enough to fill the horizon).
@@ -944,6 +965,7 @@ function SolarFleetScene({
             mapTexture.dispose();
             oceanTexture.dispose();
             skyTexture.dispose();
+            envRT.dispose();
         };
 
         sceneRef.current = {
@@ -1384,14 +1406,33 @@ function PlantTwinScene({ turbine, paused }: { turbine: PlantTelemetry; paused: 
         renderer.setSize(host.clientWidth, host.clientHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.12;
         host.innerHTML = "";
         host.appendChild(renderer.domElement);
 
-        const ambient = new THREE.AmbientLight(0xbcd4ff, 0.55);
-        const sun = new THREE.DirectionalLight(0xffffff, 1.15);
+        // Soft image-based reflections for the close-up steel hardware.
+        const detailSky = createSkyTexture();
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        const envRT = pmrem.fromEquirectangular(detailSky);
+        scene.environment = envRT.texture;
+        pmrem.dispose();
+        detailSky.dispose();
+
+        const ambient = new THREE.AmbientLight(0xbcd4ff, 0.5);
+        const sun = new THREE.DirectionalLight(0xffffff, 1.22);
         sun.position.set(12, 24, 10);
         sun.castShadow = true;
-        sun.shadow.mapSize.set(1024, 1024);
+        sun.shadow.mapSize.set(2048, 2048);
+        sun.shadow.camera.near = 1;
+        sun.shadow.camera.far = 120;
+        sun.shadow.camera.left = -20;
+        sun.shadow.camera.right = 20;
+        sun.shadow.camera.top = 24;
+        sun.shadow.camera.bottom = -8;
+        sun.shadow.bias = -0.0004;
+        sun.shadow.normalBias = 0.02;
         const rim = new THREE.DirectionalLight(0x4fa3ff, 0.35);
         rim.position.set(-14, 10, -12);
         scene.add(ambient, sun, rim);
@@ -1566,6 +1607,7 @@ function PlantTwinScene({ turbine, paused }: { turbine: PlantTelemetry; paused: 
                     material.forEach((m) => m.dispose());
                 }
             });
+            envRT.dispose();
         };
     }, []);
 
