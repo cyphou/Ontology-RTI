@@ -762,6 +762,15 @@ flowchart LR
 | :triangular_ruler: | [SEMANTIC_MODEL_GUIDE.md](SEMANTIC_MODEL_GUIDE.md) | Power BI semantic model configuration |
 | :robot: | [AGENTS.md](AGENTS.md) | Multi-agent architecture and Copilot agent definitions |
 | :clipboard: | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) | Sprint roadmap and development plan |
+| :wind_face: | [docs/WIND_TURBINE_RAYFIN_PLAN.md](docs/WIND_TURBINE_RAYFIN_PLAN.md) | Execution plan for the Rayfin + Three.js wind farm digital twin series |
+| :calendar: | [docs/WIND_TURBINE_RAYFIN_ROADMAP.md](docs/WIND_TURBINE_RAYFIN_ROADMAP.md) | Sprint roadmap, milestones, ownership, and KPI tracking for the series |
+| :checkered_flag: | [docs/WIND_TURBINE_RAYFIN_TASKBOARD.csv](docs/WIND_TURBINE_RAYFIN_TASKBOARD.csv) | Import-ready backlog for GitHub Projects or task tracking tools |
+| :memo: | [docs/BLOG_PART1_RAYFIN_THREEJS_FABRIC.md](docs/BLOG_PART1_RAYFIN_THREEJS_FABRIC.md) | Publish-ready draft for Part 1 of the Rayfin + Three.js series |
+| :white_check_mark: | [docs/WIND_TURBINE_RAYFIN_IMPLEMENTATION_CHECKLIST.md](docs/WIND_TURBINE_RAYFIN_IMPLEMENTATION_CHECKLIST.md) | Definition-of-Done and milestone checklist for execution control |
+| :inbox_tray: | [docs/WIND_TURBINE_RAYFIN_GITHUB_PROJECT_IMPORT.csv](docs/WIND_TURBINE_RAYFIN_GITHUB_PROJECT_IMPORT.csv) | GitHub Projects import CSV with Sprint 1 pre-set to In Progress |
+| :compass: | [docs/WIND_TURBINE_RAYFIN_GITHUB_PROJECTS_IMPORT.md](docs/WIND_TURBINE_RAYFIN_GITHUB_PROJECTS_IMPORT.md) | Field mapping and import procedure for GitHub Projects |
+| :rocket: | [docs/WIND_TURBINE_RAYFIN_DEPLOYMENT_MSIT.md](docs/WIND_TURBINE_RAYFIN_DEPLOYMENT_MSIT.md) | Deployment handoff for the MSIT Fabric workspace and Rayfin app identifiers |
+| :oil_drum: | [docs/REFINERY_WORLDWIDE_RAYFIN_DEPLOYMENT_MSIT.md](docs/REFINERY_WORLDWIDE_RAYFIN_DEPLOYMENT_MSIT.md) | Deployment handoff for the worldwide refinery geo-twin Rayfin app |
 
 ---
 

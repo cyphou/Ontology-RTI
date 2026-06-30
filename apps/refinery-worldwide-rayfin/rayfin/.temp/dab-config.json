@@ -1,0 +1,178 @@
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.5.56/dab.draft.schema.json",
+  "entities": {
+    "SensorThreshold": {
+      "source": "SensorThresholds",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": [
+            "*"
+          ]
+        }
+      ],
+      "x-schema": {
+        "fields": {
+          "id": {
+            "dbType": "UNIQUEIDENTIFIER",
+            "nullable": false
+          },
+          "signalKey": {
+            "dbType": "NVARCHAR(16)",
+            "nullable": false
+          },
+          "ontologyProperty": {
+            "dbType": "NVARCHAR(48)",
+            "nullable": false
+          },
+          "unit": {
+            "dbType": "NVARCHAR(16)",
+            "nullable": false
+          },
+          "warn": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "alarm": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "governsHealth": {
+            "dbType": "BIT",
+            "nullable": false
+          }
+        },
+        "constraints": {
+          "primaryKey": {
+            "name": "PK_SensorThresholds",
+            "columns": [
+              "id"
+            ]
+          },
+          "uniqueConstraints": [
+            {
+              "name": "UQ_SensorThresholds_signalKey",
+              "columns": [
+                "signalKey"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "RefineryUnit": {
+      "source": "RefineryUnits",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": [
+            "*"
+          ]
+        }
+      ],
+      "x-schema": {
+        "fields": {
+          "id": {
+            "dbType": "UNIQUEIDENTIFIER",
+            "nullable": false
+          },
+          "siteId": {
+            "dbType": "NVARCHAR(32)",
+            "nullable": false
+          },
+          "name": {
+            "dbType": "NVARCHAR(120)",
+            "nullable": false
+          },
+          "region": {
+            "dbType": "NVARCHAR(48)",
+            "nullable": false
+          },
+          "latitude": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "longitude": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "capacityMw": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          }
+        },
+        "constraints": {
+          "primaryKey": {
+            "name": "PK_RefineryUnits",
+            "columns": [
+              "id"
+            ]
+          },
+          "uniqueConstraints": [
+            {
+              "name": "UQ_RefineryUnits_siteId",
+              "columns": [
+                "siteId"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "DispatchNote": {
+      "source": "DispatchNotes",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": [
+            "*"
+          ]
+        }
+      ],
+      "x-schema": {
+        "fields": {
+          "id": {
+            "dbType": "UNIQUEIDENTIFIER",
+            "nullable": false
+          },
+          "turbineId": {
+            "dbType": "NVARCHAR(48)",
+            "nullable": false
+          },
+          "siteId": {
+            "dbType": "NVARCHAR(32)",
+            "nullable": false
+          },
+          "status": {
+            "dbType": "NVARCHAR(16)",
+            "nullable": false
+          },
+          "powerKw": {
+            "dbType": "INT",
+            "nullable": false
+          },
+          "note": {
+            "dbType": "NVARCHAR(500)",
+            "nullable": false
+          },
+          "author": {
+            "dbType": "NVARCHAR(120)",
+            "nullable": false
+          },
+          "createdAt": {
+            "dbType": "DATETIME2",
+            "nullable": false
+          }
+        },
+        "constraints": {
+          "primaryKey": {
+            "name": "PK_DispatchNotes",
+            "columns": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "deployments": {
+    "pde-windturbine": {
+      "fabricItemId": "e5931e9b-dccd-4d0d-a482-3c450e13e5f9",
+      "fabricApiUrl": "https://pbipmsitwcus23-msit.pbidedicated.windows.net/webapi/capacities/485e0346-9f99-4185-874e-8c0ccdea21cf/workloads/BaaS/BaaSService/automatic/v1/workspaces/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/e5931e9b-dccd-4d0d-a482-3c450e13e5f9/",
+      "fabricWorkspaceId": "c4e0ab47-88d2-452d-ac98-ad101b574cf3",
+      "fabricTenantId": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+      "publishableKey": "pk-jscxDpjYmbGzK-xqeB-X",
+      "hostingUrl": "https://large-lemon-474679a745-westcentralus.webapp.msit.fabricapps.net",
+      "fabricDeepLink": "https://app.fabric.microsoft.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/e5931e9b-dccd-4d0d-a482-3c450e13e5f9?ctid=72f988bf-86f1-41af-91ab-2d7cd011db47",
+      "deployedAt": "2026-06-30T10:12:19.541Z"
+    }
+  },
+  "active": "pde-windturbine"
+}
