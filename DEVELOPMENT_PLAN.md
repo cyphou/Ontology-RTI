@@ -204,7 +204,7 @@ gantt
 | 📈 | Persisted power/throughput history seam (sparkline + forecast) | 🔴 High | ✅ Done |
 | 🧩 | App parity — bring Solar & Refinery to Wind's full feature set | 🔴 High | 🚧 In progress |
 | ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) | 🟡 Medium | 🔲 |
-| 🧵 | Ontology-driven signal thresholds (warn/alarm from metadata) | 🟡 Medium | 🔲 |
+| 🧵 | Ontology-driven signal thresholds (warn/alarm from metadata) | 🟡 Medium | ✅ Done |
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
 | 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | 🔲 |
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
@@ -231,7 +231,7 @@ gantt
 | | Task | Priority | Status |
 |:---:|------|:--------:|:------:|
 | 🧩 | Complete Solar & Refinery parity audit vs Wind (analytics, alerts, writeback, forecasting, graph, Ask Fabric IQ) | 🔴 High | 🔲 |
-| 🧵 | Ontology-driven signal thresholds (warn/alarm bands from semantic-model metadata) | 🔴 High | 🔲 |
+| 🧵 | Ontology-driven signal thresholds (warn/alarm bands from semantic-model metadata) | 🔴 High | ✅ Done |
 | ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) to cut initial bundle | 🟡 Medium | 🔲 |
 | 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | 🔲 |
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
@@ -239,6 +239,15 @@ gantt
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
 | 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | 🔲 |
 | 🏗️ | Multi-domain app shell for the remaining four domains | 🟢 Low | 🔲 |
+
+**Shipped increment — `Aug 2026`:**
+
+| | Task | Status |
+|:---:|------|:------:|
+| 🧵 | Wind: runtime override seam consumes ontology-published `SensorThreshold` bands | ✅ |
+| 🧵 | Solar & Refinery: same fallback-safe override seam ported | ✅ |
+| 🧵 | Validated adoption (known key, non-negative, `warn ≤ alarm`; malformed rows ignored) drives `signalState`/`derive*Status`/thresholds card at runtime | ✅ |
+| 🧪 | +4 tests per app (67/67 each), defaults intact when backend unreachable | ✅ |
 
 ---
 
@@ -259,7 +268,7 @@ gantt
 | 📐 TMDL semantic models | 7 |
 | ⚡ PowerShell scripts | 30+ |
 | 🖥️ Fabric Rayfin apps | 3 |
-| 🧪 App tests (Vitest) | 189 (63 × 3 apps) |
+| 🧪 App tests (Vitest) | 201 (67 × 3 apps) |
 
 ---
 
