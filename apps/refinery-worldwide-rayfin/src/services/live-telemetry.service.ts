@@ -99,6 +99,35 @@ export const DAX_LATEST_TELEMETRY =
     '"SensorType", sensortelemetry[SensorType], ' +
     '"Value", [LatestValue])';
 
+// Default number of historical points to pull for a sparkline / forecast window.
+export const DEFAULT_HISTORY_LIMIT = 40;
+
+// Escape a value for safe inclusion in a DAX string literal (double any quotes).
+// ProcessUnitIds come from our own data, but this keeps the query well-formed
+// and closes off any string-injection edge for defence in depth.
+export function escapeDaxString(value: string): string {
+    return value.replace(/"/g, '""');
+}
+
+/**
+ * DAX for the last `limit` throughput readings of one process unit, ordered
+ * oldest→newest. TOPN takes the most recent by Timestamp (ISO strings sort
+ * chronologically), then ORDER BY re-sorts them ascending for a left-to-right
+ * sparkline. Throughput (kbd) maps to the shared powerKw field with no conversion.
+ */
+export function daxPowerHistory(unitId: string, limit: number = DEFAULT_HISTORY_LIMIT): string {
+    const id = escapeDaxString(unitId);
+    return (
+        `EVALUATE TOPN(${limit}, FILTER(SELECTCOLUMNS(sensortelemetry, ` +
+        '"Timestamp", sensortelemetry[Timestamp], ' +
+        '"Value", sensortelemetry[Value], ' +
+        '"ProcessUnitId", sensortelemetry[ProcessUnitId], ' +
+        '"SensorType", sensortelemetry[SensorType]), ' +
+        `[ProcessUnitId] = "${id}" && [SensorType] = "Throughput"), ` +
+        '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
+    );
+}
+
 /** True when a live semantic-model connection alias is configured. */
 export function isLiveTelemetryConfigured(): boolean {
     return Boolean(LIVE_MODEL);
@@ -228,4 +257,38 @@ export async function fetchLiveTelemetry(): Promise<LiveTelemetrySnapshot | null
         units: recordsToUnits(unitRecords),
         metrics: pivotReadings(recordsToReadings(telemetryRecords)),
     };
+}
+
+/**
+ * Project raw history rows ({ timestamp, value }) into a chronologically ordered
+ * array of throughput values (kbd). Rows are sorted oldest→newest defensively
+ * (the DAX already orders ASC) so the seeded sparkline history lines up with the
+ * live "current throughput" reading.
+ */
+export function recordsToHistory(records: Record<string, unknown>[]): number[] {
+    return records
+        .map((r) => ({ timestamp: toText(r["timestamp"]), value: toNumber(r["value"]) }))
+        .filter((p) => p.timestamp !== "")
+        .sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0))
+        .map((p) => Math.round(p.value * 10) / 10);
+}
+
+/**
+ * Fetch persisted throughput history (kbd) for one process unit from the semantic
+ * model so sparklines and forecasts reflect real Lakehouse-backed readings instead
+ * of a cold in-browser accumulation. Returns null when unconfigured or on any
+ * query failure, letting callers fall back to the live/synthetic accumulation.
+ */
+export async function fetchPowerHistory(
+    unitId: string,
+    limit: number = DEFAULT_HISTORY_LIMIT,
+): Promise<number[] | null> {
+    if (!isLiveTelemetryConfigured() || unitId === "") {
+        return null;
+    }
+    const records = await runQuery(daxPowerHistory(unitId, limit));
+    if (!records) {
+        return null;
+    }
+    return recordsToHistory(records);
 }
