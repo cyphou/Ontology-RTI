@@ -5,7 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import * as THREE from "three";
 import {
     answerQuestion,
@@ -73,13 +73,13 @@ type SceneState = {
     cleanup: () => void;
 };
 
-const STATUS_COLORS: Record<PlantStatus, string> = {
+export const STATUS_COLORS: Record<PlantStatus, string> = {
     healthy: "#58d68d",
     warning: "#ffd166",
     alarm: "#ef476f",
 };
 
-const SITE_COLORS = ["#6ee7ff", "#9bffb0", "#fbc2eb", "#ffd166", "#b4d4ff", "#a1c4fd"];
+export const SITE_COLORS = ["#6ee7ff", "#9bffb0", "#fbc2eb", "#ffd166", "#b4d4ff", "#a1c4fd"];
 
 // Major worldwide crude-oil refineries, positioned by their real coordinates across
 // the globe. capacityMw carries the crude distillation capacity in thousand barrels
@@ -95,7 +95,7 @@ const SITES: SolarPlantSite[] = [
     { id: "PERNIS", name: "Pernis", region: "Netherlands", lat: 51.88, lon: 4.39, arrayCount: 5, capacityMw: 404 },
 ];
 
-function seededRand(seed: number) {
+export function seededRand(seed: number) {
     const s = Math.sin(seed) * 10000;
     return s - Math.floor(s);
 }
@@ -326,14 +326,14 @@ export function formatBand(row: { warn: number; alarm: number; unit: string }): 
 }
 
 // Anchor points (in twin-scene world space) for the part value callouts.
-const TWIN_PARTS: { key: string; caption: string; pos: [number, number, number] }[] = [
+export const TWIN_PARTS: { key: string; caption: string; pos: [number, number, number] }[] = [
     { key: "array", caption: "Column", pos: [0, 4.0, -1.4] },
     { key: "inverter", caption: "Tank", pos: [-3.6, 1.5, 0] },
     { key: "tracker", caption: "Flare", pos: [2.8, 0.9, 1.4] },
     { key: "output", caption: "Throughput", pos: [0, 0.7, 2.8] },
 ];
 
-function createMapTexture(sites: SolarPlantSite[]) {
+export function createMapTexture(sites: SolarPlantSite[]) {
     const canvas = document.createElement("canvas");
     canvas.width = 2048;
     canvas.height = 1024;
@@ -467,7 +467,7 @@ function createMapTexture(sites: SolarPlantSite[]) {
 }
 
 // Vertical sky gradient backdrop (deep space -> teal horizon) with faint stars.
-function createSkyTexture() {
+export function createSkyTexture() {
     const canvas = document.createElement("canvas");
     canvas.width = 32;
     canvas.height = 512;
@@ -500,7 +500,7 @@ function createSkyTexture() {
 }
 
 // Lit-ocean texture: depth gradient + soft sun glint + drifting ripple bands.
-function createOceanTexture() {
+export function createOceanTexture() {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 1024;
@@ -735,6 +735,9 @@ export function sourceLabel(source: AskResult["source"]): string {
             return "Local engine (offline)";
     }
 }
+
+const LazySolarFleetScene = lazy(() => import("@/scenes/SolarFleetScene"));
+const LazyPlantTwinScene = lazy(() => import("@/scenes/PlantTwinScene"));
 
 function SolarFleetScene({
     turbines,
@@ -2462,7 +2465,9 @@ function App() {
                 <section className="relative min-h-0 flex-1">
                     {view === "map" && (
                         <div className="relative h-full min-h-[520px]">
-                            <SolarFleetScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
+                            <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
+                                <LazySolarFleetScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
+                            </Suspense>
 
                             <div className="absolute left-3 top-3 max-w-[78%] rounded-lg border border-slate-700/60 bg-[#06101fd9] p-2 backdrop-blur">
                                 {toolbar}
@@ -2526,7 +2531,9 @@ function App() {
                                     </div>
 
                                     <div className="relative h-[480px] overflow-hidden rounded-xl border border-slate-700/60 bg-[#051020]">
-                                        <PlantTwinScene turbine={selected} paused={!live} />
+                                        <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
+                                            <LazyPlantTwinScene turbine={selected} paused={!live} />
+                                        </Suspense>
                                         <div className="absolute left-3 top-3 rounded-lg border border-slate-700/60 bg-[#06101fcc] px-3 py-2 backdrop-blur">
                                             <p className="text-sm font-semibold">{selected.id}</p>
                                             <p className="text-xs text-slate-400">{selected.siteName} · {selected.latitude.toFixed(2)}, {selected.longitude.toFixed(2)}</p>
