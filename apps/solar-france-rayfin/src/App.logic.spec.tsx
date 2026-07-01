@@ -5,8 +5,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { describe, it, expect } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments } from "@/App";
+import { describe, it, expect, afterEach } from "vitest";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
 
@@ -173,6 +173,53 @@ describe("thresholdRows", () => {
         const power = thresholdRows().find((r) => r.signalKey === "power");
         expect(power?.governsHealth).toBe(false);
         expect(Number.isFinite(power?.alarm ?? Infinity)).toBe(false);
+    });
+});
+
+describe("ontology-driven threshold overrides", () => {
+    afterEach(() => {
+        clearThresholdOverrides();
+    });
+
+    it("adopts a valid backend band and drives classification at runtime", () => {
+        expect(signalState("moduleTemp", 55)).toBe("healthy");
+        const applied = applyThresholdOverrides([
+            { signalKey: "moduleTemp", ontologyProperty: "ModuleTempC", unit: "\u00b0C", warn: 40, alarm: 50, governsHealth: true },
+        ]);
+        expect(applied).toBe(1);
+        expect(signalState("moduleTemp", 55)).toBe("alarm");
+        expect(signalState("moduleTemp", 45)).toBe("warning");
+    });
+
+    it("surfaces overridden bands through thresholdRows and derived status", () => {
+        applyThresholdOverrides([
+            { signalKey: "inverterLoad", ontologyProperty: "InverterLoadPct", unit: "%", warn: 70, alarm: 80, governsHealth: true },
+        ]);
+        const load = thresholdRows().find((r) => r.signalKey === "inverterLoad");
+        expect(load).toMatchObject({ warn: 70, alarm: 80 });
+        expect(derivePlantStatus(50, 82)).toBe("alarm");
+    });
+
+    it("ignores malformed rows (unknown key, inverted or negative bands)", () => {
+        const applied = applyThresholdOverrides([
+            { signalKey: "bogus", ontologyProperty: "X", unit: "", warn: 1, alarm: 2, governsHealth: true },
+            { signalKey: "moduleTemp", ontologyProperty: "ModuleTempC", unit: "\u00b0C", warn: 90, alarm: 70, governsHealth: true },
+            { signalKey: "inverterLoad", ontologyProperty: "InverterLoadPct", unit: "%", warn: -1, alarm: 50, governsHealth: true },
+        ]);
+        expect(applied).toBe(0);
+        expect(signalState("moduleTemp", 85)).toBe("alarm");
+        expect(signalState("moduleTemp", 55)).toBe("healthy");
+        expect(signalState("inverterLoad", 80)).toBe("healthy");
+    });
+
+    it("clearThresholdOverrides restores the compiled-in defaults", () => {
+        applyThresholdOverrides([
+            { signalKey: "moduleTemp", ontologyProperty: "ModuleTempC", unit: "\u00b0C", warn: 40, alarm: 50, governsHealth: true },
+        ]);
+        expect(signalState("moduleTemp", 55)).toBe("alarm");
+        clearThresholdOverrides();
+        expect(signalState("moduleTemp", 55)).toBe("healthy");
+        expect(thresholdRows().find((r) => r.signalKey === "moduleTemp")).toMatchObject({ warn: 65, alarm: 80 });
     });
 });
 
