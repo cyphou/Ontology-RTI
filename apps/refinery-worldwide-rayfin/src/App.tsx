@@ -1268,7 +1268,7 @@ const SUGGESTED = [
 
 function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: ViewKey) => void; badges?: Partial<Record<ViewKey, number>> }) {
     return (
-        <nav className="flex w-14 flex-col gap-1 border-r border-slate-800/60 bg-[#06101fcc] py-3 md:w-44">
+        <nav className="flex w-full flex-row gap-1 overflow-x-auto border-b border-slate-800/60 bg-[#06101fcc] px-2 py-2 md:w-44 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:px-0 md:py-3">
             {NAV.map((n) => {
                 const badge = badges?.[n.key] ?? 0;
                 return (
@@ -2418,7 +2418,7 @@ function App() {
 
     return (
         <main className="flex h-full flex-col bg-[radial-gradient(circle_at_12%_8%,#13223e_0%,#050911_55%,#02050a_100%)] text-slate-100">
-            <header className="flex flex-wrap items-center gap-3 border-b border-slate-800/60 bg-[#071126cc] px-5 py-3 backdrop-blur-sm">
+            <header className="flex flex-wrap items-center gap-3 border-b border-slate-800/60 bg-[#071126cc] px-3 py-3 backdrop-blur-sm sm:px-5">
                 <div className="mr-2">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-300">Fabric Rayfin App</p>
                     <h1 className="text-xl font-semibold leading-tight">Geo Refinery Twin Command Center · Worldwide</h1>
@@ -2435,7 +2435,7 @@ function App() {
                     <KpiPill label="Units" value={`${visibleTurbines.length}/${turbines.length}`} />
                 </div>
 
-                <div className="ml-auto flex items-center gap-2 text-xs text-slate-300">
+                <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 text-xs text-slate-300 sm:w-auto">
                     <button
                         type="button"
                         onClick={() => setLive((v) => !v)}
@@ -2459,21 +2459,21 @@ function App() {
                 </div>
             </header>
 
-            <div className="flex min-h-0 flex-1">
+            <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                 <NavRail view={view} onChange={setView} badges={{ alerts: unackedAlerts.length }} />
 
                 <section className="relative min-h-0 flex-1">
                     {view === "map" && (
-                        <div className="relative h-full min-h-[520px]">
+                        <div className="relative h-full min-h-[420px] md:min-h-[520px]">
                             <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
                                 <LazySolarFleetScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
                             </Suspense>
 
-                            <div className="absolute left-3 top-3 max-w-[78%] rounded-lg border border-slate-700/60 bg-[#06101fd9] p-2 backdrop-blur">
+                            <div className="absolute left-2 right-2 top-2 rounded-lg border border-slate-700/60 bg-[#06101fd9] p-2 backdrop-blur sm:left-3 sm:right-auto sm:max-w-[78%]">
                                 {toolbar}
                             </div>
 
-                            <div className="absolute right-3 top-3 w-60 rounded-lg border border-slate-700/60 bg-[#07162de6] p-3 backdrop-blur">
+                            <div className="absolute right-3 top-3 hidden w-60 rounded-lg border border-slate-700/60 bg-[#07162de6] p-3 backdrop-blur sm:block">
                                 <p className="text-[10px] uppercase tracking-wide text-slate-400">Selected</p>
                                 <p className="text-sm font-semibold">{selected.id}</p>
                                 <p className="text-xs text-slate-400">{selected.siteName}</p>
@@ -2487,7 +2487,7 @@ function App() {
                                 </div>
                             </div>
 
-                            <div className="absolute bottom-3 left-3 rounded-lg border border-slate-700/60 bg-[#06101fcc] px-3 py-1.5 text-xs text-slate-400">
+                            <div className="absolute bottom-3 left-3 hidden rounded-lg border border-slate-700/60 bg-[#06101fcc] px-3 py-1.5 text-xs text-slate-400 sm:block">
                                 Click any refinery to open its live detail popup · scroll or use ＋ / － to zoom.
                             </div>
                         </div>
