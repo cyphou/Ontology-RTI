@@ -203,7 +203,7 @@ gantt
 | 📡 | Live Eventhouse/KQL timeseries (replace seeded telemetry) | 🔴 High | ✅ Done |
 | 📈 | Persisted power/throughput history seam (sparkline + forecast) | 🔴 High | ✅ Done |
 | 🧩 | App parity — bring Solar & Refinery to Wind's full feature set | 🔴 High | 🚧 In progress |
-| ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) | 🟡 Medium | 🔲 |
+| ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) | 🟡 Medium | ✅ Done |
 | 🧵 | Ontology-driven signal thresholds (warn/alarm from metadata) | 🟡 Medium | ✅ Done |
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
 | 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | 🔲 |
@@ -232,7 +232,7 @@ gantt
 |:---:|------|:--------:|:------:|
 | 🧩 | Complete Solar & Refinery parity audit vs Wind (analytics, alerts, writeback, forecasting, graph, Ask Fabric IQ) | 🔴 High | 🔲 |
 | 🧵 | Ontology-driven signal thresholds (warn/alarm bands from semantic-model metadata) | 🔴 High | ✅ Done |
-| ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) to cut initial bundle | 🟡 Medium | 🔲 |
+| ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) to cut initial bundle | 🟡 Medium | ✅ Done |
 | 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | 🔲 |
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
 | 🕰️ | Selectable history window (1h / 6h / 24h) on the sparkline | 🟡 Medium | 🔲 |
