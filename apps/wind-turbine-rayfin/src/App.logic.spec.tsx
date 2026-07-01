@@ -5,8 +5,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { describe, it, expect } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments } from "@/App";
+import { describe, it, expect, afterEach } from "vitest";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
 
@@ -175,6 +175,56 @@ describe("thresholdRows", () => {
         const power = thresholdRows().find((r) => r.signalKey === "power");
         expect(power?.governsHealth).toBe(false);
         expect(Number.isFinite(power?.alarm ?? Infinity)).toBe(false);
+    });
+});
+
+describe("ontology-driven threshold overrides", () => {
+    afterEach(() => {
+        clearThresholdOverrides();
+    });
+
+    it("adopts a valid backend band and drives classification at runtime", () => {
+        // Default nacelle-temp band is warn 67 / alarm 79 — 55°C is nominal by default.
+        expect(signalState("temp", 55)).toBe("healthy");
+        const applied = applyThresholdOverrides([
+            { signalKey: "temp", ontologyProperty: "GeneratorTempC", unit: "\u00b0C", warn: 40, alarm: 50, governsHealth: true },
+        ]);
+        expect(applied).toBe(1);
+        expect(signalState("temp", 55)).toBe("alarm");
+        expect(signalState("temp", 45)).toBe("warning");
+    });
+
+    it("surfaces overridden bands through thresholdRows and derived status", () => {
+        applyThresholdOverrides([
+            { signalKey: "vibration", ontologyProperty: "VibrationMmS", unit: "mm/s", warn: 2, alarm: 3, governsHealth: true },
+        ]);
+        const vib = thresholdRows().find((r) => r.signalKey === "vibration");
+        expect(vib).toMatchObject({ warn: 2, alarm: 3 });
+        // 4 mm/s was healthy by default (warn 4), now alarms under the tighter band.
+        expect(deriveTurbineStatus(50, 4)).toBe("alarm");
+    });
+
+    it("ignores malformed rows (unknown key, inverted or negative bands)", () => {
+        const applied = applyThresholdOverrides([
+            { signalKey: "bogus", ontologyProperty: "X", unit: "", warn: 1, alarm: 2, governsHealth: false },
+            { signalKey: "temp", ontologyProperty: "GeneratorTempC", unit: "\u00b0C", warn: 90, alarm: 70, governsHealth: true },
+            { signalKey: "vibration", ontologyProperty: "VibrationMmS", unit: "mm/s", warn: -1, alarm: 5, governsHealth: true },
+        ]);
+        expect(applied).toBe(0);
+        // Defaults intact: temp alarm stays 79, vibration warn stays 4.
+        expect(signalState("temp", 85)).toBe("alarm");
+        expect(signalState("temp", 55)).toBe("healthy");
+        expect(signalState("vibration", 3)).toBe("healthy");
+    });
+
+    it("clearThresholdOverrides restores the compiled-in defaults", () => {
+        applyThresholdOverrides([
+            { signalKey: "temp", ontologyProperty: "GeneratorTempC", unit: "\u00b0C", warn: 40, alarm: 50, governsHealth: true },
+        ]);
+        expect(signalState("temp", 55)).toBe("alarm");
+        clearThresholdOverrides();
+        expect(signalState("temp", 55)).toBe("healthy");
+        expect(thresholdRows().find((r) => r.signalKey === "temp")).toMatchObject({ warn: 67, alarm: 79 });
     });
 });
 
