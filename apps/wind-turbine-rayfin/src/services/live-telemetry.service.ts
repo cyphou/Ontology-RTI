@@ -102,6 +102,36 @@ export const DAX_LATEST_TELEMETRY =
     '"SensorType", sensortelemetry[SensorType], ' +
     '"Value", [LatestValue])';
 
+// Default number of historical points to pull for a sparkline / forecast window.
+export const DEFAULT_HISTORY_LIMIT = 40;
+
+// Escape a value for safe inclusion in a DAX string literal (double any quotes).
+// TurbineIds come from our own data, but this keeps the query well-formed and
+// closes off any string-injection edge for defence in depth.
+export function escapeDaxString(value: string): string {
+    return value.replace(/"/g, '""');
+}
+
+/**
+ * DAX for the last `limit` power readings (CurrentSensor) of one turbine, ordered
+ * oldest→newest. TOPN takes the most recent by Timestamp (ISO strings sort
+ * chronologically), then ORDER BY re-sorts them ascending for a left-to-right
+ * sparkline. Raw Value stays in amps here; kW conversion happens in JS via
+ * recordsToHistory so it matches the CURRENT_TO_KW factor used everywhere else.
+ */
+export function daxPowerHistory(turbineId: string, limit: number = DEFAULT_HISTORY_LIMIT): string {
+    const id = escapeDaxString(turbineId);
+    return (
+        `EVALUATE TOPN(${limit}, FILTER(SELECTCOLUMNS(sensortelemetry, ` +
+        '"Timestamp", sensortelemetry[Timestamp], ' +
+        '"Value", sensortelemetry[Value], ' +
+        '"TurbineId", sensortelemetry[TurbineId], ' +
+        '"SensorType", sensortelemetry[SensorType]), ' +
+        `[TurbineId] = "${id}" && [SensorType] = "CurrentSensor"), ` +
+        '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
+    );
+}
+
 /** True when a live semantic-model connection alias is configured. */
 export function isLiveTelemetryConfigured(): boolean {
     return Boolean(LIVE_MODEL);
@@ -231,4 +261,39 @@ export async function fetchLiveTelemetry(): Promise<LiveTelemetrySnapshot | null
         turbines: recordsToTurbines(turbineRecords),
         metrics: pivotReadings(recordsToReadings(telemetryRecords)),
     };
+}
+
+/**
+ * Project raw history rows ({ timestamp, value }) into a chronologically ordered
+ * array of power values in kW. Rows are sorted oldest→newest defensively (the
+ * DAX already orders ASC) and CurrentSensor amps are converted with the same
+ * CURRENT_TO_KW factor the KQL loader and latest-value pivot use, so the seeded
+ * sparkline history lines up with the live "current power" reading.
+ */
+export function recordsToHistory(records: Record<string, unknown>[]): number[] {
+    return records
+        .map((r) => ({ timestamp: toText(r["timestamp"]), value: toNumber(r["value"]) }))
+        .filter((p) => p.timestamp !== "")
+        .sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0))
+        .map((p) => Math.round(p.value * CURRENT_TO_KW * 10) / 10);
+}
+
+/**
+ * Fetch persisted power history (kW) for one turbine from the semantic model so
+ * sparklines and forecasts reflect real Eventhouse-backed readings instead of a
+ * cold in-browser accumulation. Returns null when unconfigured or on any query
+ * failure, letting callers fall back to the live/synthetic accumulation.
+ */
+export async function fetchPowerHistory(
+    turbineId: string,
+    limit: number = DEFAULT_HISTORY_LIMIT,
+): Promise<number[] | null> {
+    if (!isLiveTelemetryConfigured() || turbineId === "") {
+        return null;
+    }
+    const records = await runQuery(daxPowerHistory(turbineId, limit));
+    if (!records) {
+        return null;
+    }
+    return recordsToHistory(records);
 }

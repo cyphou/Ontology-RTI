@@ -20,6 +20,11 @@ import {
     recordsToTurbines,
     recordsToReadings,
     pivotReadings,
+    escapeDaxString,
+    daxPowerHistory,
+    recordsToHistory,
+    fetchPowerHistory,
+    DEFAULT_HISTORY_LIMIT,
 } from "@/services/live-telemetry.service";
 
 describe("live-telemetry.service", () => {
@@ -90,5 +95,57 @@ describe("live-telemetry.service", () => {
         expect(metrics).toHaveLength(2);
         expect(metrics.find((m) => m.turbineId === "WT-001")?.windMs).toBe(10);
         expect(metrics.find((m) => m.turbineId === "WT-002")?.windMs).toBe(20);
+    });
+});
+
+describe("timeseries history", () => {
+    it("escapes double quotes in DAX string literals", () => {
+        expect(escapeDaxString('WT-"01"')).toBe('WT-""01""');
+        expect(escapeDaxString("WT-001")).toBe("WT-001");
+    });
+
+    it("builds a bounded, ordered history query filtered to the turbine and current sensor", () => {
+        const dax = daxPowerHistory("WT-001", 25);
+
+        expect(dax).toContain("TOPN(25,");
+        expect(dax).toContain('[TurbineId] = "WT-001"');
+        expect(dax).toContain('[SensorType] = "CurrentSensor"');
+        expect(dax).toContain("ORDER BY [Timestamp] ASC");
+    });
+
+    it("defaults the history limit and escapes the id inside the query", () => {
+        const dax = daxPowerHistory('WT-"x"');
+
+        expect(dax).toContain(`TOPN(${DEFAULT_HISTORY_LIMIT},`);
+        expect(dax).toContain('[TurbineId] = "WT-""x"""');
+    });
+
+    it("orders history oldest→newest and converts amps to kW", () => {
+        const history = recordsToHistory([
+            { timestamp: "2026-01-01T00:02:00Z", value: 1000 },
+            { timestamp: "2026-01-01T00:00:00Z", value: 500 },
+            { timestamp: "2026-01-01T00:01:00Z", value: 800 },
+        ]);
+
+        // 500·0.69=345, 800·0.69=552, 1000·0.69=690 — sorted by timestamp ASC.
+        expect(history).toEqual([345, 552, 690]);
+    });
+
+    it("drops history rows without a timestamp", () => {
+        const history = recordsToHistory([
+            { timestamp: "", value: 1000 },
+            { timestamp: "2026-01-01T00:00:00Z", value: 1000 },
+        ]);
+
+        expect(history).toEqual([690]);
+    });
+
+    it("returns null history when live telemetry is not configured", async () => {
+        // The alias is unset in the test env, so the fetch must fail safe to null.
+        await expect(fetchPowerHistory("WT-001")).resolves.toBeNull();
+    });
+
+    it("returns null history for an empty turbine id", async () => {
+        await expect(fetchPowerHistory("")).resolves.toBeNull();
     });
 });

@@ -20,6 +20,7 @@ import {
 import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
 import {
     fetchLiveTelemetry,
+    fetchPowerHistory,
     isLiveTelemetryConfigured,
     type LiveTelemetrySnapshot,
 } from "@/services/live-telemetry.service";
@@ -1856,6 +1857,30 @@ function App() {
             return [...base, selected.powerKw].slice(-40);
         });
     }, [selected.powerKw, selectedId]);
+
+    // Seed the sparkline / forecast window from persisted Eventhouse-backed
+    // history when a live semantic model is configured, so it reflects real
+    // readings from the first render instead of a cold in-browser accumulation.
+    // The synchronous append effect above resets to [] on selection change; this
+    // async fetch lands afterwards and overwrites it, then live ticks append on
+    // top. No-ops (returns null) when unconfigured, keeping the synthetic path.
+    useEffect(() => {
+        if (!isLiveTelemetryConfigured()) {
+            return;
+        }
+        let cancelled = false;
+        void (async () => {
+            const history = await fetchPowerHistory(selectedId, 40);
+            if (cancelled || !history || history.length === 0) {
+                return;
+            }
+            historyKeyRef.current = selectedId;
+            setPowerHistory(history.slice(-40));
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedId]);
 
     const loadNotes = useCallback(async () => {
         setNotesLoading(true);
