@@ -45,6 +45,12 @@ gantt
     Streaming & API improvements        :done, s11, 2026-04, 2026-05
     Cross-domain ontology links         :active, s12, 2026-05, 2026-06
     CI/CD pipeline                      :s13, 2026-06, 2026-07
+
+    section Fabric Apps
+    Wind / Solar / Refinery twins (v1)  :done, a1, 2026-06, 2026-07
+    Live Eventhouse timeseries          :active, a2, 2026-07, 2026-08
+    App parity across twins             :a3, 2026-08, 2026-09
+    Teams proactive alerts              :a4, 2026-09, 2026-10
 ```
 
 ---
@@ -174,11 +180,42 @@ gantt
 
 ---
 
+### Sprint 11 — Fabric Apps (Browser Digital Twins) `Jul–Oct 2026`
+
+> Three domains ship a browser digital-twin app under `apps/` on **Fabric Rayfin**
+> (React 19 + Vite + Three.js + Vitest): `wind-turbine-rayfin` (WindTurbine),
+> `solar-france-rayfin` (SolarFarm, France), and `refinery-worldwide-rayfin` (OilGasRefinery).
+
+**Shipped (v1):**
+
+| | Capability | Status |
+|:---:|------|:------:|
+| 🌍 | 3D geospatial multi-site map + per-entity digital twin | ✅ |
+| 📈 | Analytics, alerts, ops writeback, forecasting, relationship graph | ✅ |
+| 🤖 | "Ask Fabric IQ" NL Q&A with fallback-safe Data Agent seam | ✅ |
+| 🧪 | 56 passing Vitest tests, one-command `rayfin up` deploy | ✅ |
+
+**Next features:**
+
+| | Task | Priority | Status |
+|:---:|------|:--------:|:------:|
+| 📡 | Live Eventhouse/KQL timeseries (replace seeded telemetry) | 🔴 High | 🔲 |
+| 🧩 | App parity — bring Solar & Refinery to Wind's full feature set | 🔴 High | 🔲 |
+| ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) | 🟡 Medium | 🔲 |
+| 🧵 | Ontology-driven signal thresholds (warn/alarm from metadata) | 🟡 Medium | 🔲 |
+| 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
+| 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | 🔲 |
+| 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
+| 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | 🔲 |
+| 🏗️ | Multi-domain shell — reuse the app shell for remaining domains | 🟢 Low | 🔲 |
+
+---
+
 ## 📊 Project Statistics
 
 | Metric | Count |
 |--------|------:|
-| 🏭 Industry domains | 5 |
+| 🏭 Industry domains | 7 |
 | 🧬 Entity types (total) | 59 |
 | 📊 CSV data files | 64 |
 | 📝 Sample data rows | 2,800+ |
@@ -188,8 +225,10 @@ gantt
 | 🤖 AI agents (Data + Ops) | 10 |
 | 🤖 Copilot agents | 7 |
 | 📄 Documentation files | 5 |
-| 📐 TMDL semantic models | 5 |
+| 📐 TMDL semantic models | 7 |
 | ⚡ PowerShell scripts | 30+ |
+| 🖥️ Fabric Rayfin apps | 3 |
+| 🧪 App tests (Vitest) | 56 |
 
 ---
 

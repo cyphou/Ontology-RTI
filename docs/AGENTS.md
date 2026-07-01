@@ -3,6 +3,12 @@
 This project uses a **specialized agent model**. Each agent has scoped domain knowledge,
 file ownership, and clear boundaries.
 
+> **Fabric Apps:** three domains also ship a browser digital-twin app under `apps/`
+> (Fabric Rayfin — React 19 + Vite + Three.js): [wind-turbine-rayfin](../apps/wind-turbine-rayfin/README.md)
+> (WindTurbine), [solar-france-rayfin](../apps/solar-france-rayfin/README.md) (SolarFarm, France),
+> and [refinery-worldwide-rayfin](../apps/refinery-worldwide-rayfin/README.md) (OilGasRefinery). See the
+> repo [Development Plan](../DEVELOPMENT_PLAN.md) for the app roadmap.
+
 ## Quick Reference
 
 | Agent | Invoke When | Owns |

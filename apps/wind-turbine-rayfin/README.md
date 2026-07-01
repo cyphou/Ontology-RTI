@@ -70,6 +70,14 @@ VITE_DATA_AGENT_URL=<data-agent-endpoint>
 With neither set, the app is fully functional on synthetic data — no Fabric round-trips.
 
 
+## Related
+
+- [IQ Ontology Accelerator](../../README.md) — parent repo (7 ontology domains + deployment engine)
+- [Solar France Rayfin App](../solar-france-rayfin/README.md) — Geo Solar Twin (SolarFarm model, France)
+- [Refinery Worldwide Rayfin App](../refinery-worldwide-rayfin/README.md) — Geo Refinery Twin (OilGasRefinery model)
+- [ROADMAP.md](ROADMAP.md) — shipped capabilities and forward plan
+
+
 ## Need help?
 
 If you have any questions or run into any problems, please [file an issue](../../issues) on this repository.

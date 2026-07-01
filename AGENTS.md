@@ -44,6 +44,27 @@ flowchart TB
 
 ---
 
+## :desktop_computer: Fabric Apps (browser digital twins)
+
+Beyond the seven ontology/deployment domains, three of them also ship a **browser
+digital-twin app** under `apps/`, built on **Fabric Rayfin** (React 19 + Vite + Three.js +
+Vitest). Each renders live telemetry on a 3D geospatial map, exposes per-entity twins, and
+answers natural-language questions. They are **fallback-safe** — with no Fabric connection
+configured they run on a synthetic telemetry generator and light up real data once the
+connection aliases are set.
+
+| App | Ontology model | Scope |
+|-----|----------------|-------|
+| [`apps/wind-turbine-rayfin`](apps/wind-turbine-rayfin/README.md) | WindTurbine | Global multi-site wind fleet |
+| [`apps/solar-france-rayfin`](apps/solar-france-rayfin/README.md) | SolarFarm | France |
+| [`apps/refinery-worldwide-rayfin`](apps/refinery-worldwide-rayfin/README.md) | OilGasRefinery | Worldwide |
+
+> The remaining domains (Smart Building, Manufacturing Plant, IT Asset, Healthcare) ship the
+> ontology + deployment layer only — no browser app yet. See
+> [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for the Fabric Apps roadmap.
+
+---
+
 ## :busts_in_silhouette: Agent Overview
 
 | | Agent | Focus | Key Files | Activates On |

@@ -17,6 +17,7 @@
   <a href="#-prerequisites">Prerequisites</a> ---
   <a href="#-automated-deployment">Automated</a> ---
   <a href="#-manual-setup">Manual</a> ---
+  <a href="#-fabric-apps">Fabric Apps</a> ---
   <a href="#-troubleshooting">Troubleshooting</a>
 </p>
 
@@ -290,6 +291,45 @@ Each domain has 5 KQL tables:
 > GQL queries are deployed automatically. No manual steps required.
 
 </details>
+
+---
+
+## :globe_with_meridians: Fabric Apps
+
+Three domains also ship a **browser digital-twin app** under `apps/`, built on **Fabric Rayfin**
+(React 19 + Vite + Three.js + Vitest). Each renders live telemetry on a 3D geospatial map, exposes
+per-entity twins, and answers natural-language questions. They are **fallback-safe** — with no Fabric
+connection configured they run on a synthetic telemetry generator, and light up real data once the
+connection aliases are set.
+
+| App | Ontology model | Scope |
+|-----|----------------|-------|
+| `apps/wind-turbine-rayfin` | WindTurbine | Global multi-site wind fleet |
+| `apps/solar-france-rayfin` | SolarFarm | France |
+| `apps/refinery-worldwide-rayfin` | OilGasRefinery | Worldwide |
+
+### Run an app locally
+
+```powershell
+cd apps\wind-turbine-rayfin
+npm install
+npm run dev            # http://localhost:5173
+```
+
+### Connect it to Fabric (optional)
+
+1. Deploy the matching domain first (e.g. `WindTurbine`) with `Deploy-Ontology.ps1`.
+2. Provision the Fabric host: `rayfin env` writes the workspace / item / tenant IDs into `.env.local`.
+3. Add the semantic-model + Data Agent aliases to `.env.local`:
+
+   ```dotenv
+   VITE_LIVE_TELEMETRY_MODEL=<semantic-model-name-or-dataset-id>
+   VITE_DATA_AGENT_URL=<data-agent-endpoint>
+   ```
+
+4. Build and deploy: `npm run build:fabric`, then `rayfin up`.
+
+> Each app's `README.md` and `ROADMAP.md` document the full connectivity contract and forward plan.
 
 ---
 
