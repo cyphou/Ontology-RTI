@@ -12,6 +12,7 @@ import {
     askOntology,
     ensureOntologySites,
     ensureSignalThresholds,
+    listSignalThresholds,
     recentDispatchNotes,
     saveDispatchNote,
     type DispatchNoteRecord,
@@ -234,9 +235,46 @@ const SIGNAL_METADATA: Record<SignalKey, SignalMetadata> = {
 const SIGNAL_ORDER: SignalKey[] = ["power", "irradiance", "moduleTemp", "inverterLoad"];
 const STATUS_RANK: Record<PlantStatus, number> = { healthy: 0, warning: 1, alarm: 2 };
 
-// Classify a single signal reading against its ontology threshold band.
+// Runtime warn/alarm overrides sourced from the ontology backend (SensorThreshold
+// store) at startup. Empty by default so the pure classifiers fall back to the
+// static SIGNAL_METADATA bands — keeping default behaviour and unit tests
+// deterministic. Applying overrides is fallback-safe: an unreachable backend
+// simply leaves the compiled-in defaults in place.
+const THRESHOLD_OVERRIDES = new Map<SignalKey, { warn: number; alarm: number }>();
+
+function isSignalKey(key: string): key is SignalKey {
+    return key === "power" || key === "irradiance" || key === "moduleTemp" || key === "inverterLoad";
+}
+
+// Resolve the active band for a signal: ontology override when present, else the
+// compiled-in default.
+function activeBands(key: SignalKey): { warn: number; alarm: number } {
+    return THRESHOLD_OVERRIDES.get(key) ?? SIGNAL_METADATA[key];
+}
+
+// Adopt ontology-published threshold bands as runtime overrides. Only rows with a
+// known signalKey and a coherent band (non-negative, warn <= alarm; Infinity
+// allowed for informational signals) are accepted; malformed rows are ignored so
+// a bad backend row can never destabilise classification. Returns the count applied.
+export function applyThresholdOverrides(rows: SignalThresholdRecord[]): number {
+    let applied = 0;
+    for (const row of rows) {
+        if (!isSignalKey(row.signalKey)) continue;
+        if (!(row.warn >= 0) || !(row.alarm >= 0) || row.warn > row.alarm) continue;
+        THRESHOLD_OVERRIDES.set(row.signalKey, { warn: row.warn, alarm: row.alarm });
+        applied += 1;
+    }
+    return applied;
+}
+
+// Drop every runtime override, restoring the compiled-in default bands.
+export function clearThresholdOverrides(): void {
+    THRESHOLD_OVERRIDES.clear();
+}
+
+// Classify a single signal reading against its active threshold band.
 export function signalState(key: SignalKey, value: number): PlantStatus {
-    const m = SIGNAL_METADATA[key];
+    const m = activeBands(key);
     if (value >= m.alarm) return "alarm";
     if (value >= m.warn) return "warning";
     return "healthy";
@@ -267,12 +305,13 @@ export function derivePlantStatus(moduleTempC: number, inverterLoadPct: number):
 export function thresholdRows(): SignalThresholdRecord[] {
     return SIGNAL_ORDER.map((key) => {
         const m = SIGNAL_METADATA[key];
+        const bands = activeBands(key);
         return {
             signalKey: m.key,
             ontologyProperty: m.ontologyProperty,
             unit: m.unit,
-            warn: m.warn,
-            alarm: m.alarm,
+            warn: bands.warn,
+            alarm: bands.alarm,
             governsHealth: m.governsHealth,
         };
     });
@@ -1937,6 +1976,7 @@ function App() {
     const [notes, setNotes] = useState<DispatchNoteRecord[]>([]);
     const [notesLoading, setNotesLoading] = useState(false);
     const [thresholdsPublished, setThresholdsPublished] = useState<number | null>(null);
+    const [thresholdNonce, setThresholdNonce] = useState(0);
 
     const [forecastHorizon, setForecastHorizon] = useState(5);
     const [wbAction, setWbAction] = useState("Acknowledge");
@@ -1967,14 +2007,30 @@ function App() {
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
         ensureSignalThresholds(thresholdRows())
             .then(setThresholdsPublished)
             .catch(() => {
                 /* backend not ready — publishing thresholds is best-effort */
+            })
+            .finally(() => {
+                listSignalThresholds()
+                    .then((rows) => {
+                        if (cancelled) return;
+                        if (applyThresholdOverrides(rows) > 0) {
+                            setThresholdNonce((v) => v + 1);
+                        }
+                    })
+                    .catch(() => {
+                        /* backend not ready — keep static default bands */
+                    });
             });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
-    const syntheticTurbines = useMemo(() => buildFarm(seed), [seed]);
+    const syntheticTurbines = useMemo(() => buildFarm(seed), [seed, thresholdNonce]);
     const liveView = useLiveTelemetry();
     const turbines = liveView?.turbines ?? syntheticTurbines;
     const sites = liveView?.sites ?? SITES;
