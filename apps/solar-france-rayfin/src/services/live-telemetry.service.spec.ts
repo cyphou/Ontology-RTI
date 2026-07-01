@@ -20,6 +20,11 @@ import {
     recordsToArrays,
     recordsToReadings,
     pivotReadings,
+    escapeDaxString,
+    daxPowerHistory,
+    recordsToHistory,
+    fetchPowerHistory,
+    DEFAULT_HISTORY_LIMIT,
 } from "@/services/live-telemetry.service";
 
 describe("live-telemetry.service", () => {
@@ -90,5 +95,50 @@ describe("live-telemetry.service", () => {
         expect(metrics).toHaveLength(2);
         expect(metrics.find((m) => m.arrayId === "CESTAS-PV-01")?.powerKw).toBe(100);
         expect(metrics.find((m) => m.arrayId === "CESTAS-PV-02")?.powerKw).toBe(200);
+    });
+});
+
+describe("timeseries history", () => {
+    it("escapes double quotes for DAX string literals", () => {
+        expect(escapeDaxString('CESTAS-"PV"-01')).toBe('CESTAS-""PV""-01');
+    });
+
+    it("builds a TOPN AcPower-filtered query ordered oldest-to-newest", () => {
+        const dax = daxPowerHistory("CESTAS-PV-01", 5);
+        expect(dax).toContain("EVALUATE TOPN(5,");
+        expect(dax).toContain('[ArrayId] = "CESTAS-PV-01"');
+        expect(dax).toContain('[SensorType] = "AcPower"');
+        expect(dax).toContain("ORDER BY [Timestamp] ASC");
+    });
+
+    it("defaults the limit and escapes the array id inside the query", () => {
+        const dax = daxPowerHistory('A"B');
+        expect(dax).toContain(`EVALUATE TOPN(${DEFAULT_HISTORY_LIMIT},`);
+        expect(dax).toContain('[ArrayId] = "A""B"');
+    });
+
+    it("orders history oldest-to-newest and rounds AC-power values", () => {
+        const history = recordsToHistory([
+            { timestamp: "2024-01-01T00:02:00Z", value: 800.04 },
+            { timestamp: "2024-01-01T00:00:00Z", value: 500.06 },
+            { timestamp: "2024-01-01T00:01:00Z", value: 690.02 },
+        ]);
+        expect(history).toEqual([500.1, 690, 800]);
+    });
+
+    it("drops rows without a timestamp", () => {
+        const history = recordsToHistory([
+            { timestamp: "", value: 500 },
+            { timestamp: "2024-01-01T00:00:00Z", value: 690 },
+        ]);
+        expect(history).toEqual([690]);
+    });
+
+    it("returns null when not configured", async () => {
+        expect(await fetchPowerHistory("CESTAS-PV-01")).toBeNull();
+    });
+
+    it("returns null for an empty array id", async () => {
+        expect(await fetchPowerHistory("")).toBeNull();
     });
 });
