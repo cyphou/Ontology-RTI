@@ -48,9 +48,10 @@ gantt
 
     section Fabric Apps
     Wind / Solar / Refinery twins (v1)  :done, a1, 2026-06, 2026-07
-    Live Eventhouse timeseries          :active, a2, 2026-07, 2026-08
-    App parity across twins             :a3, 2026-08, 2026-09
-    Teams proactive alerts              :a4, 2026-09, 2026-10
+    Live Eventhouse timeseries          :done, a2, 2026-07, 2026-07
+    App parity across twins             :active, a3, 2026-07, 2026-09
+    Perf, thresholds & responsive       :a4, 2026-09, 2026-10
+    Teams proactive alerts              :a5, 2026-10, 2026-11
 ```
 
 ---
@@ -199,8 +200,9 @@ gantt
 
 | | Task | Priority | Status |
 |:---:|------|:--------:|:------:|
-| 📡 | Live Eventhouse/KQL timeseries (replace seeded telemetry) | 🔴 High | 🔲 |
-| 🧩 | App parity — bring Solar & Refinery to Wind's full feature set | 🔴 High | 🔲 |
+| 📡 | Live Eventhouse/KQL timeseries (replace seeded telemetry) | 🔴 High | ✅ Done |
+| 📈 | Persisted power/throughput history seam (sparkline + forecast) | 🔴 High | ✅ Done |
+| 🧩 | App parity — bring Solar & Refinery to Wind's full feature set | 🔴 High | 🚧 In progress |
 | ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) | 🟡 Medium | 🔲 |
 | 🧵 | Ontology-driven signal thresholds (warn/alarm from metadata) | 🟡 Medium | 🔲 |
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
@@ -208,6 +210,35 @@ gantt
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
 | 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | 🔲 |
 | 🏗️ | Multi-domain shell — reuse the app shell for remaining domains | 🟢 Low | 🔲 |
+
+**Shipped increment — `Jul 2026`:**
+
+| | Task | Status |
+|:---:|------|:------:|
+| 📈 | Wind: Lakehouse-backed power history seeds sparkline/forecast (`fb1ce7f`) | ✅ |
+| 📈 | Solar: throughput/AC-power history seam ported (`ccc2be2`) | ✅ |
+| 📈 | Refinery: throughput history seam ported (`b73cf6e`) | ✅ |
+| 🧪 | +7 tests per app (63/63 each), fallback-safe on synthetic feed | ✅ |
+
+---
+
+### Sprint 12 — Fabric Apps Enhancements `Aug–Oct 2026`
+
+> Builds on the shipped live-telemetry + history seam. Focus: finish app parity,
+> then performance, ontology-driven config, and responsive layout across all three
+> twins. Each item lands as an individually-tested, per-app conventional commit.
+
+| | Task | Priority | Status |
+|:---:|------|:--------:|:------:|
+| 🧩 | Complete Solar & Refinery parity audit vs Wind (analytics, alerts, writeback, forecasting, graph, Ask Fabric IQ) | 🔴 High | 🔲 |
+| 🧵 | Ontology-driven signal thresholds (warn/alarm bands from semantic-model metadata) | 🔴 High | 🔲 |
+| ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) to cut initial bundle | 🟡 Medium | 🔲 |
+| 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | 🔲 |
+| 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | 🔲 |
+| 🕰️ | Selectable history window (1h / 6h / 24h) on the sparkline | 🟡 Medium | 🔲 |
+| 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
+| 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | 🔲 |
+| 🏗️ | Multi-domain app shell for the remaining four domains | 🟢 Low | 🔲 |
 
 ---
 
@@ -228,7 +259,7 @@ gantt
 | 📐 TMDL semantic models | 7 |
 | ⚡ PowerShell scripts | 30+ |
 | 🖥️ Fabric Rayfin apps | 3 |
-| 🧪 App tests (Vitest) | 56 |
+| 🧪 App tests (Vitest) | 189 (63 × 3 apps) |
 
 ---
 
