@@ -6,7 +6,7 @@ Scripts that have been superseded by the generic multi-domain deployment engine.
 
 The original single-domain deployment script (~900 lines) for Oil & Gas Refinery.
 Superseded by `Deploy-Ontology.ps1` → `deploy/Deploy-GenericOntology.ps1` which
-handles all 6 domains with a single parameterized engine.
+handles all 7 domains with a single parameterized engine.
 
 **Do not use for new deployments.** Use instead:
 

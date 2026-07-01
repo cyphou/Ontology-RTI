@@ -1,0 +1,69 @@
+table dimsolararray
+	lineageTag: 50000021-0001-0001-0001-000000000001
+
+	measure 'Solar Array Count' = COUNTROWS(dimsolararray)
+		displayFolder: Measures
+		lineageTag: 50000021-0001-0001-0001-100000000001
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 50000021-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayName
+		lineageTag: 50000021-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column PlantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantId
+		lineageTag: 50000021-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column RatedCapacityKW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: RatedCapacityKW
+		lineageTag: 50000021-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column TiltDegrees
+		dataType: double
+		summarizeBy: none
+		sourceColumn: TiltDegrees
+		lineageTag: 50000021-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Orientation
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Orientation
+		lineageTag: 50000021-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 50000021-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimsolararray = entity
+		mode: directLake
+		entityName: dimsolararray
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

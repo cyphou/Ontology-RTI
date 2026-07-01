@@ -1,0 +1,186 @@
+<#
+.SYNOPSIS
+    Deploy a Real-Time Intelligence (KQL) Dashboard for Solar Farm telemetry.
+.DESCRIPTION
+    Creates a KQLDashboard in Microsoft Fabric with 10 tiles covering:
+      1. Array Power Output Over Time (line)
+      2. Array Alerts by Severity (pie)
+      3. Performance Ratio by Array (bar)
+      4. Irradiance vs Power Output (scatter)
+      5. Array Health Summary (table)
+      6. Weather Station Readings (table)
+      7. Maintenance Events by Component (table)
+      8. Alert Trend Over Time (line)
+      9. Unacknowledged Alerts (table)
+     10. Underperforming Arrays (table)
+#>
+param(
+    [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
+    [Parameter(Mandatory=$false)] [string]$KqlDatabaseId,
+    [Parameter(Mandatory=$false)] [string]$QueryServiceUri,
+    [Parameter(Mandatory=$false)] [string]$DashboardName = "SolarFarmDashboard"
+)
+
+$token = (Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com").Token
+$headers = @{ "Authorization" = "Bearer $token"; "Content-Type" = "application/json" }
+$apiBase = "https://api.fabric.microsoft.com/v1"
+
+Write-Host "=== Deploying KQL Dashboard: $DashboardName ===" -ForegroundColor Cyan
+
+if (-not $KqlDatabaseId -or -not $QueryServiceUri) {
+    $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
+    if (-not $KqlDatabaseId) {
+        $kqlDb = $allItems | Where-Object { $_.type -eq 'KQLDatabase' } | Select-Object -First 1
+        if ($kqlDb) { $KqlDatabaseId = $kqlDb.id } else { Write-Host "[ERROR] No KQL Database found." -ForegroundColor Red; exit 1 }
+    }
+    if (-not $QueryServiceUri) {
+        $eh = $allItems | Where-Object { $_.type -eq 'Eventhouse' } | Select-Object -First 1
+        if ($eh) { $ehD = Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/eventhouses/$($eh.id)" -Headers $headers; $QueryServiceUri = $ehD.properties.queryServiceUri }
+    }
+}
+
+$kqlDbDetails = Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/kqlDatabases/$KqlDatabaseId" -Headers $headers
+$kqlDbName = $kqlDbDetails.displayName
+
+$dataSourceId = [guid]::NewGuid().ToString()
+$pageId = [guid]::NewGuid().ToString()
+
+function New-VisualOptions {
+    return @{
+        xColumn = $null; yColumns = $null; yAxisMinimumValue = $null; yAxisMaximumValue = $null
+        seriesColumns = $null; hideLegend = $false; xColumnTitle = ""; yColumnTitle = ""; horizontalLine = ""; verticalLine = ""
+        xAxisScale = "linear"; yAxisScale = "linear"; crossFilterDisabled = $false; hideTileTitle = $false
+        multipleYAxes = @{ base = @{ id = "-1"; columns = @(); label = ""; yAxisMinimumValue = $null; yAxisMaximumValue = $null; yAxisScale = "linear"; horizontalLines = @() }; additional = @(); showMultiplePanels = $false }
+    }
+}
+
+$tiles = @(
+    @{ id = [guid]::NewGuid().ToString(); title = "Array Power Output Over Time"; layout = @{ x = 0; y = 0; width = 12; height = 6 }; pageId = $pageId; visualType = "line"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+EnergyMetric
+| where Timestamp > ago(30d)
+| summarize AvgPowerKW = avg(PowerOutputKW) by bin(Timestamp, 1h), ArrayId
+| order by Timestamp asc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Array Alerts by Severity"; layout = @{ x = 12; y = 0; width = 6; height = 6 }; pageId = $pageId; visualType = "pie"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+ArrayAlert
+| summarize AlertCount = count() by Severity
+| order by AlertCount desc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Performance Ratio by Array"; layout = @{ x = 18; y = 0; width = 6; height = 6 }; pageId = $pageId; visualType = "bar"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+EnergyMetric
+| summarize AvgPerformanceRatio = avg(PerformanceRatio) by ArrayId
+| order by AvgPerformanceRatio desc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Irradiance vs Power Output"; layout = @{ x = 0; y = 6; width = 12; height = 6 }; pageId = $pageId; visualType = "scatter"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+EnergyMetric
+| project IrradianceWm2, PowerOutputKW, ArrayId
+| order by IrradianceWm2 asc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Array Health Summary"; layout = @{ x = 12; y = 6; width = 12; height = 6 }; pageId = $pageId; visualType = "table"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+ArrayReading
+| where Timestamp > ago(30d)
+| summarize AvgValue = round(avg(Value), 2), MaxValue = round(max(Value), 2), AnomalyCount = countif(IsAnomaly == true) by ArrayId, SensorType
+| order by AnomalyCount desc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Weather Station Readings"; layout = @{ x = 0; y = 12; width = 12; height = 6 }; pageId = $pageId; visualType = "table"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+WeatherMetric
+| order by Timestamp desc
+| take 20
+| project Timestamp, StationId, PlantId, IrradianceWm2, AmbientTempC, WindSpeedMs, HumidityPct, CloudCoverPct
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Maintenance Events by Component"; layout = @{ x = 12; y = 12; width = 12; height = 6 }; pageId = $pageId; visualType = "table"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+MaintenanceMetric
+| summarize EventCount = count(), TotalCostUSD = sum(CostUSD), AvgDurationHrs = round(avg(DurationHours), 1) by Component
+| order by TotalCostUSD desc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Alert Trend Over Time"; layout = @{ x = 0; y = 18; width = 12; height = 6 }; pageId = $pageId; visualType = "line"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+ArrayAlert
+| summarize AlertCount = count() by bin(Timestamp, 6h), Severity
+| order by Timestamp asc
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Unacknowledged Alerts"; layout = @{ x = 12; y = 18; width = 12; height = 6 }; pageId = $pageId; visualType = "table"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+ArrayAlert
+| where IsAcknowledged == false
+| order by Timestamp desc
+| project Timestamp, ArrayId, AlertType, Severity, Component, Message
+"@ },
+    @{ id = [guid]::NewGuid().ToString(); title = "Underperforming Arrays"; layout = @{ x = 0; y = 24; width = 24; height = 6 }; pageId = $pageId; visualType = "table"; dataSourceId = $dataSourceId; visualOptions = New-VisualOptions; usedParamVariables = @()
+       query = @"
+EnergyMetric
+| summarize AvgPerformanceRatio = round(avg(PerformanceRatio), 3), AvgPowerKW = round(avg(PowerOutputKW), 1) by ArrayId, PlantId
+| where AvgPerformanceRatio < 0.78
+| order by AvgPerformanceRatio asc
+"@ }
+)
+
+# -- Transform tiles for schema v52: extract queries, use queryRef ----------
+$queries = @()
+foreach ($t in $tiles) {
+    $qId = [guid]::NewGuid().ToString()
+    $queries += @{ id = $qId; text = $t.query; dataSource = @{ kind = "inline"; dataSourceId = $dataSourceId }; usedVariables = @() }
+    $t['queryRef'] = @{ kind = "query"; queryId = $qId }
+    $t.Remove('query')
+    $t.Remove('dataSourceId')
+    $t.Remove('usedParamVariables')
+}
+
+$dashboard = @{
+    schema_version = "52"
+    title = $DashboardName
+    autoRefresh = @{ enabled = $true; defaultInterval = "30s"; minInterval = "10s" }
+    dataSources = @( @{ id = $dataSourceId; scopeId = "kusto"; name = $kqlDbName; clusterUri = $QueryServiceUri; database = $kqlDbName; kind = "manual-kusto" } )
+    pages = @( @{ id = $pageId; name = "Solar Farm Overview" } )
+    tiles = $tiles
+    queries = $queries
+    baseQueries = @()
+    parameters = @()
+}
+
+$dashboardJson = $dashboard | ConvertTo-Json -Depth 20 -Compress
+$dashBase64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($dashboardJson))
+
+$defBody = @{
+    displayName = $DashboardName
+    type = "KQLDashboard"
+    definition = @{
+        parts = @( @{ path = "RealTimeDashboard.json"; payload = $dashBase64; payloadType = "InlineBase64" } )
+    }
+} | ConvertTo-Json -Depth 10
+
+# Check for existing dashboard
+$existingDashboard = $null
+try {
+    $items = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items?type=KQLDashboard" -Headers $headers).value
+    $existingDashboard = $items | Where-Object { $_.displayName -eq $DashboardName } | Select-Object -First 1
+} catch { Write-Warning "Could not list existing dashboards: $($_.Exception.Message)" }
+
+if ($existingDashboard) {
+    Write-Host "  Updating existing dashboard $($existingDashboard.id)..." -ForegroundColor Yellow
+    $updBody = @{ definition = @{ parts = @( @{ path = "RealTimeDashboard.json"; payload = $dashBase64; payloadType = "InlineBase64" } ) } } | ConvertTo-Json -Depth 10
+    try {
+        Invoke-RestMethod -Method Post -Uri "$apiBase/workspaces/$WorkspaceId/kqlDashboards/$($existingDashboard.id)/updateDefinition" -Headers $headers -Body $updBody | Out-Null
+        Write-Host "  [OK] Dashboard updated: $DashboardName (10 tiles)" -ForegroundColor Green
+    } catch { Write-Host "  [ERROR] Dashboard update: $_" -ForegroundColor Red }
+} else {
+    Write-Host "  Creating new dashboard..." -ForegroundColor Gray
+    try {
+        $resp = Invoke-WebRequest -Method Post -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers -Body $defBody -UseBasicParsing
+        if ($resp.StatusCode -eq 202) {
+            $loc = $resp.Headers["Location"]; if ($loc -is [array]) { $loc = $loc[0] }
+            $ra = $resp.Headers["Retry-After"]; if ($ra -is [array]) { $ra = $ra[0] }; $retryAfter = if ($ra) { [int]$ra } else { 5 }
+            if ($loc) { for ($i = 0; $i -lt 30; $i++) { Start-Sleep -Seconds $retryAfter; try { $poll = Invoke-RestMethod -Uri $loc -Headers $headers; if ($poll.status -eq "Succeeded") { break } } catch {} } }
+        }
+        Write-Host "  [OK] Dashboard created: $DashboardName (10 tiles)" -ForegroundColor Green
+    } catch { Write-Host "  [ERROR] Dashboard creation: $_" -ForegroundColor Red }
+}
+
+Write-Host "`n=== Solar Farm Dashboard Deployment Complete ===" -ForegroundColor Cyan

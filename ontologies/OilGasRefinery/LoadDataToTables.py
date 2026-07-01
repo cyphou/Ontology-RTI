@@ -209,6 +209,18 @@ TABLE_DEFINITIONS = [
             StructField("Notes", StringType(), True),
         ])
     ),
+    (
+        "SensorTelemetryEnriched.csv", "sensortelemetry",
+        StructType([
+            StructField("Timestamp", StringType(), False),
+            StructField("ProcessUnitId", StringType(), True),
+            StructField("SensorId", StringType(), True),
+            StructField("SensorType", StringType(), True),
+            StructField("Value", DoubleType(), True),
+            StructField("Unit", StringType(), True),
+            StructField("Quality", StringType(), True),
+        ])
+    ),
 ]
 
 # ============================================================================

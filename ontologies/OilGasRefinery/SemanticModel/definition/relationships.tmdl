@@ -3,6 +3,12 @@ relationship dimprocessunit_RefineryId_dimrefinery
 	toColumn: dimrefinery.RefineryId
 	crossFilteringBehavior: oneDirection
 
+relationship sensortelemetry_ProcessUnitId_dimprocessunit
+	isActive: false
+	fromColumn: sensortelemetry.ProcessUnitId
+	toColumn: dimprocessunit.ProcessUnitId
+	crossFilteringBehavior: oneDirection
+
 relationship dimequipment_ProcessUnitId_dimprocessunit
 	fromColumn: dimequipment.ProcessUnitId
 	toColumn: dimprocessunit.ProcessUnitId

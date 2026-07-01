@@ -18,6 +18,11 @@ import {
     type SignalThresholdRecord,
 } from "@/services/ontology-data.service";
 import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
+import {
+    fetchLiveTelemetry,
+    isLiveTelemetryConfigured,
+    type LiveTelemetrySnapshot,
+} from "@/services/live-telemetry.service";
 
 type PlantStatus = "healthy" | "warning" | "alarm";
 
@@ -443,6 +448,104 @@ function buildFarm(seedOffset: number): PlantTelemetry[] {
     });
 
     return rows;
+}
+
+// Live refresh cadence for the real semantic-model feed (kept close to the
+// synthetic seed cadence so the two paths feel consistent to the operator).
+const LIVE_TELEMETRY_REFRESH_MS = 5000;
+
+// Assemble live semantic-model rows into the same PlantTelemetry shape the scene
+// renders, reusing each plant's real coordinates and the shared status bands so
+// real data flows through the identical rendering path as buildFarm().
+function assembleLiveView(snapshot: LiveTelemetrySnapshot): { turbines: PlantTelemetry[]; sites: SolarPlantSite[] } {
+    const metricsById = new Map(snapshot.metrics.map((m) => [m.arrayId, m]));
+    const plantById = new Map(snapshot.plants.map((p) => [p.plantId, p]));
+    const arraysByPlant = new Map<string, string[]>();
+    for (const a of snapshot.arrays) {
+        const list = arraysByPlant.get(a.plantId) ?? [];
+        list.push(a.arrayId);
+        arraysByPlant.set(a.plantId, list);
+    }
+
+    const rows: PlantTelemetry[] = [];
+    for (const plant of snapshot.plants) {
+        const ids = arraysByPlant.get(plant.plantId) ?? [];
+        const cx = projectLonToX(plant.longitude);
+        const cz = projectLatToZ(plant.latitude);
+        const cols = Math.max(1, Math.ceil(Math.sqrt(ids.length)));
+        const totalRows = Math.max(1, Math.ceil(ids.length / cols));
+        ids.forEach((arrayId, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = cx + (col - (cols - 1) / 2) * 1.5;
+            const z = cz + (row - (totalRows - 1) / 2) * 1.5;
+            const m = metricsById.get(arrayId);
+            const moduleTempC = +(m?.moduleTempC ?? 0).toFixed(1);
+            const inverterLoadPct = +(m?.inverterLoadPct ?? 0).toFixed(0);
+            rows.push({
+                id: arrayId,
+                siteId: plant.plantId,
+                siteName: plant.plantName,
+                latitude: plant.latitude + (row - (totalRows - 1) / 2) * 0.012,
+                longitude: plant.longitude + (col - (cols - 1) / 2) * 0.014,
+                x,
+                z,
+                powerKw: Math.round(m?.powerKw ?? 0),
+                irradianceWm2: +(m?.irradianceWm2 ?? 0).toFixed(0),
+                moduleTempC,
+                inverterLoadPct,
+                status: derivePlantStatus(moduleTempC, inverterLoadPct),
+            });
+        });
+    }
+
+    const sites: SolarPlantSite[] = snapshot.plants.map((plant) => ({
+        id: plant.plantId,
+        name: plant.plantName,
+        region: "",
+        lat: plant.latitude,
+        lon: plant.longitude,
+        arrayCount: (arraysByPlant.get(plant.plantId) ?? []).length,
+        capacityMw: plant.capacityMwc,
+    }));
+
+    // Ignore arrays whose plant has no coordinates so they cannot collapse to origin.
+    return {
+        turbines: rows.filter((p) => plantById.has(p.siteId)),
+        sites,
+    };
+}
+
+// React hook: when a live semantic-model connection is configured, poll it and
+// return real arrays + sites; otherwise return null so callers fall back to the
+// synthetic feed. Any query failure also yields null (fail-safe).
+function useLiveTelemetry(): { turbines: PlantTelemetry[]; sites: SolarPlantSite[] } | null {
+    const [snapshot, setSnapshot] = useState<{ turbines: PlantTelemetry[]; sites: SolarPlantSite[] } | null>(null);
+
+    useEffect(() => {
+        if (!isLiveTelemetryConfigured()) {
+            return;
+        }
+        let cancelled = false;
+        const load = async () => {
+            const data = await fetchLiveTelemetry();
+            if (cancelled || !data || data.arrays.length === 0) {
+                return;
+            }
+            const view = assembleLiveView(data);
+            if (!cancelled && view.turbines.length > 0) {
+                setSnapshot(view);
+            }
+        };
+        void load();
+        const id = window.setInterval(load, LIVE_TELEMETRY_REFRESH_MS);
+        return () => {
+            cancelled = true;
+            window.clearInterval(id);
+        };
+    }, []);
+
+    return snapshot;
 }
 
 async function askFabricIQ(question: string, context: Record<string, unknown>): Promise<AskResult> {
@@ -1645,7 +1748,10 @@ function App() {
             });
     }, []);
 
-    const turbines = useMemo(() => buildFarm(seed), [seed]);
+    const syntheticTurbines = useMemo(() => buildFarm(seed), [seed]);
+    const liveView = useLiveTelemetry();
+    const turbines = liveView?.turbines ?? syntheticTurbines;
+    const sites = liveView?.sites ?? SITES;
     const selected = turbines.find((t) => t.id === selectedId) ?? turbines[0];
 
     const openTurbine = useCallback((id: string) => {
@@ -1816,7 +1922,7 @@ function App() {
     }, [search, turbines]);
 
     const sitesSummary = useMemo(() => {
-        return SITES.map((site) => {
+        return sites.map((site) => {
             const local = turbines.filter((t) => t.siteId === site.id);
             const sitePowerMw = local.reduce((sum, t) => sum + t.powerKw, 0) / 1000;
             const alarms = local.filter((t) => t.status === "alarm").length;
@@ -1829,7 +1935,7 @@ function App() {
                 warnings,
             };
         });
-    }, [turbines]);
+    }, [turbines, sites]);
 
     const fleetPower = visibleTurbines.reduce((sum, t) => sum + t.powerKw, 0);
     const alarms = visibleTurbines.filter((t) => t.status === "alarm").length;
@@ -1946,7 +2052,7 @@ function App() {
     }));
     const curvePowerMax = Math.max(1000, ...powerCurve.map((p) => p.y));
 
-    const selectedSite = SITES.find((s) => s.id === selected.siteId);
+    const selectedSite = sites.find((s) => s.id === selected.siteId);
     const relatedNotes = notes.filter((n) => n.turbineId === selected.id);
 
     const toolbar = (
@@ -1957,7 +2063,7 @@ function App() {
                 className="rounded border border-slate-700 bg-[#08142a] px-2 py-1"
             >
                 <option value="all">All sites</option>
-                {SITES.map((s) => (
+                {sites.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
             </select>
@@ -2049,7 +2155,7 @@ function App() {
                 <section className="relative min-h-0 flex-1">
                     {view === "map" && (
                         <div className="relative h-full min-h-[520px]">
-                            <SolarFleetScene turbines={turbines} sites={SITES} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
+                            <SolarFleetScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
 
                             <div className="absolute left-3 top-3 max-w-[78%] rounded-lg border border-slate-700/60 bg-[#06101fd9] p-2 backdrop-blur">
                                 {toolbar}
@@ -2265,7 +2371,7 @@ function App() {
                                 </div>
                             </div>
                             <div className="relative h-[calc(100%-2rem)] rounded-xl border border-slate-700/60 bg-[#051020]">
-                                <RelationshipGraph key={graphNonce} turbines={turbines} sites={SITES} selectedId={selected.id} statusFilter={graphFilter} onSelect={(id) => setSelectedId(id)} />
+                                <RelationshipGraph key={graphNonce} turbines={turbines} sites={sites} selectedId={selected.id} statusFilter={graphFilter} onSelect={(id) => setSelectedId(id)} />
                                 <div className="pointer-events-none absolute right-3 top-2 rounded-md border border-slate-700/60 bg-[#08142acc] px-2.5 py-2 text-[11px] text-slate-300 backdrop-blur-sm">
                                     <p className="mb-1 font-medium text-slate-400">Node types</p>
                                     <div className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#6ee7ff] bg-[#0e2a4d]" /> Fleet</div>

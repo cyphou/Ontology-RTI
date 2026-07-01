@@ -79,7 +79,7 @@ The fastest way to deploy any domain --- a single command creates all Fabric ite
 ```mermaid
 flowchart LR
     A["PowerShell\nDeploy-Ontology.ps1"] --> B["Login\nConnect-AzAccount"]
-    B --> C["Select Domain\n6 industries"]
+    B --> C["Select Domain\n7 industries"]
     C --> D["Deploy All\n8 Fabric items"]
     D --> E["Validate\nPost-deploy check"]
 
@@ -120,6 +120,7 @@ $headers = @{ "Authorization" = "Bearer $token" }
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType WindTurbine
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType Healthcare
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType SolarFarm
 
 # Skip optional components (useful for lower-SKU capacity)
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset -SkipDataAgent -SkipDashboard -SkipOperationsAgent
@@ -186,6 +187,7 @@ If you prefer to create items manually (or as a learning exercise), follow the s
 | <img src="assets/icons/it-asset.svg" width="18"/> IT Asset | 12 | DimServer, DimRack, DimApplication, FactIncident, SensorTelemetry |
 | <img src="assets/icons/wind-turbine.svg" width="18"/> Wind Turbine | 13 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
 | <img src="assets/icons/healthcare.svg" width="18"/> Healthcare | 14 | DimHospital, DimWard, DimPatient, DimPhysician, SensorTelemetry |
+| <img src="assets/icons/solar.svg" width="18"/> Solar Farm | 26 | DimSolarPlant, DimSolarArray, DimInverter, FactEnergyProduction, SensorTelemetry |
 
 > [!WARNING]
 > Do **NOT** upload `SensorTelemetry.csv` to the lakehouse. This file goes to the **Eventhouse** (Step 5).
@@ -274,6 +276,7 @@ Each domain has 5 KQL tables:
 | :desktop_computer: IT Asset | ServerMetric | InfraAlert | ApplicationHealth | NetworkMetric | IncidentMetric |
 | :wind_face: Wind Turbine | TurbineReading | TurbineAlert | PowerOutputMetric | WeatherMetric | MaintenanceMetric |
 | :hospital: Healthcare | PatientVitals | ClinicalAlert | LabMetric | MedicationEvent | DeviceReading |
+| :sunny: Solar Farm | ArrayReading | ArrayAlert | EnergyMetric | WeatherMetric | MaintenanceMetric |
 
 </details>
 
@@ -334,7 +337,7 @@ Each domain has 5 KQL tables:
 5. **Teams** — install the *Fabric Operations Agent* app in Microsoft Teams to receive proactive recommendations
 
 > [!NOTE]
-> This limitation applies to all 6 domains. The deployment script auto-detects the Eventhouse
+> This limitation applies to all 7 domains. The deployment script auto-detects the Eventhouse
 > and KQL Database IDs from the workspace — no hardcoded GUIDs required.
 
 ---

@@ -1,7 +1,7 @@
 # Wind Turbine Rayfin App — Roadmap
 
 > Geo wind‑twin command center built on Fabric Rayfin (React 19 + Three.js + Vitest).
-> Last updated: 2026‑06‑30
+> Last updated: 2026‑07‑01
 
 ---
 
@@ -31,7 +31,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 | **Ontology backend** | `WindSite` + `DispatchNote` entities, ensure‑sites bootstrap, dispatch note persistence |
 | **Shell** | Menu‑driven nav rail (with badges), KPI header strip, pause/resume, refresh interval, turbine detail modal |
 | **Bundle** | Three.js split into its own cached chunk via `manualChunks` |
-| **Quality** | 33 passing tests, clean `build:fabric`, one‑command `rayfin up` deploy |
+| **Quality** | 56 passing tests, clean `build:fabric`, one‑command `rayfin up` deploy |
 
 ---
 

@@ -1,0 +1,7 @@
+TransformerId,TransformerName,PlantId,RatingMVA,VoltageKV,Manufacturer,InstallDate,LastServiceDate,Status
+TRF-CESTAS,Cestas Substation TX,CESTAS,150,225,Siemens,2015-05-01,2025-05-15,Operational
+TRF-MARVILLE,Marville Substation TX,MARVILLE,76,225,ABB,2018-05-01,2025-05-15,Operational
+TRF-TOUL,Toul-Rosieres Substation TX,TOUL,58,225,Schneider Electric,2012-05-01,2025-05-15,Operational
+TRF-MEES,Les Mees Substation TX,MEES,50,225,Siemens,2011-05-01,2025-05-15,Operational
+TRF-GABARDAN,Gabardan Substation TX,GABARDAN,38,225,ABB,2016-05-01,2025-05-15,Operational
+TRF-MASSANGIS,Massangis Substation TX,MASSANGIS,28,225,Schneider Electric,2012-05-01,2025-05-15,Operational

@@ -1,0 +1,13 @@
+TechnicianId,TechnicianName,Specialization,CertificationLevel,PlantId,Shift,YearsExperience,Status
+TECH-CESTAS-01,Marie Bernard,Inverter Systems,Level III,CESTAS,Day,4,Active
+TECH-CESTAS-02,Ahmed Dubois,Module Cleaning,Senior,CESTAS,Night,5,Active
+TECH-MARVILLE-01,Sophie Dubois,Module Cleaning,Senior,MARVILLE,Day,5,Active
+TECH-MARVILLE-02,Karim Moreau,SCADA/Controls,Master,MARVILLE,Night,6,Active
+TECH-TOUL-01,Elise Moreau,SCADA/Controls,Master,TOUL,Day,6,Active
+TECH-TOUL-02,Thomas Laurent,Electrical,Level II,TOUL,Night,7,Active
+TECH-MEES-01,Nadia Laurent,Electrical,Level II,MEES,Day,7,Active
+TECH-MEES-02,Paul Simon,Inverter Systems,Level III,MEES,Night,8,Active
+TECH-GABARDAN-01,Chloe Simon,Inverter Systems,Level III,GABARDAN,Day,8,Active
+TECH-GABARDAN-02,Yanis Martin,Module Cleaning,Senior,GABARDAN,Night,9,Active
+TECH-MASSANGIS-01,Camille Martin,Module Cleaning,Senior,MASSANGIS,Day,9,Active
+TECH-MASSANGIS-02,Luc Bernard,SCADA/Controls,Master,MASSANGIS,Night,10,Active

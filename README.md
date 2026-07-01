@@ -11,9 +11,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/domains-6%20industries-742774?style=flat-square" alt="6 Domains"/>
-  <img src="https://img.shields.io/badge/entity%20types-68-blue?style=flat-square" alt="68 Entity Types"/>
-  <img src="https://img.shields.io/badge/CSV%20tables-78-green?style=flat-square" alt="78 Tables"/>
+  <img src="https://img.shields.io/badge/domains-7%20industries-742774?style=flat-square" alt="7 Domains"/>
+  <img src="https://img.shields.io/badge/entity%20types-80-blue?style=flat-square" alt="80 Entity Types"/>
+  <img src="https://img.shields.io/badge/CSV%20tables-104-green?style=flat-square" alt="104 Tables"/>
   <img src="https://img.shields.io/badge/sample%20rows-3%2C100%2B-orange?style=flat-square" alt="3100+ Rows"/>
   <img src="https://img.shields.io/badge/KQL%20tables-30-0078D4?style=flat-square" alt="30 KQL Tables"/>
   <img src="https://img.shields.io/badge/dashboard%20tiles-62-0078D4?style=flat-square" alt="62 Tiles"/>
@@ -75,7 +75,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 
 <table>
 <tr>
-<td width="16%" align="center">
+<td width="14%" align="center">
 <img src="assets/icons/oil-gas.svg" width="80" alt="Oil & Gas"/>
 
 ### Oil & Gas
@@ -84,7 +84,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 445 rows
 
 </td>
-<td width="16%" align="center">
+<td width="14%" align="center">
 <img src="assets/icons/smart-building.svg" width="80" alt="Smart Building"/>
 
 ### Smart Building
@@ -93,7 +93,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 498 rows
 
 </td>
-<td width="16%" align="center">
+<td width="14%" align="center">
 <img src="assets/icons/manufacturing.svg" width="80" alt="Manufacturing"/>
 
 ### Manufacturing
@@ -102,7 +102,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 444 rows
 
 </td>
-<td width="16%" align="center">
+<td width="14%" align="center">
 <img src="assets/icons/it-asset.svg" width="80" alt="IT Asset"/>
 
 ### IT Asset
@@ -111,7 +111,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 381 rows
 
 </td>
-<td width="16%" align="center">
+<td width="14%" align="center">
 <img src="assets/icons/wind-turbine.svg" width="80" alt="Wind Turbine"/>
 
 ### Wind Turbine
@@ -120,13 +120,22 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 651 rows
 
 </td>
-<td width="16%" align="center">
+<td width="14%" align="center">
 <img src="assets/icons/healthcare.svg" width="80" alt="Healthcare"/>
 
 ### Healthcare
 **Hospital Ops**
 9 entities · 14 CSVs
 260 rows
+
+</td>
+<td width="14%" align="center">
+<img src="assets/icons/solar.svg" width="80" alt="Solar Farm"/>
+
+### Solar Farm
+**PV Plant**
+12 entities · 26 CSVs
+1964 rows
 
 </td>
 </tr>
@@ -137,6 +146,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 <td><sub>Datacenters, racks, servers, VMs, applications, incidents, licenses</sub></td>
 <td><sub>Wind farms, turbines, nacelles, blades, towers, power output, weather stations</sub></td>
 <td><sub>Hospitals, departments, wards, physicians, nurses, patients, devices, medications</sub></td>
+<td><sub>Solar plants, PV arrays, inverters, strings, trackers, energy production, weather</sub></td>
 </tr>
 </table>
 ---
@@ -162,6 +172,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
   |    [4]  IT Asset Management                                   |
   |    [5]  Wind Turbine / Wind Farm                              |
   |    [6]  Healthcare                                            |
+  |    [7]  Solar Farm                                            |
   |                                                               |
   +==============================================================+
 ```

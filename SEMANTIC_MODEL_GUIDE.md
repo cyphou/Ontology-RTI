@@ -11,7 +11,7 @@
 <h1 align="center">:triangular_ruler: Semantic Model Guide</h1>
 
 <p align="center">
-  <b>Power BI semantic model configuration for all 6 ontology domains</b>
+  <b>Power BI semantic model configuration for all 7 ontology domains</b>
 </p>
 
 > [!TIP]
@@ -300,6 +300,32 @@ Key relationships:
 - `factmedicationadmin.NurseId` :arrow_right: `dimnurse.NurseId`
 - `bridgewarddevice.WardId` :arrow_right: `dimward.WardId`
 - `bridgewarddevice.DeviceId` :arrow_right: `dimmedicaldevice.DeviceId`
+- `sensortelemetry.SensorId` :arrow_right: `dimsensor.SensorId`
+
+</details>
+
+---
+
+## :sunny: Solar Farm Model
+
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**12 entity types** | **~12 relationships** | **Star schema**
+
+Key relationships:
+- `dimsolararray.PlantId` :arrow_right: `dimsolarplant.PlantId`
+- `diminverter.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `dimstring.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `dimtracker.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `dimsensor.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `dimtransformer.PlantId` :arrow_right: `dimsolarplant.PlantId`
+- `dimweatherstation.PlantId` :arrow_right: `dimsolarplant.PlantId`
+- `factenergyproduction.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `factmaintenanceevent.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `factmaintenanceevent.TechnicianId` :arrow_right: `dimtechnician.TechnicianId`
+- `factalert.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `factalert.SensorId` :arrow_right: `dimsensor.SensorId`
 - `sensortelemetry.SensorId` :arrow_right: `dimsensor.SensorId`
 
 </details>

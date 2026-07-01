@@ -1,0 +1,149 @@
+SensorId,SensorName,ArrayId,SensorType,Location,Unit,MinThreshold,MaxThreshold,InstallDate,Status
+SN-CESTAS-01-PWR,AC Power Meter 01,CESTAS-PV-01,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-01-IRR,Pyranometer 01,CESTAS-PV-01,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-01-TMP,Module Temp Sensor 01,CESTAS-PV-01,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-01-INV,Inverter Load Sensor 01,CESTAS-PV-01,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-02-PWR,AC Power Meter 02,CESTAS-PV-02,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-02-IRR,Pyranometer 02,CESTAS-PV-02,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-02-TMP,Module Temp Sensor 02,CESTAS-PV-02,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-02-INV,Inverter Load Sensor 02,CESTAS-PV-02,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-03-PWR,AC Power Meter 03,CESTAS-PV-03,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-03-IRR,Pyranometer 03,CESTAS-PV-03,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-03-TMP,Module Temp Sensor 03,CESTAS-PV-03,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-03-INV,Inverter Load Sensor 03,CESTAS-PV-03,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-04-PWR,AC Power Meter 04,CESTAS-PV-04,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-04-IRR,Pyranometer 04,CESTAS-PV-04,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-04-TMP,Module Temp Sensor 04,CESTAS-PV-04,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-04-INV,Inverter Load Sensor 04,CESTAS-PV-04,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-05-PWR,AC Power Meter 05,CESTAS-PV-05,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-05-IRR,Pyranometer 05,CESTAS-PV-05,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-05-TMP,Module Temp Sensor 05,CESTAS-PV-05,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-05-INV,Inverter Load Sensor 05,CESTAS-PV-05,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-06-PWR,AC Power Meter 06,CESTAS-PV-06,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-06-IRR,Pyranometer 06,CESTAS-PV-06,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-06-TMP,Module Temp Sensor 06,CESTAS-PV-06,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-06-INV,Inverter Load Sensor 06,CESTAS-PV-06,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-07-PWR,AC Power Meter 07,CESTAS-PV-07,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-07-IRR,Pyranometer 07,CESTAS-PV-07,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-07-TMP,Module Temp Sensor 07,CESTAS-PV-07,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-07-INV,Inverter Load Sensor 07,CESTAS-PV-07,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-CESTAS-08-PWR,AC Power Meter 08,CESTAS-PV-08,AcPower,Inverter Output,kW,0,39375,2015-04-15,Operational
+SN-CESTAS-08-IRR,Pyranometer 08,CESTAS-PV-08,Irradiance,Array Plane,W/m2,0,1200,2015-04-15,Operational
+SN-CESTAS-08-TMP,Module Temp Sensor 08,CESTAS-PV-08,ModuleTemp,Module Backsheet,degC,-20,85,2015-04-15,Operational
+SN-CESTAS-08-INV,Inverter Load Sensor 08,CESTAS-PV-08,InverterLoad,Inverter,pct,0,100,2015-04-15,Operational
+SN-MARVILLE-01-PWR,AC Power Meter 01,MARVILLE-PV-01,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-01-IRR,Pyranometer 01,MARVILLE-PV-01,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-01-TMP,Module Temp Sensor 01,MARVILLE-PV-01,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-01-INV,Inverter Load Sensor 01,MARVILLE-PV-01,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-MARVILLE-02-PWR,AC Power Meter 02,MARVILLE-PV-02,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-02-IRR,Pyranometer 02,MARVILLE-PV-02,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-02-TMP,Module Temp Sensor 02,MARVILLE-PV-02,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-02-INV,Inverter Load Sensor 02,MARVILLE-PV-02,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-MARVILLE-03-PWR,AC Power Meter 03,MARVILLE-PV-03,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-03-IRR,Pyranometer 03,MARVILLE-PV-03,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-03-TMP,Module Temp Sensor 03,MARVILLE-PV-03,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-03-INV,Inverter Load Sensor 03,MARVILLE-PV-03,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-MARVILLE-04-PWR,AC Power Meter 04,MARVILLE-PV-04,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-04-IRR,Pyranometer 04,MARVILLE-PV-04,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-04-TMP,Module Temp Sensor 04,MARVILLE-PV-04,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-04-INV,Inverter Load Sensor 04,MARVILLE-PV-04,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-MARVILLE-05-PWR,AC Power Meter 05,MARVILLE-PV-05,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-05-IRR,Pyranometer 05,MARVILLE-PV-05,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-05-TMP,Module Temp Sensor 05,MARVILLE-PV-05,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-05-INV,Inverter Load Sensor 05,MARVILLE-PV-05,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-MARVILLE-06-PWR,AC Power Meter 06,MARVILLE-PV-06,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-06-IRR,Pyranometer 06,MARVILLE-PV-06,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-06-TMP,Module Temp Sensor 06,MARVILLE-PV-06,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-06-INV,Inverter Load Sensor 06,MARVILLE-PV-06,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-MARVILLE-07-PWR,AC Power Meter 07,MARVILLE-PV-07,AcPower,Inverter Output,kW,0,22800,2018-04-15,Operational
+SN-MARVILLE-07-IRR,Pyranometer 07,MARVILLE-PV-07,Irradiance,Array Plane,W/m2,0,1200,2018-04-15,Operational
+SN-MARVILLE-07-TMP,Module Temp Sensor 07,MARVILLE-PV-07,ModuleTemp,Module Backsheet,degC,-20,85,2018-04-15,Operational
+SN-MARVILLE-07-INV,Inverter Load Sensor 07,MARVILLE-PV-07,InverterLoad,Inverter,pct,0,100,2018-04-15,Operational
+SN-TOUL-01-PWR,AC Power Meter 01,TOUL-PV-01,AcPower,Inverter Output,kW,0,20125,2012-04-15,Operational
+SN-TOUL-01-IRR,Pyranometer 01,TOUL-PV-01,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-TOUL-01-TMP,Module Temp Sensor 01,TOUL-PV-01,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-TOUL-01-INV,Inverter Load Sensor 01,TOUL-PV-01,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-TOUL-02-PWR,AC Power Meter 02,TOUL-PV-02,AcPower,Inverter Output,kW,0,20125,2012-04-15,Operational
+SN-TOUL-02-IRR,Pyranometer 02,TOUL-PV-02,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-TOUL-02-TMP,Module Temp Sensor 02,TOUL-PV-02,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-TOUL-02-INV,Inverter Load Sensor 02,TOUL-PV-02,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-TOUL-03-PWR,AC Power Meter 03,TOUL-PV-03,AcPower,Inverter Output,kW,0,20125,2012-04-15,Operational
+SN-TOUL-03-IRR,Pyranometer 03,TOUL-PV-03,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-TOUL-03-TMP,Module Temp Sensor 03,TOUL-PV-03,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-TOUL-03-INV,Inverter Load Sensor 03,TOUL-PV-03,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-TOUL-04-PWR,AC Power Meter 04,TOUL-PV-04,AcPower,Inverter Output,kW,0,20125,2012-04-15,Operational
+SN-TOUL-04-IRR,Pyranometer 04,TOUL-PV-04,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-TOUL-04-TMP,Module Temp Sensor 04,TOUL-PV-04,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-TOUL-04-INV,Inverter Load Sensor 04,TOUL-PV-04,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-TOUL-05-PWR,AC Power Meter 05,TOUL-PV-05,AcPower,Inverter Output,kW,0,20125,2012-04-15,Operational
+SN-TOUL-05-IRR,Pyranometer 05,TOUL-PV-05,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-TOUL-05-TMP,Module Temp Sensor 05,TOUL-PV-05,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-TOUL-05-INV,Inverter Load Sensor 05,TOUL-PV-05,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-TOUL-06-PWR,AC Power Meter 06,TOUL-PV-06,AcPower,Inverter Output,kW,0,20125,2012-04-15,Operational
+SN-TOUL-06-IRR,Pyranometer 06,TOUL-PV-06,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-TOUL-06-TMP,Module Temp Sensor 06,TOUL-PV-06,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-TOUL-06-INV,Inverter Load Sensor 06,TOUL-PV-06,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-MEES-01-PWR,AC Power Meter 01,MEES-PV-01,AcPower,Inverter Output,kW,0,17500,2011-04-15,Operational
+SN-MEES-01-IRR,Pyranometer 01,MEES-PV-01,Irradiance,Array Plane,W/m2,0,1200,2011-04-15,Operational
+SN-MEES-01-TMP,Module Temp Sensor 01,MEES-PV-01,ModuleTemp,Module Backsheet,degC,-20,85,2011-04-15,Operational
+SN-MEES-01-INV,Inverter Load Sensor 01,MEES-PV-01,InverterLoad,Inverter,pct,0,100,2011-04-15,Operational
+SN-MEES-02-PWR,AC Power Meter 02,MEES-PV-02,AcPower,Inverter Output,kW,0,17500,2011-04-15,Operational
+SN-MEES-02-IRR,Pyranometer 02,MEES-PV-02,Irradiance,Array Plane,W/m2,0,1200,2011-04-15,Operational
+SN-MEES-02-TMP,Module Temp Sensor 02,MEES-PV-02,ModuleTemp,Module Backsheet,degC,-20,85,2011-04-15,Operational
+SN-MEES-02-INV,Inverter Load Sensor 02,MEES-PV-02,InverterLoad,Inverter,pct,0,100,2011-04-15,Operational
+SN-MEES-03-PWR,AC Power Meter 03,MEES-PV-03,AcPower,Inverter Output,kW,0,17500,2011-04-15,Operational
+SN-MEES-03-IRR,Pyranometer 03,MEES-PV-03,Irradiance,Array Plane,W/m2,0,1200,2011-04-15,Operational
+SN-MEES-03-TMP,Module Temp Sensor 03,MEES-PV-03,ModuleTemp,Module Backsheet,degC,-20,85,2011-04-15,Operational
+SN-MEES-03-INV,Inverter Load Sensor 03,MEES-PV-03,InverterLoad,Inverter,pct,0,100,2011-04-15,Operational
+SN-MEES-04-PWR,AC Power Meter 04,MEES-PV-04,AcPower,Inverter Output,kW,0,17500,2011-04-15,Operational
+SN-MEES-04-IRR,Pyranometer 04,MEES-PV-04,Irradiance,Array Plane,W/m2,0,1200,2011-04-15,Operational
+SN-MEES-04-TMP,Module Temp Sensor 04,MEES-PV-04,ModuleTemp,Module Backsheet,degC,-20,85,2011-04-15,Operational
+SN-MEES-04-INV,Inverter Load Sensor 04,MEES-PV-04,InverterLoad,Inverter,pct,0,100,2011-04-15,Operational
+SN-MEES-05-PWR,AC Power Meter 05,MEES-PV-05,AcPower,Inverter Output,kW,0,17500,2011-04-15,Operational
+SN-MEES-05-IRR,Pyranometer 05,MEES-PV-05,Irradiance,Array Plane,W/m2,0,1200,2011-04-15,Operational
+SN-MEES-05-TMP,Module Temp Sensor 05,MEES-PV-05,ModuleTemp,Module Backsheet,degC,-20,85,2011-04-15,Operational
+SN-MEES-05-INV,Inverter Load Sensor 05,MEES-PV-05,InverterLoad,Inverter,pct,0,100,2011-04-15,Operational
+SN-MEES-06-PWR,AC Power Meter 06,MEES-PV-06,AcPower,Inverter Output,kW,0,17500,2011-04-15,Operational
+SN-MEES-06-IRR,Pyranometer 06,MEES-PV-06,Irradiance,Array Plane,W/m2,0,1200,2011-04-15,Operational
+SN-MEES-06-TMP,Module Temp Sensor 06,MEES-PV-06,ModuleTemp,Module Backsheet,degC,-20,85,2011-04-15,Operational
+SN-MEES-06-INV,Inverter Load Sensor 06,MEES-PV-06,InverterLoad,Inverter,pct,0,100,2011-04-15,Operational
+SN-GABARDAN-01-PWR,AC Power Meter 01,GABARDAN-PV-01,AcPower,Inverter Output,kW,0,15960,2016-04-15,Operational
+SN-GABARDAN-01-IRR,Pyranometer 01,GABARDAN-PV-01,Irradiance,Array Plane,W/m2,0,1200,2016-04-15,Operational
+SN-GABARDAN-01-TMP,Module Temp Sensor 01,GABARDAN-PV-01,ModuleTemp,Module Backsheet,degC,-20,85,2016-04-15,Operational
+SN-GABARDAN-01-INV,Inverter Load Sensor 01,GABARDAN-PV-01,InverterLoad,Inverter,pct,0,100,2016-04-15,Operational
+SN-GABARDAN-02-PWR,AC Power Meter 02,GABARDAN-PV-02,AcPower,Inverter Output,kW,0,15960,2016-04-15,Operational
+SN-GABARDAN-02-IRR,Pyranometer 02,GABARDAN-PV-02,Irradiance,Array Plane,W/m2,0,1200,2016-04-15,Operational
+SN-GABARDAN-02-TMP,Module Temp Sensor 02,GABARDAN-PV-02,ModuleTemp,Module Backsheet,degC,-20,85,2016-04-15,Operational
+SN-GABARDAN-02-INV,Inverter Load Sensor 02,GABARDAN-PV-02,InverterLoad,Inverter,pct,0,100,2016-04-15,Operational
+SN-GABARDAN-03-PWR,AC Power Meter 03,GABARDAN-PV-03,AcPower,Inverter Output,kW,0,15960,2016-04-15,Operational
+SN-GABARDAN-03-IRR,Pyranometer 03,GABARDAN-PV-03,Irradiance,Array Plane,W/m2,0,1200,2016-04-15,Operational
+SN-GABARDAN-03-TMP,Module Temp Sensor 03,GABARDAN-PV-03,ModuleTemp,Module Backsheet,degC,-20,85,2016-04-15,Operational
+SN-GABARDAN-03-INV,Inverter Load Sensor 03,GABARDAN-PV-03,InverterLoad,Inverter,pct,0,100,2016-04-15,Operational
+SN-GABARDAN-04-PWR,AC Power Meter 04,GABARDAN-PV-04,AcPower,Inverter Output,kW,0,15960,2016-04-15,Operational
+SN-GABARDAN-04-IRR,Pyranometer 04,GABARDAN-PV-04,Irradiance,Array Plane,W/m2,0,1200,2016-04-15,Operational
+SN-GABARDAN-04-TMP,Module Temp Sensor 04,GABARDAN-PV-04,ModuleTemp,Module Backsheet,degC,-20,85,2016-04-15,Operational
+SN-GABARDAN-04-INV,Inverter Load Sensor 04,GABARDAN-PV-04,InverterLoad,Inverter,pct,0,100,2016-04-15,Operational
+SN-GABARDAN-05-PWR,AC Power Meter 05,GABARDAN-PV-05,AcPower,Inverter Output,kW,0,15960,2016-04-15,Operational
+SN-GABARDAN-05-IRR,Pyranometer 05,GABARDAN-PV-05,Irradiance,Array Plane,W/m2,0,1200,2016-04-15,Operational
+SN-GABARDAN-05-TMP,Module Temp Sensor 05,GABARDAN-PV-05,ModuleTemp,Module Backsheet,degC,-20,85,2016-04-15,Operational
+SN-GABARDAN-05-INV,Inverter Load Sensor 05,GABARDAN-PV-05,InverterLoad,Inverter,pct,0,100,2016-04-15,Operational
+SN-MASSANGIS-01-PWR,AC Power Meter 01,MASSANGIS-PV-01,AcPower,Inverter Output,kW,0,11760,2012-04-15,Operational
+SN-MASSANGIS-01-IRR,Pyranometer 01,MASSANGIS-PV-01,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-MASSANGIS-01-TMP,Module Temp Sensor 01,MASSANGIS-PV-01,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-MASSANGIS-01-INV,Inverter Load Sensor 01,MASSANGIS-PV-01,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-MASSANGIS-02-PWR,AC Power Meter 02,MASSANGIS-PV-02,AcPower,Inverter Output,kW,0,11760,2012-04-15,Operational
+SN-MASSANGIS-02-IRR,Pyranometer 02,MASSANGIS-PV-02,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-MASSANGIS-02-TMP,Module Temp Sensor 02,MASSANGIS-PV-02,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-MASSANGIS-02-INV,Inverter Load Sensor 02,MASSANGIS-PV-02,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-MASSANGIS-03-PWR,AC Power Meter 03,MASSANGIS-PV-03,AcPower,Inverter Output,kW,0,11760,2012-04-15,Operational
+SN-MASSANGIS-03-IRR,Pyranometer 03,MASSANGIS-PV-03,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-MASSANGIS-03-TMP,Module Temp Sensor 03,MASSANGIS-PV-03,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-MASSANGIS-03-INV,Inverter Load Sensor 03,MASSANGIS-PV-03,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-MASSANGIS-04-PWR,AC Power Meter 04,MASSANGIS-PV-04,AcPower,Inverter Output,kW,0,11760,2012-04-15,Operational
+SN-MASSANGIS-04-IRR,Pyranometer 04,MASSANGIS-PV-04,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-MASSANGIS-04-TMP,Module Temp Sensor 04,MASSANGIS-PV-04,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-MASSANGIS-04-INV,Inverter Load Sensor 04,MASSANGIS-PV-04,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational
+SN-MASSANGIS-05-PWR,AC Power Meter 05,MASSANGIS-PV-05,AcPower,Inverter Output,kW,0,11760,2012-04-15,Operational
+SN-MASSANGIS-05-IRR,Pyranometer 05,MASSANGIS-PV-05,Irradiance,Array Plane,W/m2,0,1200,2012-04-15,Operational
+SN-MASSANGIS-05-TMP,Module Temp Sensor 05,MASSANGIS-PV-05,ModuleTemp,Module Backsheet,degC,-20,85,2012-04-15,Operational
+SN-MASSANGIS-05-INV,Inverter Load Sensor 05,MASSANGIS-PV-05,InverterLoad,Inverter,pct,0,100,2012-04-15,Operational

@@ -1,0 +1,13 @@
+AlertId,ArrayId,AlertType,Severity,Timestamp,SensorId,Value,Threshold,Description,Status
+SA-001,CESTAS-PV-01,HighModuleTemp,High,2025-12-01T09:00:00,SN-CESTAS-01-TMP,69,65,HighModuleTemp detected on array CESTAS-PV-01,Resolved
+SA-002,CESTAS-PV-02,InverterFault,Critical,2025-12-01T10:00:00,SN-CESTAS-02-INV,99,95,InverterFault detected on array CESTAS-PV-02,Active
+SA-003,CESTAS-PV-03,StringImbalance,Medium,2025-12-01T11:00:00,SN-CESTAS-03-PWR,15,8,StringImbalance detected on array CESTAS-PV-03,Resolved
+SA-004,CESTAS-PV-04,CommLoss,Warning,2025-12-01T12:00:00,SN-CESTAS-04-INV,0,1,CommLoss detected on array CESTAS-PV-04,Active
+SA-005,CESTAS-PV-05,LowYield,High,2025-12-01T13:00:00,SN-CESTAS-05-PWR,13125,20625,LowYield detected on array CESTAS-PV-05,Resolved
+SA-006,CESTAS-PV-06,HighModuleTemp,Critical,2025-12-01T14:00:00,SN-CESTAS-06-TMP,74,65,HighModuleTemp detected on array CESTAS-PV-06,Active
+SA-007,CESTAS-PV-07,InverterFault,Medium,2025-12-01T15:00:00,SN-CESTAS-07-INV,100,95,InverterFault detected on array CESTAS-PV-07,Resolved
+SA-008,CESTAS-PV-08,StringImbalance,Warning,2025-12-01T08:00:00,SN-CESTAS-08-PWR,20,8,StringImbalance detected on array CESTAS-PV-08,Active
+SA-009,MARVILLE-PV-01,CommLoss,High,2025-12-01T09:00:00,SN-MARVILLE-01-INV,0,1,CommLoss detected on array MARVILLE-PV-01,Resolved
+SA-010,MARVILLE-PV-02,LowYield,Critical,2025-12-01T10:00:00,SN-MARVILLE-02-PWR,7600,11942.9,LowYield detected on array MARVILLE-PV-02,Active
+SA-011,MARVILLE-PV-03,HighModuleTemp,Medium,2025-12-01T11:00:00,SN-MARVILLE-03-TMP,79,65,HighModuleTemp detected on array MARVILLE-PV-03,Resolved
+SA-012,MARVILLE-PV-04,InverterFault,Warning,2025-12-01T12:00:00,SN-MARVILLE-04-INV,99,95,InverterFault detected on array MARVILLE-PV-04,Active

@@ -5,7 +5,7 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-annotation PBI_QueryOrder = ["dimrefinery","dimprocessunit","dimequipment","dimpipeline","dimcrudeoil","dimrefinedproduct","dimstoragetank","dimsensor","dimemployee","factmaintenance","factsafetyalarm","factproduction","bridgecrudeoilprocessunit"]
+annotation PBI_QueryOrder = ["dimrefinery","dimprocessunit","dimequipment","dimpipeline","dimcrudeoil","dimrefinedproduct","dimstoragetank","dimsensor","dimemployee","factmaintenance","factsafetyalarm","factproduction","bridgecrudeoilprocessunit","sensortelemetry"]
 
 ref table dimrefinery
 ref table dimprocessunit
@@ -20,6 +20,7 @@ ref table factmaintenance
 ref table factsafetyalarm
 ref table factproduction
 ref table bridgecrudeoilprocessunit
+ref table sensortelemetry
 
 ref expression DatabaseQuery
 

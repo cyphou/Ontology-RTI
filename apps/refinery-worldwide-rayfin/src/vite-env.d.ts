@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_FABRIC_ITEM_ID?: string;
   /** Fabric portal base URL (e.g. https://app.fabric.microsoft.com/). */
   readonly VITE_FABRIC_PORTAL_URL?: string;
+  /** Semantic-model connection alias for live telemetry; when set, real readings replace the synthetic feed. */
+  readonly VITE_LIVE_TELEMETRY_MODEL?: string;
 }
 
 interface ImportMeta {

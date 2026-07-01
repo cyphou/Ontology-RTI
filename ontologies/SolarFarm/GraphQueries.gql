@@ -1,0 +1,114 @@
+/* Solar Farm / Photovoltaic Plant GraphQL Queries (ISO/IEC 39075:2024) */
+/* Graph exploration queries for Solar Farm Ontology */
+
+/* 1. List all solar plants with capacity overview */
+MATCH (p:SolarPlant)
+RETURN p.PlantName, p.Region, p.ArrayCount, p.CapacityMWc, p.Operator, p.Status
+ORDER BY p.CapacityMWc DESC
+
+/* 2. Solar plant -> arrays hierarchy with details */
+MATCH (p:SolarPlant)-[:PlantHasArray]->(a:SolarArray)
+RETURN p.PlantName, a.ArrayName, a.RatedCapacityKW, a.TiltDegrees, a.Orientation, a.Status
+ORDER BY p.PlantName, a.ArrayName
+
+/* 3. Array full component view (inverter + trackers + strings) */
+MATCH (a:SolarArray)-[:ArrayHasInverter]->(inv:Inverter)
+OPTIONAL MATCH (a)-[:ArrayHasTracker]->(tr:Tracker)
+OPTIONAL MATCH (a)-[:ArrayHasString]->(st:PanelString)
+RETURN a.ArrayName, inv.Manufacturer, inv.RatedPowerKW, inv.Efficiency, tr.TrackerType, tr.AxisType, COUNT(st) AS StringCount
+ORDER BY a.ArrayName
+
+/* 4. Panel string status across the fleet */
+MATCH (a:SolarArray)-[:ArrayHasString]->(st:PanelString)
+RETURN a.ArrayName, st.StringName, st.ModuleCount, st.ModuleType, st.RatedVoltageV, st.LastInspectionDate, st.Status
+ORDER BY st.Status DESC, a.ArrayName
+
+/* 5. Sensors per array */
+MATCH (a:SolarArray)-[:ArrayHasSensor]->(s:Sensor)
+RETURN a.ArrayName, s.SensorName, s.SensorType, s.Location, s.Unit, s.MinThreshold, s.MaxThreshold, s.Status
+ORDER BY a.ArrayName, s.SensorType
+
+/* 6. Technicians per plant with specialization */
+MATCH (p:SolarPlant)-[:PlantHasTechnician]->(tech:Technician)
+RETURN p.PlantName, tech.TechnicianName, tech.Specialization, tech.CertificationLevel, tech.Shift, tech.YearsExperience
+ORDER BY p.PlantName, tech.Specialization
+
+/* 7. Weather stations per plant */
+MATCH (p:SolarPlant)-[:PlantHasWeatherStation]->(ws:WeatherStation)
+RETURN p.PlantName, ws.StationName, ws.Latitude, ws.Longitude, ws.ElevationM, ws.Status
+ORDER BY p.PlantName
+
+/* 8. Transformers and grid connection per plant */
+MATCH (p:SolarPlant)-[:PlantHasTransformer]->(tr:Transformer)
+RETURN p.PlantName, tr.TransformerName, tr.RatingMVA, tr.VoltageKV, tr.Manufacturer, tr.LastServiceDate, tr.Status
+ORDER BY p.PlantName
+
+/* 9. Open maintenance events with array and technician details */
+MATCH (me:MaintenanceEvent)-[:MaintenanceOnArray]->(a:SolarArray), (me)-[:MaintenanceByTechnician]->(tech:Technician)
+WHERE me.Status <> 'Completed'
+RETURN me.EventId, me.EventType, me.Priority, a.ArrayName, tech.TechnicianName, me.ScheduledDate, me.Component, me.Description, me.Status
+ORDER BY me.Priority, me.ScheduledDate
+
+/* 10. Maintenance cost analysis per array */
+MATCH (me:MaintenanceEvent)-[:MaintenanceOnArray]->(a:SolarArray)
+WHERE me.Status = 'Completed'
+RETURN a.ArrayName, COUNT(me) AS EventCount, SUM(me.CostUSD) AS TotalCost, SUM(me.DurationHours) AS TotalHours
+ORDER BY TotalCost DESC
+
+/* 11. Energy production per array (latest readings) */
+MATCH (ep:EnergyProduction)-[:ProductionFromArray]->(a:SolarArray)
+RETURN a.ArrayName, ep.Date, ep.Hour, ep.IrradianceWm2, ep.PowerOutputKW, ep.PerformanceRatio, ep.ModuleTempC
+ORDER BY a.ArrayName, ep.Date DESC, ep.Hour DESC
+
+/* 12. Active alerts and their arrays */
+MATCH (al:Alert)-[:AlertOnArray]->(a:SolarArray)
+WHERE al.Status = 'Active'
+RETURN al.AlertId, al.AlertType, al.Severity, a.ArrayName, al.Timestamp, al.Value, al.Threshold, al.Description
+ORDER BY al.Severity, al.Timestamp DESC
+
+/* 13. Full asset chain: plant -> array -> inverter + strings + sensors + alerts */
+MATCH (p:SolarPlant)-[:PlantHasArray]->(a:SolarArray)
+OPTIONAL MATCH (a)-[:ArrayHasInverter]->(inv:Inverter)
+OPTIONAL MATCH (a)-[:ArrayHasString]->(st:PanelString)
+OPTIONAL MATCH (a)-[:ArrayHasSensor]->(s:Sensor)
+OPTIONAL MATCH (al:Alert)-[:AlertOnArray]->(a) WHERE al.Status = 'Active'
+RETURN p.PlantName, a.ArrayName, a.Status, inv.Manufacturer, COUNT(DISTINCT st) AS Strings, COUNT(DISTINCT s) AS Sensors, COUNT(DISTINCT al) AS ActiveAlerts
+ORDER BY ActiveAlerts DESC, p.PlantName
+
+/* 14. String condition assessment across plants */
+MATCH (p:SolarPlant)-[:PlantHasArray]->(a:SolarArray)-[:ArrayHasString]->(st:PanelString)
+RETURN p.PlantName, a.ArrayName, st.StringId, st.ModuleCount, st.ModuleType, st.Status
+ORDER BY p.PlantName, a.ArrayName
+
+/* 15. Transformer load distribution per plant */
+MATCH (p:SolarPlant)-[:PlantHasTransformer]->(tr:Transformer)
+RETURN p.PlantName, tr.TransformerName, tr.RatingMVA, tr.VoltageKV, tr.Status
+ORDER BY tr.RatingMVA DESC
+
+/* 16. Arrays with no recent maintenance (overdue detection) */
+MATCH (a:SolarArray)
+WHERE NOT EXISTS { MATCH (:MaintenanceEvent {Status: 'Completed'})-[:MaintenanceOnArray]->(a) }
+RETURN a.ArrayName, a.RatedCapacityKW, a.Orientation, a.Status
+ORDER BY a.ArrayName
+
+/* 17. Weather station coverage per plant */
+MATCH (p:SolarPlant)-[:PlantHasWeatherStation]->(ws:WeatherStation)
+RETURN p.PlantName, p.CapacityMWc, COUNT(ws) AS StationCount, COLLECT(ws.StationName) AS Stations
+ORDER BY p.PlantName
+
+/* 18. Technician specialization and maintenance cost */
+MATCH (me:MaintenanceEvent)-[:MaintenanceByTechnician]->(tech:Technician)
+RETURN tech.TechnicianName, tech.Specialization, tech.YearsExperience, COUNT(me) AS EventCount, SUM(me.CostUSD) AS TotalCost
+ORDER BY TotalCost DESC
+
+/* 19. Energy production trends by inverter manufacturer */
+MATCH (a:SolarArray)-[:ArrayHasInverter]->(inv:Inverter)
+MATCH (ep:EnergyProduction)-[:ProductionFromArray]->(a)
+RETURN inv.Manufacturer, COUNT(ep) AS Readings, AVG(ep.PowerOutputKW) AS AvgPower, AVG(ep.PerformanceRatio) AS AvgPR
+ORDER BY AvgPower DESC
+
+/* 20. Multi-hop asset integrity: plant to sensor with alert count */
+MATCH (p:SolarPlant)-[:PlantHasArray]->(a:SolarArray)-[:ArrayHasSensor]->(s:Sensor)
+OPTIONAL MATCH (al:Alert)-[:AlertOnArray]->(a) WHERE al.Status = 'Active'
+RETURN p.PlantName, a.ArrayName, s.SensorName, s.SensorType, COUNT(al) AS ActiveAlerts
+ORDER BY ActiveAlerts DESC, p.PlantName

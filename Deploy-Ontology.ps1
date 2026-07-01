@@ -50,7 +50,7 @@ param(
     [string]$WorkspaceId,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare")]
+    [ValidateSet("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare", "SolarFarm")]
     [string]$OntologyType,
 
     [switch]$SkipDataAgent,
@@ -137,6 +137,18 @@ $domains = @{
         OntologyFolder = Join-Path $scriptDir "ontologies\Healthcare"
         Color        = "Red"
     }
+    SolarFarm = @{
+        DisplayName  = "Solar Farm"
+        Emoji        = [char]::ConvertFromUtf32(0x2600)  # sun
+        Description  = "Solar plants, PV arrays, inverters, strings, trackers, energy production, weather"
+        Lakehouse    = "SolarFarmLH"
+        Eventhouse   = "SolarTelemetryEH"
+        SemanticModel = "SolarFarmModel"
+        OntologyName = "SolarFarmOntology"
+        DataFolder   = Join-Path $scriptDir "ontologies\SolarFarm\data"
+        OntologyFolder = Join-Path $scriptDir "ontologies\SolarFarm"
+        Color        = "Yellow"
+    }
 }
 
 # ============================================================================
@@ -154,7 +166,7 @@ if (-not $OntologyType) {
 
     $index = 1
     $menuMap = @{}
-    foreach ($key in @("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare")) {
+    foreach ($key in @("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare", "SolarFarm")) {
         $d = $domains[$key]
         $color = $d.Color
         Write-Host "    [$index] " -NoNewline -ForegroundColor White
@@ -165,7 +177,7 @@ if (-not $OntologyType) {
     }
 
     Write-Host ""
-    $choice = Read-Host "  Enter choice (1-6)"
+    $choice = Read-Host "  Enter choice (1-7)"
     $choiceInt = [int]$choice
     if ($menuMap.ContainsKey($choiceInt)) {
         $OntologyType = $menuMap[$choiceInt]

@@ -18,6 +18,11 @@ import {
     type SignalThresholdRecord,
 } from "@/services/ontology-data.service";
 import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
+import {
+    fetchLiveTelemetry,
+    isLiveTelemetryConfigured,
+    type LiveTelemetrySnapshot,
+} from "@/services/live-telemetry.service";
 
 type TurbineStatus = "healthy" | "warning" | "alarm";
 
@@ -466,6 +471,100 @@ function buildFarm(seedOffset: number): TurbineTelemetry[] {
     });
 
     return rows;
+}
+
+// Live refresh cadence for the real semantic-model feed (kept close to the
+// synthetic seed cadence so the two paths feel consistent to the operator).
+const LIVE_TELEMETRY_REFRESH_MS = 5000;
+
+// Assemble live semantic-model rows into the same TurbineTelemetry shape the
+// scene renders, reusing the ontology farm coordinates and the shared status
+// bands so real data flows through the identical rendering path as buildFarm().
+function assembleLiveView(snapshot: LiveTelemetrySnapshot): { turbines: TurbineTelemetry[]; sites: WindSite[] } {
+    const metricsById = new Map(snapshot.metrics.map((m) => [m.turbineId, m]));
+    const farmById = new Map(snapshot.farms.map((f) => [f.farmId, f]));
+    const turbinesByFarm = new Map<string, string[]>();
+    for (const t of snapshot.turbines) {
+        const list = turbinesByFarm.get(t.farmId) ?? [];
+        list.push(t.turbineId);
+        turbinesByFarm.set(t.farmId, list);
+    }
+
+    const turbines: TurbineTelemetry[] = [];
+    for (const farm of snapshot.farms) {
+        const ids = turbinesByFarm.get(farm.farmId) ?? [];
+        const cx = projectLonToX(farm.longitude);
+        const cz = projectLatToZ(farm.latitude);
+        ids.forEach((turbineId, i) => {
+            const angle = (Math.PI * 2 * i) / Math.max(ids.length, 1);
+            const radius = 1.2 + (i % 3) * 0.85;
+            const m = metricsById.get(turbineId);
+            const nacelleTempC = +(m?.nacelleTempC ?? 0).toFixed(1);
+            const vibrationMmS = +(m?.vibrationMmS ?? 0).toFixed(1);
+            turbines.push({
+                id: turbineId,
+                siteId: farm.farmId,
+                siteName: farm.farmName,
+                latitude: farm.latitude + Math.sin(angle) * 0.18,
+                longitude: farm.longitude + Math.cos(angle) * 0.22,
+                x: cx + Math.cos(angle) * radius,
+                z: cz + Math.sin(angle) * radius,
+                powerKw: Math.round(m?.powerKw ?? 0),
+                windMs: +(m?.windMs ?? 0).toFixed(1),
+                nacelleTempC,
+                vibrationMmS,
+                status: deriveTurbineStatus(nacelleTempC, vibrationMmS),
+            });
+        });
+    }
+
+    const sites: WindSite[] = snapshot.farms.map((farm) => ({
+        id: farm.farmId,
+        name: farm.farmName,
+        country: "",
+        lat: farm.latitude,
+        lon: farm.longitude,
+        turbineCount: (turbinesByFarm.get(farm.farmId) ?? []).length,
+        capacityMw: farm.capacityMw,
+    }));
+
+    // Ignore farms with no coordinates so they cannot collapse turbines to origin.
+    return {
+        turbines: turbines.filter((t) => farmById.has(t.siteId)),
+        sites,
+    };
+}
+
+// React hook: when a live semantic-model connection is configured, poll it and
+// return real turbines + sites; otherwise return null so callers fall back to
+// the synthetic feed. Any query failure also yields null (fail-safe).
+function useLiveTelemetry(): { turbines: TurbineTelemetry[]; sites: WindSite[] } | null {
+    const [snapshot, setSnapshot] = useState<{ turbines: TurbineTelemetry[]; sites: WindSite[] } | null>(null);
+
+    useEffect(() => {
+        if (!isLiveTelemetryConfigured()) {
+            return;
+        }
+        let cancelled = false;
+        const load = async () => {
+            const data = await fetchLiveTelemetry();
+            if (cancelled || !data || data.turbines.length === 0) {
+                return;
+            }
+            const view = assembleLiveView(data);
+            if (!cancelled && view.turbines.length > 0) {
+                setSnapshot(view);
+            }
+        };
+        void load();
+        const id = window.setInterval(load, LIVE_TELEMETRY_REFRESH_MS);
+        return () => {
+            cancelled = true;
+            window.clearInterval(id);
+        };
+    }, []);
+
+    return snapshot;
 }
 
 async function askFabricIQ(question: string, context: Record<string, unknown>): Promise<AskResult> {
@@ -1702,7 +1801,10 @@ function App() {
             });
     }, []);
 
-    const turbines = useMemo(() => buildFarm(seed), [seed]);
+    const syntheticTurbines = useMemo(() => buildFarm(seed), [seed]);
+    const liveView = useLiveTelemetry();
+    const turbines = liveView?.turbines ?? syntheticTurbines;
+    const sites = liveView?.sites ?? SITES;
     const selected = turbines.find((t) => t.id === selectedId) ?? turbines[0];
 
     const openTurbine = useCallback((id: string) => {
@@ -1873,7 +1975,7 @@ function App() {
     }, [search, turbines]);
 
     const sitesSummary = useMemo(() => {
-        return SITES.map((site) => {
+        return sites.map((site) => {
             const local = turbines.filter((t) => t.siteId === site.id);
             const sitePowerMw = local.reduce((sum, t) => sum + t.powerKw, 0) / 1000;
             const alarms = local.filter((t) => t.status === "alarm").length;
@@ -1886,7 +1988,7 @@ function App() {
                 warnings,
             };
         });
-    }, [turbines]);
+    }, [turbines, sites]);
 
     const fleetPower = visibleTurbines.reduce((sum, t) => sum + t.powerKw, 0);
     const alarms = visibleTurbines.filter((t) => t.status === "alarm").length;
@@ -2003,7 +2105,7 @@ function App() {
     }));
     const curvePowerMax = Math.max(1000, ...powerCurve.map((p) => p.y));
 
-    const selectedSite = SITES.find((s) => s.id === selected.siteId);
+    const selectedSite = sites.find((s) => s.id === selected.siteId);
     const relatedNotes = notes.filter((n) => n.turbineId === selected.id);
 
     const toolbar = (
@@ -2014,7 +2116,7 @@ function App() {
                 className="rounded border border-slate-700 bg-[#08142a] px-2 py-1"
             >
                 <option value="all">All sites</option>
-                {SITES.map((s) => (
+                {sites.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
             </select>
@@ -2106,7 +2208,7 @@ function App() {
                 <section className="relative min-h-0 flex-1">
                     {view === "map" && (
                         <div className="relative h-full min-h-[520px]">
-                            <WindFarmScene turbines={turbines} sites={SITES} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
+                            <WindFarmScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
 
                             <div className="absolute left-3 top-3 max-w-[78%] rounded-lg border border-slate-700/60 bg-[#06101fd9] p-2 backdrop-blur">
                                 {toolbar}
@@ -2322,7 +2424,7 @@ function App() {
                                 </div>
                             </div>
                             <div className="relative h-[calc(100%-2rem)] rounded-xl border border-slate-700/60 bg-[#051020]">
-                                <RelationshipGraph key={graphNonce} turbines={turbines} sites={SITES} selectedId={selected.id} statusFilter={graphFilter} onSelect={(id) => setSelectedId(id)} />
+                                <RelationshipGraph key={graphNonce} turbines={turbines} sites={sites} selectedId={selected.id} statusFilter={graphFilter} onSelect={(id) => setSelectedId(id)} />
                                 <div className="pointer-events-none absolute right-3 top-2 rounded-md border border-slate-700/60 bg-[#08142acc] px-2.5 py-2 text-[11px] text-slate-300 backdrop-blur-sm">
                                     <p className="mb-1 font-medium text-slate-400">Node types</p>
                                     <div className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#6ee7ff] bg-[#0e2a4d]" /> Fleet</div>

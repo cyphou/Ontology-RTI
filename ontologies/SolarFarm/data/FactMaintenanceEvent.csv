@@ -1,0 +1,13 @@
+EventId,ArrayId,TechnicianId,EventType,Priority,ScheduledDate,CompletedDate,DurationHours,Component,Description,CostUSD,Status
+ME-0001,CESTAS-PV-01,TECH-CESTAS-02,Corrective,Medium,2025-11-02,2025-11-06,2.5,PanelString,Corrective service on PanelString,850,Completed
+ME-0002,CESTAS-PV-02,TECH-CESTAS-01,Inspection,High,2025-11-03,2025-11-07,3.5,Tracker,Inspection service on Tracker,1200,Completed
+ME-0003,CESTAS-PV-03,TECH-CESTAS-02,Cleaning,Low,2025-11-04,,4.5,Transformer,Cleaning service on Transformer,1550,Scheduled
+ME-0004,CESTAS-PV-04,TECH-CESTAS-01,Preventive,Medium,2025-11-05,2025-11-09,5.5,Combiner Box,Preventive service on Combiner Box,1900,Completed
+ME-0005,CESTAS-PV-05,TECH-CESTAS-02,Corrective,High,2025-11-06,2025-11-10,6.5,Inverter,Corrective service on Inverter,2250,Completed
+ME-0006,CESTAS-PV-06,TECH-CESTAS-01,Inspection,Low,2025-11-07,,1.5,PanelString,Inspection service on PanelString,2600,Scheduled
+ME-0007,CESTAS-PV-07,TECH-CESTAS-02,Cleaning,Medium,2025-11-08,2025-11-12,2.5,Tracker,Cleaning service on Tracker,2950,Completed
+ME-0008,CESTAS-PV-08,TECH-CESTAS-01,Preventive,High,2025-11-09,2025-11-13,3.5,Transformer,Preventive service on Transformer,500,Completed
+ME-0009,MARVILLE-PV-01,TECH-MARVILLE-02,Corrective,Low,2025-11-10,,4.5,Combiner Box,Corrective service on Combiner Box,850,Scheduled
+ME-0010,MARVILLE-PV-02,TECH-MARVILLE-01,Inspection,Medium,2025-11-11,2025-11-15,5.5,Inverter,Inspection service on Inverter,1200,Completed
+ME-0011,MARVILLE-PV-03,TECH-MARVILLE-02,Cleaning,High,2025-11-12,2025-11-16,6.5,PanelString,Cleaning service on PanelString,1550,Completed
+ME-0012,MARVILLE-PV-04,TECH-MARVILLE-01,Preventive,Low,2025-11-13,,1.5,Tracker,Preventive service on Tracker,1900,Scheduled

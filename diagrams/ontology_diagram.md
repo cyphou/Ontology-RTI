@@ -1,4 +1,4 @@
-# Ontology Diagrams — All 6 Domains
+# Ontology Diagrams — All 7 Domains
 
 ## Domain Overview
 
@@ -10,6 +10,7 @@
 | IT Asset Management | 11 | 10 | 5 |
 | Wind Turbine | 12 | 12 | 5 |
 | Healthcare | 9 | 7 | 5 |
+| Solar Farm | 12 | 12 | 6 |
 
 ---
 
@@ -456,4 +457,46 @@ graph TB
     style HOS fill:#D32F2F,color:#fff
     style DEP fill:#D32F2F,color:#fff
     style WRD fill:#D32F2F,color:#fff
+```
+
+---
+
+## Solar Farm
+
+```mermaid
+graph TB
+    subgraph Plant
+        PLT[SolarPlant]
+        ARR[SolarArray]
+        TRF[Transformer]
+        WST[WeatherStation]
+    end
+    subgraph Array Components
+        INV[Inverter]
+        STR[PanelString]
+        TRK[Tracker]
+        SN[Sensor]
+    end
+    subgraph Operations
+        TEC[Technician]
+        MNT[MaintenanceEvent]
+        PRD[EnergyProduction]
+        ALT[Alert]
+    end
+    PLT -->|PlantHasArray| ARR
+    ARR -->|ArrayHasInverter| INV
+    ARR -->|ArrayHasString| STR
+    ARR -->|ArrayHasTracker| TRK
+    ARR -->|ArrayHasSensor| SN
+    PLT -->|PlantHasTransformer| TRF
+    PLT -->|PlantHasWeatherStation| WST
+    PLT -->|PlantHasTechnician| TEC
+    MNT -->|MaintenanceOnArray| ARR
+    MNT -->|MaintenanceByTechnician| TEC
+    PRD -->|ProductionFromArray| ARR
+    ALT -->|AlertOnArray| ARR
+    style PLT fill:#B9770E,color:#fff
+    style ARR fill:#B9770E,color:#fff
+    style TRF fill:#B9770E,color:#fff
+    style WST fill:#B9770E,color:#fff
 ```

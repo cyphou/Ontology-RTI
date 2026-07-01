@@ -1,0 +1,7 @@
+StationId,StationName,PlantId,Latitude,Longitude,ElevationM,InstallDate,Status
+WS-CESTAS,Cestas Weather Station,CESTAS,44.75,-0.67,50,2015-04-15,Operational
+WS-MARVILLE,Marville Weather Station,MARVILLE,49.46,5.43,75,2018-04-15,Operational
+WS-TOUL,Toul-Rosieres Weather Station,TOUL,48.79,5.93,100,2012-04-15,Operational
+WS-MEES,Les Mees Weather Station,MEES,44.03,6.01,125,2011-04-15,Operational
+WS-GABARDAN,Gabardan Weather Station,GABARDAN,44.03,-0.07,150,2016-04-15,Operational
+WS-MASSANGIS,Massangis Weather Station,MASSANGIS,47.63,4.03,175,2012-04-15,Operational

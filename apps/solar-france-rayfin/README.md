@@ -1,45 +1,73 @@
 
-# Fabric Apps - Analytics Template
+# Solar France Rayfin App
 
-> **⚠️ This repository is under active development.** Features and instructions may change.
+> **Geo Solar Twin Command Center · France** — an ontology-grounded, 3D digital-twin
+> command center for multi-site solar fleets across France, built on Fabric Rayfin
+> (React 19 + Vite + Three.js + Vitest).
 
-This is a starter template for building Fabric Apps - Analytics web apps. Clone this repo locally and follow the steps below to get started.
+This app visualizes live solar telemetry on a 3D geospatial map of France, exposes
+per-plant digital twins, forecasts power output, writes operational notes back to the
+Fabric ontology, and answers natural-language questions ("Ask Fabric IQ"). It ships
+fallback-safe: with no Fabric connection configured it runs on a synthetic telemetry
+generator, and it lights up real data the moment the connection aliases are set.
+
+See [ROADMAP.md](ROADMAP.md) for shipped capabilities and the forward plan, and
+[AGENTS.md](AGENTS.md) for build/agent guidance.
+
+
+## Fabric connectivity
+
+The app talks to Microsoft Fabric through three seams, all managed by the Rayfin CLI and
+all fallback-safe:
+
+| Seam | Files | Activation | Fallback when unset |
+|------|-------|------------|---------------------|
+| **Fabric host + client** | `src/lib/fabric-client.ts`, `src/fabric.generated.ts`, `fabric.yaml` | Provisioned by `rayfin` (workspace / item / tenant IDs land in `.env.local`); `getFabricClient()` proxies to the Fabric host via `postMessage` | Client no-ops locally |
+| **Live telemetry** | `src/services/live-telemetry.service.ts` | Set `VITE_LIVE_TELEMETRY_MODEL` to the deployed **SolarFarm** semantic model — DAX (Direct Lake over the Lakehouse) pulls real plant readings | Synthetic `buildFarm()` generator |
+| **Data Agent** | `src/services/data-agent.service.ts` | Set `VITE_DATA_AGENT_URL` — "Ask Fabric IQ" routes to the deployed Fabric Data Agent (source `fabriciq`) | Ontology-grounded engine (`ontology`), then pure offline engine (`local`) |
+
+The header badge and answer footers label the active source honestly
+(`Fabric Data Agent (live)` / `Ontology-grounded engine` / `Local engine (offline)`), and
+flag telemetry as **simulated** until `VITE_LIVE_TELEMETRY_MODEL` is set.
+
+> `fabric.yaml` and `src/fabric.generated.ts` are intentionally empty stubs until a real
+> semantic-model connection is wired — this is by design, not a missing step. The Rayfin
+> host IDs in `.env.local` are what connect the running app to its Fabric workspace.
 
 
 ## Prerequisites
 
 1. **Node.js (v22)**: Download and install from https://nodejs.org/dist/v22.22.2/node-v22.22.2-x64.msi
 2. **GitHub Copilot CLI**: Refer to https://github.com/github/copilot-cli
-3. **Playwright CLI**: Run `npm install -g @playwright/cli@latest` in Terminal
-4. **Azure CLI**: Install from https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest. After installation, run `az login` in your terminal to sign in to your Azure account.
+3. **Azure CLI**: Install from https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest. After installation, run `az login` to sign in to your Azure account.
 
 
-## Instructions for building a new web app
-1. **Open Terminal**: Open Terminal in the local folder where you want to clone this repo and create your app.
-2. **Clone this repo**: Run `git clone <REPO_URL> <repo_name>`. Replace `<REPO_URL>` with this repository's URL and `<repo_name>` with the name you want for your project folder.
-3. **Navigate to the repo folder**: Run `cd <repo_name>`. (Optional: Run `code` to open VS Code in that folder and open Terminal inside VS Code.)
-4. **Install dependencies**: Run `npm install`.
-5. **Launch Copilot**: In the Command Prompt (cmd) or PowerShell terminal run `copilot` to start the Copilot CLI. Then type a prompt for what you want to build. Include the name or dataset ID of the semantic model (from Power BI Service) that you want to use. (To get the dataset ID, copy the value between `...dataset/` and `/overview...` from the URL)
-6. **Preview your app**: After LLM is done, run `npm run dev` in another terminal.
-7. **Open fabric shell**: Navigate to the workspace in fabric portal and open the artifact. Then append `&devUri=http://localhost:5173` at the end.
+## Getting started
 
-<details>
-<summary><strong>💡 Tips</strong></summary>
+1. **Install dependencies**: `npm install`
+2. **Provision / refresh the Fabric host** (optional for local dev): `rayfin env` writes the
+   workspace / item / tenant IDs into `.env.local`.
+3. **Run the app**: `npm run dev`, then open http://localhost:5173.
+4. **Run the tests**: `npm test` (Vitest).
+5. **Build for Fabric**: `npm run build:fabric`.
+6. **Deploy**: `rayfin up`.
+7. **Open the Fabric shell**: open the artifact in the Fabric portal and append
+   `&devUri=http://localhost:5173` to preview local changes inside the host.
 
-- Use **Shift + Tab** in Copilot to switch to **Plan mode**, where Copilot will present a plan and ask for confirmation before writing any code.
 
-</details>
+## Enabling real Fabric data
 
-<details>
-<summary><strong>📝 Example prompts</strong></summary>
+Add the connection aliases to `.env.local` (they are read via `import.meta.env`):
 
-- `Create a sales performance dashboard using the "Contoso Sales" semantic model. Include revenue KPIs, a monthly trend line chart, top 10 stores by profit, and a regional breakdown bar chart.`
-- `Build an executive summary app for the "HR Analytics" model with headcount by department, attrition rate trends over the past 3 years, and a data grid of open positions sorted by days-to-fill.`
-- `I want a customer insights app using dataset ID 4053a155-34a9-4b74-9bc2-e162f1b27fc7. Show customer lifetime value distribution, churn risk segmentation, and a filterable table of top accounts.`
-- `Create a supply chain monitoring dashboard from the "Logistics Ops" model. I need inventory levels by warehouse, on-time delivery rate KPIs, and a heatmap of shipping delays by region and month.`
-- `Build a financial reporting app using the "GL Financials" semantic model with a P&L summary, expense breakdown by cost center, and quarter-over-quarter variance charts. Add a date range filter across all visuals.`
+```dotenv
+# Real plant telemetry from the deployed SolarFarm semantic model
+VITE_LIVE_TELEMETRY_MODEL=<semantic-model-name-or-dataset-id>
 
-</details>
+# Real natural-language answers from the deployed Fabric Data Agent
+VITE_DATA_AGENT_URL=<data-agent-endpoint>
+```
+
+With neither set, the app is fully functional on synthetic data — no Fabric round-trips.
 
 
 ## Need help?

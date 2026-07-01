@@ -1,0 +1,10 @@
+relationship dimsolararray_PlantId_dimsolarplant
+	fromColumn: dimsolararray.PlantId
+	toColumn: dimsolarplant.PlantId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_ArrayId_dimsolararray
+	isActive: false
+	fromColumn: sensortelemetry.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection

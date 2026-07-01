@@ -1,0 +1,7 @@
+PlantId,PlantName,Region,Latitude,Longitude,CapacityMWc,ArrayCount,Operator,Status
+CESTAS,Cestas,Nouvelle-Aquitaine,44.74,-0.68,300,8,Neoen,Operational
+MARVILLE,Marville,Grand Est,49.45,5.42,152,7,EDF Renouvelables,Operational
+TOUL,Toul-Rosieres,Grand Est,48.78,5.92,115,6,EDF Renouvelables,Operational
+MEES,Les Mees,Provence-Alpes-Cote d'Azur,44.02,6.00,100,6,Enerparc,Operational
+GABARDAN,Gabardan,Nouvelle-Aquitaine,44.02,-0.08,76,5,EDF Renouvelables,Operational
+MASSANGIS,Massangis,Bourgogne-Franche-Comte,47.62,4.02,56,5,Neoen,Operational

@@ -1,14 +1,14 @@
-# Wind Turbine Rayfin App — Roadmap
+# Solar France Rayfin App — Roadmap
 
-> Geo wind‑twin command center built on Fabric Rayfin (React 19 + Three.js + Vitest).
-> Last updated: 2026‑06‑30
+> Geo solar‑twin command center built on Fabric Rayfin (React 19 + Three.js + Vitest).
+> Last updated: 2026‑07‑01
 
 ---
 
 ## Vision
 
-An ontology‑grounded digital‑twin command center for multi‑site wind fleets: live 3D
-geospatial monitoring, per‑turbine digital twins, forecasting, writeback to the Fabric
+An ontology‑grounded digital‑twin command center for multi‑site solar fleets across France: live 3D
+geospatial monitoring, per‑plant digital twins, forecasting, writeback to the Fabric
 ontology, and natural‑language operations ("Ask Fabric IQ").
 
 ---
@@ -17,21 +17,21 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 
 | Area | Capability |
 |------|------------|
-| **Map view** | 3D geospatial multi‑site farm, auto‑orbit camera, canvas world map, raycaster turbine picking, status coloring |
-| **Digital Twin view** | Single scaled‑up turbine scene, ontology entity panel, live signal meters, related dispatch notes, turbine picker (dropdown + prev/next) |
+| **Map view** | 3D geospatial multi‑site solar map of France, auto‑orbit camera, canvas world map, raycaster plant picking, status coloring |
+| **Digital Twin view** | Single scaled‑up solar‑plant scene, ontology entity panel, live signal meters, related dispatch notes, plant picker (dropdown + prev/next) |
 | **Zoom** | Mouse‑wheel + ＋/－/⟳ controls on map and twin scenes; zoom works while paused |
-| **Analytics view** | Fleet KPIs, output by site, fleet health, top performers, average wind by site |
+| **Analytics view** | Fleet KPIs, output by site, fleet health, top performers, average irradiance by site |
 | **Operations view** | Telemetry detail, sparkline with forecast overlay (predicted value + confidence band), power forecast (linear regression), writeback form (acknowledge/setpoint/note) |
 | **Alerts view** | Active alarms/warnings list, acknowledge workflow persisted with who/when, show‑acknowledged toggle, unacknowledged badge on the nav rail, predictive anomaly watch |
-| **Graph view** | Interactive ontology relationship graph (Fleet → Site → Turbine) with zoom, pan, hover edge‑tracing, status filter, and reset |
+| **Graph view** | Interactive ontology relationship graph (Fleet → Site → Plant) with zoom, pan, hover edge‑tracing, status filter, and reset |
 | **Forecasting** | Linear‑regression forecast with confidence bands, multi‑horizon (3/6/12), sparkline overlay |
-| **Alarm automation** | Auto‑writes a `DispatchNote` the first time a turbine crosses into alarm (deduped per onset) |
+| **Alarm automation** | Auto‑writes a `DispatchNote` the first time a plant crosses into alarm (deduped per onset) |
 | **Deep‑linking** | `view` + `selectedId` encoded in the URL hash for shareable views |
 | **Ask Fabric IQ** | Grounded NL Q&A over telemetry + sites + notes, suggested questions |
-| **Ontology backend** | `WindSite` + `DispatchNote` entities, ensure‑sites bootstrap, dispatch note persistence |
-| **Shell** | Menu‑driven nav rail (with badges), KPI header strip, pause/resume, refresh interval, turbine detail modal |
+| **Ontology backend** | `SolarSite` + `DispatchNote` entities, ensure‑sites bootstrap, dispatch note persistence |
+| **Shell** | Menu‑driven nav rail (with badges), KPI header strip, pause/resume, refresh interval, plant detail modal |
 | **Bundle** | Three.js split into its own cached chunk via `manualChunks` |
-| **Quality** | 33 passing tests, clean `build:fabric`, one‑command `rayfin up` deploy |
+| **Quality** | 56 passing tests, clean `build:fabric`, one‑command `rayfin up` deploy |
 
 ---
 
@@ -46,17 +46,17 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 
 ## 🟡 Mid term
 
-- [x] **Relationship graph view** — interactive ontology graph (turbine → site → fleet) with zoom/pan/hover/filter.
+- [x] **Relationship graph view** — interactive ontology graph (plant → site → fleet) with zoom/pan/hover/filter.
 - [x] **Forecast confidence + multi‑horizon** — confidence bands and selectable 3/6/12‑tick horizons.
 - [ ] **Role‑based writeback** — operator vs viewer permissions on dispatch/setpoint actions.
-- [ ] **Per‑site drill‑down dashboard** — site‑scoped KPIs and turbine grid.
+- [ ] **Per‑site drill‑down dashboard** — site‑scoped KPIs and plant grid.
 - [ ] **Mobile / responsive layout** — collapsible nav rail and stacked panels.
 
 ## 🟢 Long term
 
 - [~] **Anomaly detection** — predictive anomaly watch + auto‑logging shipped; next: model‑based failure prediction from trends.
 - [ ] **Teams proactive alerts** — push alarm notifications via the Operations Agent.
-- [ ] **Multi‑ontology / domain switch** — reuse the shell for the other accelerator domains (Solar, Manufacturing, etc.).
+- [ ] **Multi‑ontology / domain switch** — reuse the shell for the other accelerator domains (Wind, Manufacturing, etc.).
 - [ ] **Scenario / what‑if simulator** — model curtailment and maintenance windows against forecast output.
 
 ---

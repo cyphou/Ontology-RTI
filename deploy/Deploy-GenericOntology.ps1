@@ -320,7 +320,17 @@ Write-Step "Step 4b: Deploying Eventstream for real-time telemetry"
 $esScript = Join-Path $scriptDir "Deploy-Eventstream.ps1"
 if (Test-Path $esScript) {
     try {
-        & $esScript -WorkspaceId $WorkspaceId -OntologyType $OntologyType
+        # Resolve the KQL Database for THIS Eventhouse so the stream binds to the
+        # correct destination even when the workspace holds multiple Eventhouses.
+        $esKqlDbId = $null
+        try {
+            $esKqlInfo = Invoke-FabricApi -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/kqlDatabases" -Token $fabricToken
+            $esKqlDb = $esKqlInfo.value | Where-Object { $_.displayName -eq $EventhouseName }
+            if ($esKqlDb) { $esKqlDbId = $esKqlDb.id }
+        } catch { Write-Warn "KQL DB lookup for Eventstream failed (will auto-detect): $_" }
+        $esParams = @{ WorkspaceId = $WorkspaceId; OntologyType = $OntologyType; EventhouseName = $EventhouseName }
+        if ($esKqlDbId) { $esParams['KqlDatabaseId'] = $esKqlDbId }
+        & $esScript @esParams
         Write-Success "Eventstream deployed"
     } catch { Write-Warn "Eventstream issue: $_" }
 } else { Write-Info "Skipping Eventstream (script not found)" }
@@ -512,7 +522,24 @@ if (-not $SkipDataAgent) {
 Write-Step "Step 9: Deploying Graph Query Set"
 $gqsScript = Join-Path $scriptDir "Deploy-GraphQuerySet.ps1"
 if (Test-Path $gqsScript) {
-    try { & $gqsScript -WorkspaceId $WorkspaceId -OntologyType $OntologyType -OntologyFolder $OntologyFolder; Write-Success "Graph Query Set deployed" }
+    try {
+        # Resolve the GraphModel tied to this ontology so queries bind to the
+        # correct graph even when multiple GraphModels exist in the workspace.
+        $gqsGraphModelId = $null
+        try {
+            $gmItems = (Invoke-FabricApi -Method Get -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=GraphModel" -Token $fabricToken).value
+            if ($gmItems) {
+                $gmMatch = @($gmItems | Where-Object { $_.displayName -like "*$OntologyName*" })
+                if ($gmMatch.Count -eq 0) { $gmMatch = @($gmItems | Where-Object { $_.displayName -like '*Ontology*graph*' }) }
+                if ($gmMatch.Count -eq 1) { $gqsGraphModelId = $gmMatch[0].id }
+                elseif (@($gmItems).Count -eq 1) { $gqsGraphModelId = $gmItems[0].id }
+            }
+        } catch { Write-Warn "GraphModel lookup failed (will auto-detect): $_" }
+        $gqsParams = @{ WorkspaceId = $WorkspaceId; OntologyType = $OntologyType; OntologyFolder = $OntologyFolder }
+        if ($gqsGraphModelId) { $gqsParams['GraphModelId'] = $gqsGraphModelId }
+        & $gqsScript @gqsParams
+        Write-Success "Graph Query Set deployed"
+    }
     catch { Write-Warn "Graph Query Set issue: $_" }
 }
 
