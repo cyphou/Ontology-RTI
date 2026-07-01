@@ -26,6 +26,7 @@ file ownership, and clear boundaries.
 | **@deployer** | Deployment, auth, gateway, telemetry | Deployment modules |
 | **@reviewer** | Artifact quality review, preceptorship loop | Quality review modules |
 | **@tester** | Tests, coverage, fixtures, regression | `tests/` |
+| **@fabric-apps** | Rayfin app features, cross-app parity, telemetry UX, scene performance | `apps/*-rayfin/src/**` |
 
 ## Architecture Diagram
 

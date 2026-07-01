@@ -3,21 +3,21 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Copilot%20Agents-7-5391FE?style=for-the-badge&logo=github&logoColor=white" alt="7 Agents"/>
+  <img src="https://img.shields.io/badge/Copilot%20Agents-8-5391FE?style=for-the-badge&logo=github&logoColor=white" alt="8 Agents"/>
   <img src="https://img.shields.io/badge/Multi--Agent-Architecture-742774?style=for-the-badge" alt="Multi-Agent"/>
 </p>
 
 <h1 align="center">:robot: Multi-Agent Architecture</h1>
 
 <p align="center">
-  <b>7 specialized Copilot agents for ontology design and deployment</b>
+  <b>8 specialized Copilot agents for ontology design, deployment, and Fabric app engineering</b>
 </p>
 
 ---
 
 ## :globe_with_meridians: Overview
 
-This project uses a **multi-agent architecture** with 7 specialized GitHub Copilot agents and a shared instruction set. Each agent has deep expertise in a specific phase of ontology design and deployment across **7 industry domains**: Oil & Gas Refinery, Smart Building, Manufacturing Plant, IT Asset Management, Wind Turbine, Healthcare, and Solar Farm.
+This project uses a **multi-agent architecture** with 8 specialized GitHub Copilot agents and a shared instruction set. Each agent has deep expertise in a specific phase of ontology design, deployment, and Fabric app engineering across **7 industry domains**: Oil & Gas Refinery, Smart Building, Manufacturing Plant, IT Asset Management, Wind Turbine, Healthcare, and Solar Farm.
 
 ```mermaid
 flowchart TB
@@ -31,6 +31,7 @@ flowchart TB
     ORCH --> DEP["Deployer\nFabric REST API\nLakehouse / Eventhouse\nNotebook / Semantic Model"]
     ORCH --> DB["Dashboard Builder\nKQL tiles\nreal-time visuals\nauto-refresh"]
     ORCH --> AB["Agent Builder\nData Agent\nOperations Agent\nTeams integration"]
+    ORCH --> FAB["Fabric Apps\nRayfin apps\nlive telemetry\nscene performance"]
 
     style USER fill:#333,color:#fff
     style ORCH fill:#742774,color:#fff
@@ -40,6 +41,7 @@ flowchart TB
     style DEP fill:#FF6F00,color:#fff
     style DB fill:#0078D4,color:#fff
     style AB fill:#FF6F00,color:#fff
+    style FAB fill:#1f6feb,color:#fff
 ```
 
 ---
@@ -76,6 +78,7 @@ connection aliases are set.
 | :rocket: | **Deployer** | Fabric REST API, Lakehouse, Eventhouse, Notebook, Semantic Model | `deploy/*.ps1` | `deploy/*.ps1` |
 | :bar_chart: | **Dashboard Builder** | RTI Dashboard KQL tiles, real-time visualizations | `Deploy-RTIDashboard.ps1` | `*RTIDashboard*` |
 | :robot: | **Agent Builder** | Data Agent, Operations Agent, Teams integration | `Deploy-DataAgent.ps1`, `Deploy-OperationsAgent.ps1` | `*Agent.ps1` |
+| :desktop_computer: | **Fabric Apps** | Rayfin app features, parity, telemetry UX, scene performance | `apps/*-rayfin/src/**` | `apps/*-rayfin/src/**/*.ts(x)` |
 
 ---
 
@@ -92,6 +95,7 @@ flowchart LR
         F4["deploy/*.ps1"]
         F5["*RTIDashboard*"]
         F6["*Agent.ps1"]
+        F7["apps/*-rayfin/src/**/*.ts(x)"]
     end
 
     subgraph Agents["Active Agent"]
@@ -101,6 +105,7 @@ flowchart LR
         A4["Deployer"]
         A5["Dashboard Builder"]
         A6["Agent Builder"]
+        A7["Fabric Apps"]
     end
 
     F1 --> A1
@@ -109,6 +114,7 @@ flowchart LR
     F4 --> A4
     F5 --> A5
     F6 --> A6
+    F7 --> A7
 
     style A1 fill:#107C10,color:#fff
     style A2 fill:#0078D4,color:#fff
@@ -116,6 +122,7 @@ flowchart LR
     style A4 fill:#FF6F00,color:#fff
     style A5 fill:#0078D4,color:#fff
     style A6 fill:#FF6F00,color:#fff
+    style A7 fill:#1f6feb,color:#fff
 ```
 
 ---
