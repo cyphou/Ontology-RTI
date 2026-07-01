@@ -282,8 +282,14 @@ OntologyAccelerator/
 |   |-- ManufacturingPlant/                  <-- Manufacturing domain
 |   |-- ITAsset/                             <-- IT Asset domain
 |   |-- WindTurbine/                         <-- Wind Turbine domain
-|   +-- Healthcare/                          <-- Healthcare domain
+|   |-- Healthcare/                          <-- Healthcare domain
+|   +-- SolarFarm/                           <-- Solar Farm domain
 |       +-- (same structure per domain)
+|
+|-- apps/                                    <-- Browser digital-twin front-ends (Fabric Rayfin)
+|   |-- wind-turbine-rayfin/                 <-- Geo Wind Twin (WindTurbine model)
+|   |-- solar-france-rayfin/                 <-- Geo Solar Twin, France (SolarFarm model)
+|   +-- refinery-worldwide-rayfin/           <-- Geo Refinery Twin (OilGasRefinery model)
 |
 |-- .github/
 |   |-- workflows/ci.yml                     <-- GitHub Actions CI pipeline
@@ -745,6 +751,27 @@ flowchart LR
 
 ---
 
+## :globe_with_meridians: Fabric Apps (browser digital twins)
+
+Beyond the PowerShell/Python deployment engine, the repo ships **browser-based 3D digital-twin
+command centers** under `apps/`, each built on **Fabric Rayfin** (React 19 + Vite + Three.js +
+Vitest). Every app renders live telemetry on a geospatial 3D map, exposes per-asset digital twins,
+and answers natural-language questions ("Ask Fabric IQ"). All three ship **fallback-safe**: with no
+Fabric connection configured they run on a synthetic telemetry generator, and they light up real
+data the moment the connection aliases (`VITE_LIVE_TELEMETRY_MODEL`, `VITE_DATA_AGENT_URL`) are set.
+
+| Scenario / Domain | App | Semantic Model | Geo Scope |
+|-------------------|-----|----------------|-----------|
+| :wind_face: **Wind Turbine** | [apps/wind-turbine-rayfin](apps/wind-turbine-rayfin/README.md) | `WindTurbine` | Multi-site fleet (world) |
+| :sunny: **Solar Farm** | [apps/solar-france-rayfin](apps/solar-france-rayfin/README.md) | `SolarFarm` | Multi-site fleet (France) |
+| :oil_drum: **Oil & Gas Refinery** | [apps/refinery-worldwide-rayfin](apps/refinery-worldwide-rayfin/README.md) | `OilGasRefinery` | Multi-site fleet (worldwide) |
+
+> The remaining domains (Smart Building, Manufacturing, IT Asset, Healthcare) currently ship the
+> ontology/deployment layer only — no browser app yet. Each app's `README.md` covers prerequisites,
+> getting started, and how to enable real Fabric data.
+
+---
+
 ## :toolbox: Additional Tools
 
 | Script | Description |
@@ -773,6 +800,9 @@ flowchart LR
 | :triangular_ruler: | [SEMANTIC_MODEL_GUIDE.md](SEMANTIC_MODEL_GUIDE.md) | Power BI semantic model configuration |
 | :robot: | [AGENTS.md](AGENTS.md) | Multi-agent architecture and Copilot agent definitions |
 | :clipboard: | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) | Sprint roadmap and development plan |
+| :globe_with_meridians: | [apps/wind-turbine-rayfin/README.md](apps/wind-turbine-rayfin/README.md) | Geo Wind Twin Command Center — browser digital-twin app (WindTurbine) |
+| :globe_with_meridians: | [apps/solar-france-rayfin/README.md](apps/solar-france-rayfin/README.md) | Geo Solar Twin Command Center · France — browser digital-twin app (SolarFarm) |
+| :globe_with_meridians: | [apps/refinery-worldwide-rayfin/README.md](apps/refinery-worldwide-rayfin/README.md) | Geo Refinery Twin Command Center · Worldwide — browser digital-twin app (OilGasRefinery) |
 | :wind_face: | [docs/WIND_TURBINE_RAYFIN_PLAN.md](docs/WIND_TURBINE_RAYFIN_PLAN.md) | Execution plan for the Rayfin + Three.js wind farm digital twin series |
 | :calendar: | [docs/WIND_TURBINE_RAYFIN_ROADMAP.md](docs/WIND_TURBINE_RAYFIN_ROADMAP.md) | Sprint roadmap, milestones, ownership, and KPI tracking for the series |
 | :checkered_flag: | [docs/WIND_TURBINE_RAYFIN_TASKBOARD.csv](docs/WIND_TURBINE_RAYFIN_TASKBOARD.csv) | Import-ready backlog for GitHub Projects or task tracking tools |
