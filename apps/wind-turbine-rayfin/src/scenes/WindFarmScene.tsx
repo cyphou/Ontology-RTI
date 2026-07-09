@@ -60,6 +60,7 @@ export default function WindFarmScene({
     const sceneRef = useRef<SceneState | null>(null);
     const pausedRef = useRef(paused);
     const zoomRef = useRef(0.62);
+    const panRef = useRef<{ x: number; z: number }>({ x: 0, z: 0 });
 
     useEffect(() => {
         pausedRef.current = paused;
@@ -275,7 +276,19 @@ export default function WindFarmScene({
             });
         });
 
+        // Track drag state so a pan gesture never selects a turbine, and so the
+        // click handler can tell a genuine click from the end of a drag.
+        let dragging = false;
+        let dragMoved = false;
+        let lastPointerX = 0;
+        let lastPointerY = 0;
+        renderer.domElement.style.cursor = "grab";
+        renderer.domElement.style.touchAction = "none";
+
         const onClick = (event: MouseEvent) => {
+            if (dragMoved) {
+                return;
+            }
             const rect = renderer.domElement.getBoundingClientRect();
             pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -287,6 +300,42 @@ export default function WindFarmScene({
             }
         };
         renderer.domElement.addEventListener("click", onClick);
+
+        // Drag anywhere on the canvas to pan the map across the ocean plane. The
+        // pan offset shifts both the camera and its look-at target, so zoom and
+        // the gentle auto-orbit keep working on top of it.
+        const onPointerDown = (event: PointerEvent) => {
+            dragging = true;
+            dragMoved = false;
+            lastPointerX = event.clientX;
+            lastPointerY = event.clientY;
+            renderer.domElement.style.cursor = "grabbing";
+            renderer.domElement.setPointerCapture?.(event.pointerId);
+        };
+        const onPointerMove = (event: PointerEvent) => {
+            if (!dragging) {
+                return;
+            }
+            const dx = event.clientX - lastPointerX;
+            const dy = event.clientY - lastPointerY;
+            if (Math.abs(dx) + Math.abs(dy) > 3) {
+                dragMoved = true;
+            }
+            lastPointerX = event.clientX;
+            lastPointerY = event.clientY;
+            const factor = 0.11 * zoomRef.current;
+            panRef.current.x = THREE.MathUtils.clamp(panRef.current.x - dx * factor, -70, 70);
+            panRef.current.z = THREE.MathUtils.clamp(panRef.current.z - dy * factor, -46, 46);
+        };
+        const onPointerUp = (event: PointerEvent) => {
+            dragging = false;
+            renderer.domElement.style.cursor = "grab";
+            renderer.domElement.releasePointerCapture?.(event.pointerId);
+        };
+        renderer.domElement.addEventListener("pointerdown", onPointerDown);
+        renderer.domElement.addEventListener("pointermove", onPointerMove);
+        renderer.domElement.addEventListener("pointerup", onPointerUp);
+        renderer.domElement.addEventListener("pointerleave", onPointerUp);
 
         const onWheel = (event: WheelEvent) => {
             event.preventDefault();
@@ -315,10 +364,12 @@ export default function WindFarmScene({
             oceanTexture.offset.x = tick * 0.0015;
             oceanTexture.offset.y = Math.sin(tick * 0.05) * 0.01;
             const z = zoomRef.current;
-            camera.position.x = (26 + Math.sin(tick * 0.17) * 9) * z;
+            const px = panRef.current.x;
+            const pz = panRef.current.z;
+            camera.position.x = (26 + Math.sin(tick * 0.17) * 9) * z + px;
             camera.position.y = 36 * z;
-            camera.position.z = (61 + Math.cos(tick * 0.13) * 5) * z;
-            camera.lookAt(0, 0, 0);
+            camera.position.z = (61 + Math.cos(tick * 0.13) * 5) * z + pz;
+            camera.lookAt(px, 0, pz);
             renderer.render(scene, camera);
         };
         renderer.setAnimationLoop(animate);
@@ -326,6 +377,10 @@ export default function WindFarmScene({
         const cleanup = () => {
             renderer.setAnimationLoop(null);
             renderer.domElement.removeEventListener("click", onClick);
+            renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+            renderer.domElement.removeEventListener("pointermove", onPointerMove);
+            renderer.domElement.removeEventListener("pointerup", onPointerUp);
+            renderer.domElement.removeEventListener("pointerleave", onPointerUp);
             renderer.domElement.removeEventListener("wheel", onWheel);
             window.removeEventListener("resize", onResize);
             renderer.dispose();
@@ -382,7 +437,7 @@ export default function WindFarmScene({
             <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
                 <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.15, 0.4, 1.8); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
                 <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.15, 0.4, 1.8); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button type="button" title="Reset zoom" onClick={() => { zoomRef.current = 0.62; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
+                <button type="button" title="Reset view" onClick={() => { zoomRef.current = 0.62; panRef.current = { x: 0, z: 0 }; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
             </div>
         </div>
     );
