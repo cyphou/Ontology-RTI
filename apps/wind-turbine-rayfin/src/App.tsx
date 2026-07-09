@@ -1190,6 +1190,42 @@ export function forecastEscalation(scores: number[]): EscalationForecast {
     return { direction, slopePerTick: +slope.toFixed(3), etaToAlarmTicks };
 }
 
+export interface ScenarioInput {
+    baselineKw: number;
+    curtailmentPct: number;
+    downtimeTicks: number;
+    horizonTicks: number;
+}
+
+export interface ScenarioResult {
+    projectedKw: number;
+    runningTicks: number;
+    energyBaselineKwt: number;
+    energyScenarioKwt: number;
+    energyDeltaKwt: number;
+}
+
+// Pure what-if model: apply a curtailment (% output reduction while running) and a
+// maintenance downtime (ticks offline) to a baseline output over a horizon, and
+// report projected output plus the energy delta (output x ticks) vs doing nothing.
+export function simulateScenario(input: ScenarioInput): ScenarioResult {
+    const baseline = Math.max(0, input.baselineKw);
+    const curtail = Math.min(100, Math.max(0, input.curtailmentPct));
+    const horizon = Math.max(0, Math.round(input.horizonTicks));
+    const downtime = Math.min(horizon, Math.max(0, Math.round(input.downtimeTicks)));
+    const projectedKw = Math.round(baseline * (1 - curtail / 100));
+    const runningTicks = horizon - downtime;
+    const energyBaselineKwt = baseline * horizon;
+    const energyScenarioKwt = projectedKw * runningTicks;
+    return {
+        projectedKw,
+        runningTicks,
+        energyBaselineKwt,
+        energyScenarioKwt,
+        energyDeltaKwt: energyScenarioKwt - energyBaselineKwt,
+    };
+}
+
 // Ids of turbines that transitioned into "alarm" since the previous status snapshot.
 export function newlyAlarmed(prev: Record<string, TurbineStatus>, turbines: { id: string; status: TurbineStatus }[]): string[] {
     return turbines.filter((t) => t.status === "alarm" && prev[t.id] !== "alarm").map((t) => t.id);
@@ -1937,6 +1973,9 @@ function App() {
     const [thresholdNonce, setThresholdNonce] = useState(0);
 
     const [forecastHorizon, setForecastHorizon] = useState(5);
+    const [simCurtail, setSimCurtail] = useState(0);
+    const [simDowntime, setSimDowntime] = useState(0);
+    const [simHorizon, setSimHorizon] = useState(12);
     const [historyWindow, setHistoryWindow] = useState<HistoryWindow>("6h");
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
@@ -2242,6 +2281,8 @@ function App() {
     const healthy = visibleTurbines.length - alarms - warnings;
 
     const siteSummaries = useMemo(() => summarizeSites(turbines, sites), [turbines, sites]);
+
+    const scenario = simulateScenario({ baselineKw: selected.powerKw, curtailmentPct: simCurtail, downtimeTicks: simDowntime, horizonTicks: simHorizon });
 
     const runAsk = useCallback(async (override?: string) => {
         setAskLoading(true);
@@ -2969,6 +3010,29 @@ function App() {
                                         </button>
                                         {writebackMessage && <p className="text-xs text-emerald-300">{writebackMessage}</p>}
                                     </div>
+                                </Panel>
+
+                                <Panel title="What-if simulator">
+                                    <p className="mb-2 text-[11px] text-slate-400">Model curtailment and a maintenance window on {selected.id} against its current output baseline.</p>
+                                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
+                                        <label className="flex flex-col gap-1">
+                                            Curtail %
+                                            <input type="number" min={0} max={100} value={simCurtail} onChange={(e) => setSimCurtail(Number(e.target.value))} aria-label="Curtailment percent" className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                        </label>
+                                        <label className="flex flex-col gap-1">
+                                            Downtime (t)
+                                            <input type="number" min={0} max={simHorizon} value={simDowntime} onChange={(e) => setSimDowntime(Number(e.target.value))} aria-label="Maintenance downtime ticks" className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                        </label>
+                                        <label className="flex flex-col gap-1">
+                                            Horizon (t)
+                                            <input type="number" min={1} max={96} value={simHorizon} onChange={(e) => setSimHorizon(Number(e.target.value))} aria-label="Scenario horizon ticks" className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                        </label>
+                                    </div>
+                                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
+                                        <div className="flex justify-between"><dt className="text-slate-400">Projected output</dt><dd>{scenario.projectedKw.toLocaleString()} kW</dd></div>
+                                        <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
+                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
+                                    </dl>
                                 </Panel>
 
                                 <Panel

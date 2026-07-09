@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -165,6 +165,28 @@ describe("forecastEscalation", () => {
 
     it("treats a flat trend as stable", () => {
         expect(forecastEscalation([0.5, 0.5, 0.5, 0.5]).direction).toBe("stable");
+    });
+});
+
+describe("simulateScenario", () => {
+    it("applies curtailment to projected output", () => {
+        const r = simulateScenario({ baselineKw: 1000, curtailmentPct: 25, downtimeTicks: 0, horizonTicks: 10 });
+        expect(r.projectedKw).toBe(750);
+        expect(r.runningTicks).toBe(10);
+        expect(r.energyDeltaKwt).toBe(750 * 10 - 1000 * 10);
+    });
+
+    it("models a maintenance window as offline ticks", () => {
+        const r = simulateScenario({ baselineKw: 1000, curtailmentPct: 0, downtimeTicks: 4, horizonTicks: 10 });
+        expect(r.runningTicks).toBe(6);
+        expect(r.energyScenarioKwt).toBe(1000 * 6);
+    });
+
+    it("clamps inputs and caps downtime at the horizon", () => {
+        const r = simulateScenario({ baselineKw: -50, curtailmentPct: 150, downtimeTicks: 20, horizonTicks: 8 });
+        expect(r.projectedKw).toBe(0);
+        expect(r.runningTicks).toBe(0);
+        expect(r.energyDeltaKwt).toBe(0);
     });
 });
 

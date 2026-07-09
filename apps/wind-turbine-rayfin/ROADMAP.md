@@ -58,7 +58,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 - [x] **Anomaly detection** — predictive anomaly watch + auto‑logging, plus slope‑based escalation forecast (rising/falling trend + ETA‑to‑alarm) from a rolling anomaly‑score window.
 - [ ] **Teams proactive alerts** — push alarm notifications via the Operations Agent.
 - [ ] **Multi‑ontology / domain switch** — reuse the shell for the other accelerator domains (Solar, Manufacturing, etc.).
-- [ ] **Scenario / what‑if simulator** — model curtailment and maintenance windows against forecast output.
+- [x] **Scenario / what‑if simulator** — model curtailment and maintenance windows against forecast output.
 
 ---
 

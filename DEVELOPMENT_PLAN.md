@@ -237,7 +237,7 @@ gantt
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | ✅ Done |
 | 🕰️ | Selectable history window (1h / 6h / 24h) on the sparkline | 🟡 Medium | ✅ Done |
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
-| 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | 🔲 |
+| 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | ✅ Done |
 | 🏗️ | Multi-domain app shell for the remaining four domains | 🟢 Low | 🔲 |
 
 **Shipped increment — `Aug 2026`:**
