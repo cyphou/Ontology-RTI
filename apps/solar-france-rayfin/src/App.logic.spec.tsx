@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -141,6 +141,39 @@ describe("classifyAskIntent", () => {
 
     it("keeps ambiguous prompts in hybrid mode", () => {
         expect(classifyAskIntent("Why is CESTAS-PV-01 underperforming?")).toBe("hybrid");
+    });
+});
+
+describe("summarizeSites", () => {
+    const plants = [
+        { siteId: "A", status: "healthy" as const, powerKw: 1000, irradianceWm2: 600, moduleTempC: 50, inverterLoadPct: 70 },
+        { siteId: "A", status: "alarm" as const, powerKw: 500, irradianceWm2: 400, moduleTempC: 90, inverterLoadPct: 98 },
+        { siteId: "B", status: "warning" as const, powerKw: 800, irradianceWm2: 500, moduleTempC: 70, inverterLoadPct: 92 },
+    ];
+    const sites = [
+        { id: "A", name: "Alpha", capacityMw: 1 },
+        { id: "B", name: "Bravo", capacityMw: 2 },
+        { id: "C", name: "Charlie", capacityMw: 3 },
+    ];
+
+    it("rolls plants into per-site totals and health counts", () => {
+        const [a, b, c] = summarizeSites(plants, sites);
+        expect(a).toMatchObject({ id: "A", plantCount: 2, totalKw: 1500, alarms: 1, warnings: 0, healthy: 1 });
+        expect(b).toMatchObject({ id: "B", plantCount: 1, totalKw: 800, alarms: 0, warnings: 1, healthy: 0 });
+        expect(c).toMatchObject({ id: "C", plantCount: 0, totalKw: 0, alarms: 0, warnings: 0, healthy: 0 });
+    });
+
+    it("computes capacity factor against rated MW and zero-safe empty sites", () => {
+        const [a, , c] = summarizeSites(plants, sites);
+        expect(a.ratedMw).toBe(2);
+        expect(a.capacityFactor).toBeCloseTo(75, 5);
+        expect(c.capacityFactor).toBe(0);
+    });
+
+    it("averages signal readings per site", () => {
+        const [a] = summarizeSites(plants, sites);
+        expect(a.avgModuleTempC).toBeCloseTo(70, 5);
+        expect(a.avgInverterLoadPct).toBeCloseTo(84, 5);
     });
 });
 

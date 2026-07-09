@@ -50,7 +50,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 - [x] **Forecast confidence + multi‑horizon** — confidence bands and selectable 3/6/12‑tick horizons.
 - [x] **Selectable history windows** — 1h / 6h / 24h sparkline and forecast context for live and fallback history.
 - [x] **Role‑based writeback** — operator vs viewer permissions on dispatch/setpoint actions.
-- [ ] **Per‑site drill‑down dashboard** — site‑scoped KPIs and turbine grid.
+- [x] **Per‑site drill‑down dashboard** — site‑scoped KPIs and turbine grid.
 - [x] **Mobile / responsive layout** — collapsible nav rail and stacked panels.
 
 ## 🟢 Long term
@@ -65,8 +65,8 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 ## Cross‑cutting / tech debt
 
 - [ ] Expand test coverage beyond render smoke test (scene helpers, forecast math, filter logic).
-- [ ] Extract Three.js scene logic from `App.tsx` into dedicated modules as it grows.
-- [ ] Add error boundaries around the 3D canvases.
+- [x] Extract Three.js scene logic from `App.tsx` into dedicated modules as it grows.
+- [x] Add error boundaries around the 3D canvases.
 - [ ] Accessibility pass (keyboard nav, ARIA on nav rail and controls).
 
 ---

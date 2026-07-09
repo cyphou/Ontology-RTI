@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -141,6 +141,40 @@ describe("classifyAskIntent", () => {
 
     it("keeps ambiguous prompts in hybrid mode", () => {
         expect(classifyAskIntent("Why is JAMNAGAR-U-01 underperforming?")).toBe("hybrid");
+    });
+});
+
+describe("summarizeSites", () => {
+    const units = [
+        { siteId: "A", status: "healthy" as const, powerKw: 600, irradianceWm2: 620, moduleTempC: 350, inverterLoadPct: 70 },
+        { siteId: "A", status: "alarm" as const, powerKw: 400, irradianceWm2: 420, moduleTempC: 440, inverterLoadPct: 98 },
+        { siteId: "B", status: "warning" as const, powerKw: 800, irradianceWm2: 500, moduleTempC: 400, inverterLoadPct: 92 },
+    ];
+    const sites = [
+        { id: "A", name: "Alpha", capacityMw: 1000 },
+        { id: "B", name: "Bravo", capacityMw: 2000 },
+        { id: "C", name: "Charlie", capacityMw: 3000 },
+    ];
+
+    it("rolls units into per-site totals and health counts", () => {
+        const [a, b, c] = summarizeSites(units, sites);
+        expect(a).toMatchObject({ id: "A", unitCount: 2, totalKbd: 1000, alarms: 1, warnings: 0, healthy: 1 });
+        expect(b).toMatchObject({ id: "B", unitCount: 1, totalKbd: 800, alarms: 0, warnings: 1, healthy: 0 });
+        expect(c).toMatchObject({ id: "C", unitCount: 0, totalKbd: 0, alarms: 0, warnings: 0, healthy: 0 });
+    });
+
+    it("computes utilization against rated kbd and zero-safe empty sites", () => {
+        const [a, , c] = summarizeSites(units, sites);
+        // rated = 1000 kbd * 2 units = 2000 kbd; throughput 1000 kbd => 50%.
+        expect(a.ratedKbd).toBe(2000);
+        expect(a.utilization).toBeCloseTo(50, 5);
+        expect(c.utilization).toBe(0);
+    });
+
+    it("averages signal readings per site", () => {
+        const [a] = summarizeSites(units, sites);
+        expect(a.avgUnitTempC).toBeCloseTo(395, 5);
+        expect(a.avgUtilizationPct).toBeCloseTo(84, 5);
     });
 });
 

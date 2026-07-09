@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -141,6 +141,41 @@ describe("classifyAskIntent", () => {
 
     it("keeps ambiguous prompts in hybrid mode", () => {
         expect(classifyAskIntent("Why is SITE-TX-WT-01 underperforming?")).toBe("hybrid");
+    });
+});
+
+describe("summarizeSites", () => {
+    const turbines = [
+        { siteId: "A", status: "healthy" as const, powerKw: 1000, windMs: 10, nacelleTempC: 50, vibrationMmS: 3 },
+        { siteId: "A", status: "alarm" as const, powerKw: 500, windMs: 12, nacelleTempC: 90, vibrationMmS: 9 },
+        { siteId: "B", status: "warning" as const, powerKw: 800, windMs: 8, nacelleTempC: 70, vibrationMmS: 5 },
+    ];
+    const sites = [
+        { id: "A", name: "Alpha", capacityMw: 1 },
+        { id: "B", name: "Bravo", capacityMw: 2 },
+        { id: "C", name: "Charlie", capacityMw: 3 },
+    ];
+
+    it("rolls turbines into per-site totals and health counts", () => {
+        const [a, b, c] = summarizeSites(turbines, sites);
+        expect(a).toMatchObject({ id: "A", turbineCount: 2, totalKw: 1500, alarms: 1, warnings: 0, healthy: 1 });
+        expect(b).toMatchObject({ id: "B", turbineCount: 1, totalKw: 800, alarms: 0, warnings: 1, healthy: 0 });
+        expect(c).toMatchObject({ id: "C", turbineCount: 0, totalKw: 0, alarms: 0, warnings: 0, healthy: 0 });
+    });
+
+    it("computes capacity factor against rated MW and zero-safe empty sites", () => {
+        const [a, , c] = summarizeSites(turbines, sites);
+        // rated = 1 MW * 2 turbines = 2 MW; output 1.5 MW => 75%.
+        expect(a.ratedMw).toBe(2);
+        expect(a.capacityFactor).toBeCloseTo(75, 5);
+        expect(c.capacityFactor).toBe(0);
+    });
+
+    it("averages signal readings per site", () => {
+        const [a] = summarizeSites(turbines, sites);
+        expect(a.avgWindMs).toBeCloseTo(11, 5);
+        expect(a.avgNacelleTempC).toBeCloseTo(70, 5);
+        expect(a.avgVibrationMmS).toBeCloseTo(6, 5);
     });
 });
 

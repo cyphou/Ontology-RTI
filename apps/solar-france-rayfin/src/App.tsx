@@ -258,6 +258,53 @@ export function formatBand(row: { warn: number; alarm: number; unit: string }): 
     return `warn \u2265 ${row.warn}${row.unit} \u00b7 alarm \u2265 ${row.alarm}${row.unit}`;
 }
 
+export interface SiteSummary {
+    id: string;
+    name: string;
+    plantCount: number;
+    totalKw: number;
+    ratedMw: number;
+    capacityFactor: number;
+    alarms: number;
+    warnings: number;
+    healthy: number;
+    avgIrradianceWm2: number;
+    avgModuleTempC: number;
+    avgInverterLoadPct: number;
+}
+
+// Pure per-site aggregation for the site drill-down view: rolls each site's
+// PV plants into scoped KPIs (output, capacity factor, health counts, averages).
+// Sites with no plants report zeros so the UI can render them safely.
+export function summarizeSites(
+    turbines: { siteId: string; status: PlantStatus; powerKw: number; irradianceWm2: number; moduleTempC: number; inverterLoadPct: number }[],
+    sites: { id: string; name: string; capacityMw: number }[],
+): SiteSummary[] {
+    return sites.map((site) => {
+        const local = turbines.filter((t) => t.siteId === site.id);
+        const n = local.length;
+        const totalKw = local.reduce((sum, t) => sum + t.powerKw, 0);
+        const alarms = local.filter((t) => t.status === "alarm").length;
+        const warnings = local.filter((t) => t.status === "warning").length;
+        const ratedMw = site.capacityMw * n;
+        const avg = (sel: (t: (typeof local)[number]) => number) => (n > 0 ? local.reduce((sum, t) => sum + sel(t), 0) / n : 0);
+        return {
+            id: site.id,
+            name: site.name,
+            plantCount: n,
+            totalKw,
+            ratedMw,
+            capacityFactor: ratedMw > 0 ? (totalKw / 1000 / ratedMw) * 100 : 0,
+            alarms,
+            warnings,
+            healthy: n - alarms - warnings,
+            avgIrradianceWm2: +avg((t) => t.irradianceWm2).toFixed(0),
+            avgModuleTempC: +avg((t) => t.moduleTempC).toFixed(1),
+            avgInverterLoadPct: +avg((t) => t.inverterLoadPct).toFixed(0),
+        };
+    });
+}
+
 // Anchor points (in twin-scene world space) for the part value callouts.
 export const TWIN_PARTS: { key: string; caption: string; pos: [number, number, number] }[] = [
     { key: "array", caption: "Array", pos: [0, 4.0, -1.4] },
@@ -1074,11 +1121,12 @@ export function newlyAlarmed(prev: Record<string, PlantStatus>, turbines: { id: 
     return turbines.filter((t) => t.status === "alarm" && prev[t.id] !== "alarm").map((t) => t.id);
 }
 
-type ViewKey = "map" | "twin" | "alerts" | "graph" | "analytics" | "operations" | "ask";
+type ViewKey = "map" | "twin" | "sites" | "alerts" | "graph" | "analytics" | "operations" | "ask";
 
 const NAV: { key: ViewKey; label: string; icon: string }[] = [
     { key: "map", label: "Map", icon: "🗺" },
     { key: "twin", label: "Digital Twin", icon: "🌀" },
+    { key: "sites", label: "Sites", icon: "🏢" },
     { key: "alerts", label: "Alerts", icon: "🚨" },
     { key: "graph", label: "Graph", icon: "🕸" },
     { key: "analytics", label: "Analytics", icon: "📊" },
@@ -2079,6 +2127,8 @@ function App() {
     const warnings = visibleTurbines.filter((t) => t.status === "warning").length;
     const healthy = visibleTurbines.length - alarms - warnings;
 
+    const siteSummaries = useMemo(() => summarizeSites(turbines, sites), [turbines, sites]);
+
     const runAsk = useCallback(async (override?: string) => {
         setAskLoading(true);
         setAskError(null);
@@ -2627,6 +2677,52 @@ function App() {
                                         Each dot is a visible array. Points hugging the upper-right convert sunlight to power efficiently; low-output dots at high irradiance are underperformers worth inspecting.
                                     </p>
                                 </Panel>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === "sites" && (
+                        <div className="h-full overflow-y-auto p-4">
+                            <div className="mb-3">{toolbar}</div>
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                                {siteSummaries.map((s) => {
+                                    const local = turbines.filter((t) => t.siteId === s.id);
+                                    return (
+                                        <Panel
+                                            key={s.id}
+                                            title={s.name}
+                                            action={
+                                                <span className="flex gap-1.5 text-[10px]">
+                                                    {s.alarms > 0 && <span className="rounded-full bg-rose-600/80 px-1.5 font-semibold text-white">{s.alarms} alarm</span>}
+                                                    {s.warnings > 0 && <span className="rounded-full bg-amber-500/80 px-1.5 font-semibold text-black">{s.warnings} warn</span>}
+                                                </span>
+                                            }
+                                        >
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <MetricCard label="Output" value={`${(s.totalKw / 1000).toFixed(2)} MW`} sub={`${s.plantCount} plants`} />
+                                                <MetricCard label="Capacity" value={`${s.capacityFactor.toFixed(0)}%`} sub={`of ${s.ratedMw.toFixed(0)} MW`} accent="text-emerald-300" />
+                                                <MetricCard label="Avg module" value={`${s.avgModuleTempC.toFixed(0)} °C`} sub={`load ${s.avgInverterLoadPct.toFixed(0)}%`} accent="text-amber-300" />
+                                            </div>
+                                            <div className="mt-2">
+                                                <HealthBar healthy={s.healthy} warning={s.warnings} alarm={s.alarms} />
+                                            </div>
+                                            <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto pr-1">
+                                                {local.map((t) => (
+                                                    <li key={t.id}>
+                                                        <button type="button" onClick={() => { setSelectedId(t.id); setView("twin"); }} className="flex w-full items-center justify-between rounded bg-[#0a1830] px-2 py-1 text-left text-xs hover:bg-slate-800">
+                                                            <span className="flex items-center gap-2">
+                                                                <span className="inline-block h-2 w-2 rounded-full" style={{ background: STATUS_COLORS[t.status] }} />
+                                                                <span className="text-slate-200">{t.id}</span>
+                                                            </span>
+                                                            <span className="text-slate-400">{t.powerKw.toLocaleString()} kW · {t.inverterLoadPct}%</span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {local.length === 0 && <li className="text-xs text-slate-500">No plants at this site.</li>}
+                                            </ul>
+                                        </Panel>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
