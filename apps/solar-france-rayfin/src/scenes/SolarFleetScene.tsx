@@ -20,7 +20,52 @@ type PlantTelemetry = {
     moduleTempC: number;
     inverterLoadPct: number;
 };
-type SolarPlantSite = { lon: number; lat: number };
+type SolarPlantSite = { lon: number; lat: number; name?: string; region?: string };
+
+// Camera-facing pill label drawn to a canvas texture. depthTest:false + a high
+// renderOrder keep it on top of the scene, so site labels are never hidden behind
+// the plant structures. Positioned in world space, it pans/zooms with the map.
+function createLabelSprite(text: string, color: string): THREE.Sprite {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    const map = new THREE.CanvasTexture(canvas);
+    if (ctx) {
+        ctx.font = "600 44px 'Segoe UI', system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const textWidth = ctx.measureText(text).width;
+        const pad = 28;
+        const rw = Math.min(canvas.width - 8, textWidth + pad * 2);
+        const rx = (canvas.width - rw) / 2;
+        const ry = 30;
+        const rh = 68;
+        ctx.beginPath();
+        if (typeof (ctx as unknown as { roundRect?: unknown }).roundRect === "function") {
+            (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(rx, ry, rw, rh, 16);
+        } else {
+            ctx.rect(rx, ry, rw, rh);
+        }
+        ctx.fillStyle = "rgba(6, 16, 31, 0.78)";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.fillStyle = "#eefcff";
+        ctx.fillText(text, canvas.width / 2, ry + rh / 2 + 1);
+        map.colorSpace = THREE.SRGBColorSpace;
+        map.needsUpdate = true;
+    }
+    const material = new THREE.SpriteMaterial({ map, transparent: true, depthTest: false, depthWrite: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(12, 3, 1);
+    sprite.renderOrder = 999;
+    return sprite;
+}
+
+// World height for the floating site labels — clearly above the plant structures.
+const LABEL_HEIGHT = 7;
 type PanelRenderRefs = {
     blades: THREE.Group;
     nacelleMat: THREE.MeshStandardMaterial;
@@ -134,6 +179,7 @@ export default function SolarFleetScene({
         grid.material.opacity = 0.12;
         scene.add(grid);
 
+        const labelSprites: THREE.Sprite[] = [];
         sites.forEach((site, idx) => {
             const marker = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.24, 0.24, 0.9, 14),
@@ -153,6 +199,14 @@ export default function SolarFleetScene({
             glow.rotation.x = -Math.PI / 2;
             glow.position.set(projectLonToX(site.lon), 0.07, projectLatToZ(site.lat));
             scene.add(glow);
+
+            const labelText = site.name ?? site.region ?? "";
+            if (labelText) {
+                const sprite = createLabelSprite(labelText, SITE_COLORS[idx % SITE_COLORS.length]);
+                sprite.position.set(projectLonToX(site.lon), LABEL_HEIGHT, projectLatToZ(site.lat));
+                scene.add(sprite);
+                labelSprites.push(sprite);
+            }
         });
 
         const byId = new Map<string, PanelRenderRefs>();
@@ -371,6 +425,10 @@ export default function SolarFleetScene({
             mapTexture.dispose();
             oceanTexture.dispose();
             skyTexture.dispose();
+            labelSprites.forEach((s) => {
+                s.material.map?.dispose();
+                s.material.dispose();
+            });
         };
 
         sceneRef.current = {
