@@ -1116,6 +1116,35 @@ export function anomalyScore(t: PlantTelemetry): number {
     return Math.min(1, Math.max(0, tempScore, loadScore));
 }
 
+export interface EscalationForecast {
+    direction: "rising" | "stable" | "falling";
+    slopePerTick: number;
+    etaToAlarmTicks: number | null;
+}
+
+// Trend-based escalation forecast over a rolling window of anomaly scores (0..1).
+// Fits a least-squares slope; a rising trend projects ticks-to-alarm (score -> 1).
+// Fewer than 3 samples is treated as stable so early frames never mislead.
+export function forecastEscalation(scores: number[]): EscalationForecast {
+    const n = scores.length;
+    if (n < 3) {
+        return { direction: "stable", slopePerTick: 0, etaToAlarmTicks: null };
+    }
+    const meanX = (n - 1) / 2;
+    const meanY = scores.reduce((a, b) => a + b, 0) / n;
+    let num = 0;
+    let den = 0;
+    for (let i = 0; i < n; i += 1) {
+        num += (i - meanX) * (scores[i] - meanY);
+        den += (i - meanX) ** 2;
+    }
+    const slope = den === 0 ? 0 : num / den;
+    const current = scores[n - 1];
+    const direction = slope > 0.01 ? "rising" : slope < -0.01 ? "falling" : "stable";
+    const etaToAlarmTicks = slope > 0.001 && current < 1 ? Math.ceil((1 - current) / slope) : null;
+    return { direction, slopePerTick: +slope.toFixed(3), etaToAlarmTicks };
+}
+
 // Ids of arrays that transitioned into "alarm" since the previous status snapshot.
 export function newlyAlarmed(prev: Record<string, PlantStatus>, turbines: { id: string; status: PlantStatus }[]): string[] {
     return turbines.filter((t) => t.status === "alarm" && prev[t.id] !== "alarm").map((t) => t.id);
@@ -1838,6 +1867,7 @@ function App() {
     const prevStatusRef = useRef<Record<string, PlantStatus>>({});
     const autoLoggedRef = useRef<Set<string>>(new Set());
     const autoInitRef = useRef(false);
+    const anomalyHistRef = useRef<Map<string, number[]>>(new Map());
     const askCacheRef = useRef<Map<string, { at: number; result: AskResult }>>(new Map());
 
     const [powerHistory, setPowerHistory] = useState<number[]>([]);
@@ -1940,9 +1970,30 @@ function App() {
         [turbines],
     );
     const anomalyWatch = useMemo(
-        () => turbines.map((t) => ({ t, score: anomalyScore(t) })).sort((a, b) => b.score - a.score).slice(0, 6),
+        () => turbines.map((t) => ({ t, score: anomalyScore(t), forecast: forecastEscalation(anomalyHistRef.current.get(t.id) ?? []) })).sort((a, b) => b.score - a.score).slice(0, 6),
         [turbines],
     );
+
+    // Maintain a short rolling window of each plant's anomaly score so the watch
+    // panel can project a trend (rising/falling) and an ETA-to-alarm from the slope.
+    useEffect(() => {
+        const hist = anomalyHistRef.current;
+        const seen = new Set<string>();
+        turbines.forEach((t) => {
+            seen.add(t.id);
+            const arr = hist.get(t.id) ?? [];
+            arr.push(anomalyScore(t));
+            if (arr.length > 12) {
+                arr.shift();
+            }
+            hist.set(t.id, arr);
+        });
+        for (const id of hist.keys()) {
+            if (!seen.has(id)) {
+                hist.delete(id);
+            }
+        }
+    }, [turbines]);
     const unackedAlerts = useMemo(() => activeAlerts.filter((t) => !ackLog[t.id]), [activeAlerts, ackLog]);
 
     const fc = useMemo(
@@ -2592,13 +2643,19 @@ function App() {
                                 </Panel>
 
                                 <Panel title="Anomaly watch (predictive)">
-                                    <p className="mb-2 text-[11px] text-slate-400">Arrays trending toward thresholds, ranked by anomaly score from module temp &amp; inverter load.</p>
+                                    <p className="mb-2 text-[11px] text-slate-400">Arrays trending toward thresholds, ranked by anomaly score with a slope-based escalation trend and ETA to alarm.</p>
                                     <ul className="space-y-2">
                                         {anomalyWatch.map((a) => (
                                             <li key={a.t.id}>
                                                 <div className="flex justify-between text-xs">
                                                     <button type="button" onClick={() => { setSelectedId(a.t.id); setView("twin"); }} className="text-slate-200 hover:text-cyan-200">{a.t.id} · {a.t.siteName}</button>
-                                                    <span className="text-slate-300">{Math.round(a.score * 100)}%</span>
+                                                    <span className="flex items-center gap-2">
+                                                        <span className={a.forecast.direction === "rising" ? "text-rose-300" : a.forecast.direction === "falling" ? "text-emerald-300" : "text-slate-500"}>
+                                                            {a.forecast.direction === "rising" ? "↑" : a.forecast.direction === "falling" ? "↓" : "→"}
+                                                            {a.forecast.etaToAlarmTicks != null && ` ~${a.forecast.etaToAlarmTicks}t`}
+                                                        </span>
+                                                        <span className="text-slate-300">{Math.round(a.score * 100)}%</span>
+                                                    </span>
                                                 </div>
                                                 <div className="mt-1 h-2 rounded bg-slate-800">
                                                     <div

@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -141,6 +141,30 @@ describe("classifyAskIntent", () => {
 
     it("keeps ambiguous prompts in hybrid mode", () => {
         expect(classifyAskIntent("Why is SITE-TX-WT-01 underperforming?")).toBe("hybrid");
+    });
+});
+
+describe("forecastEscalation", () => {
+    it("treats short histories as stable", () => {
+        expect(forecastEscalation([])).toMatchObject({ direction: "stable", etaToAlarmTicks: null });
+        expect(forecastEscalation([0.4, 0.5])).toMatchObject({ direction: "stable", etaToAlarmTicks: null });
+    });
+
+    it("flags a rising trend and projects ticks to alarm", () => {
+        const f = forecastEscalation([0.2, 0.4, 0.6, 0.8]);
+        expect(f.direction).toBe("rising");
+        expect(f.slopePerTick).toBeCloseTo(0.2, 3);
+        expect(f.etaToAlarmTicks).toBe(1);
+    });
+
+    it("flags a falling trend with no ETA", () => {
+        const f = forecastEscalation([0.9, 0.7, 0.5, 0.3]);
+        expect(f.direction).toBe("falling");
+        expect(f.etaToAlarmTicks).toBeNull();
+    });
+
+    it("treats a flat trend as stable", () => {
+        expect(forecastEscalation([0.5, 0.5, 0.5, 0.5]).direction).toBe("stable");
     });
 });
 
