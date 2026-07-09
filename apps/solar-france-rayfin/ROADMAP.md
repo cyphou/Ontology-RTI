@@ -67,7 +67,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 - [ ] Expand test coverage beyond render smoke test (scene helpers, forecast math, filter logic).
 - [x] Extract Three.js scene logic from `App.tsx` into dedicated modules as it grows.
 - [x] Add error boundaries around the 3D canvases.
-- [ ] Accessibility pass (keyboard nav, ARIA on nav rail and controls).
+- [x] Accessibility pass (keyboard nav, ARIA on nav rail and controls).
 
 ---
 

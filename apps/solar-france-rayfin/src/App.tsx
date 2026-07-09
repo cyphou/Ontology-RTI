@@ -1156,7 +1156,7 @@ const SUGGESTED = [
 
 function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: ViewKey) => void; badges?: Partial<Record<ViewKey, number>> }) {
     return (
-        <nav className="flex w-full flex-row gap-1 overflow-x-auto border-b border-slate-800/60 bg-[#06101fcc] px-2 py-2 md:w-44 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:px-0 md:py-3">
+        <nav aria-label="Primary views" className="flex w-full flex-row gap-1 overflow-x-auto border-b border-slate-800/60 bg-[#06101fcc] px-2 py-2 md:w-44 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:px-0 md:py-3">
             {NAV.map((n) => {
                 const badge = badges?.[n.key] ?? 0;
                 return (
@@ -1164,12 +1164,14 @@ function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: View
                         key={n.key}
                         type="button"
                         onClick={() => onChange(n.key)}
+                        aria-current={view === n.key ? "page" : undefined}
+                        aria-label={badge > 0 ? `${n.label}, ${badge} active` : n.label}
                         className={`mx-2 flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${view === n.key ? "bg-cyan-600/90 text-white" : "text-slate-300 hover:bg-slate-800/60"}`}
                     >
-                        <span className="text-lg leading-none">{n.icon}</span>
+                        <span aria-hidden="true" className="text-lg leading-none">{n.icon}</span>
                         <span className="hidden md:inline">{n.label}</span>
                         {badge > 0 && (
-                            <span className="ml-auto rounded-full bg-rose-600 px-1.5 text-[10px] font-semibold leading-4 text-white">{badge}</span>
+                            <span aria-hidden="true" className="ml-auto rounded-full bg-rose-600 px-1.5 text-[10px] font-semibold leading-4 text-white">{badge}</span>
                         )}
                     </button>
                 );
@@ -2304,6 +2306,7 @@ function App() {
             <select
                 value={siteFilter}
                 onChange={(e) => setSiteFilter(e.target.value)}
+                aria-label="Filter by site"
                 className="rounded border border-slate-700 bg-[#08142a] px-2 py-1"
             >
                 <option value="all">All sites</option>
@@ -2312,12 +2315,13 @@ function App() {
                 ))}
             </select>
 
-            <div className="flex overflow-hidden rounded border border-slate-700">
+            <div role="group" aria-label="Filter by status" className="flex overflow-hidden rounded border border-slate-700">
                 {(["all", "healthy", "warning", "alarm"] as StatusFilter[]).map((s) => (
                     <button
                         key={s}
                         type="button"
                         onClick={() => setStatusFilter(s)}
+                        aria-pressed={statusFilter === s}
                         className={`px-2 py-1 capitalize ${statusFilter === s ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}
                     >
                         {s}
@@ -2331,6 +2335,7 @@ function App() {
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                     placeholder="Find array…"
+                    aria-label="Find array by id"
                     className="w-32 rounded border border-slate-700 bg-[#08142a] px-2 py-1"
                 />
                 <button type="button" onClick={handleSearch} className="rounded bg-slate-700 px-2 py-1 text-white">Go</button>
@@ -2810,6 +2815,7 @@ function App() {
                                             <select
                                                 value={forecastHorizon}
                                                 onChange={(e) => setForecastHorizon(Number(e.target.value))}
+                                                aria-label="Forecast horizon"
                                                 className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100"
                                             >
                                                 <option value={3}>3 ticks</option>
@@ -2820,6 +2826,7 @@ function App() {
                                             <select
                                                 value={historyWindow}
                                                 onChange={(e) => setHistoryWindow(e.target.value as HistoryWindow)}
+                                                aria-label="History window"
                                                 className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100"
                                             >
                                                 {HISTORY_WINDOWS.map((window) => (
