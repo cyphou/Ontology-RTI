@@ -402,6 +402,29 @@ export default function SolarFleetScene({
             camera.position.z = (61 + Math.cos(tick * 0.13) * 5) * z + pz;
             camera.lookAt(px, 0, pz);
             renderer.render(scene, camera);
+
+            // Screen-space label de-confliction: nearest label wins; hide any whose
+            // projected box overlaps a label already shown this frame so labels never stack.
+            const shownBoxes: { x: number; y: number; hw: number; hh: number }[] = [];
+            const camRight = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+            const camUp = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+            labelSprites
+                .map((s) => ({ s, d: camera.position.distanceToSquared(s.position) }))
+                .sort((a, b) => a.d - b.d)
+                .forEach(({ s }) => {
+                    const c = s.position.clone().project(camera);
+                    const eX = s.position.clone().addScaledVector(camRight, s.scale.x / 2).project(camera);
+                    const eY = s.position.clone().addScaledVector(camUp, s.scale.y / 2).project(camera);
+                    const hw = Math.abs(eX.x - c.x);
+                    const hh = Math.abs(eY.y - c.y);
+                    const overlaps = shownBoxes.some((b) => Math.abs(b.x - c.x) < b.hw + hw && Math.abs(b.y - c.y) < b.hh + hh);
+                    if (overlaps) {
+                        s.visible = false;
+                    } else {
+                        s.visible = true;
+                        shownBoxes.push({ x: c.x, y: c.y, hw, hh });
+                    }
+                });
         };
         renderer.setAnimationLoop(animate);
 
