@@ -681,15 +681,6 @@ export function classifyAskIntent(question: string): AskIntent {
     if (!q) {
         return "ops-fastpath";
     }
-    const opsPatterns = [
-        /\b(alarm|warning|critical|fault|trip)\b/,
-        /\b(hottest|temperature|temp|nacelle|vibration|wind)\b/,
-        /(how many|\bcount\b|\btotal\b)/,
-        /\b(highest|lowest|top|worst|best)\b/,
-    ];
-    if (opsPatterns.some((p) => p.test(q))) {
-        return "ops-fastpath";
-    }
     const analyticsPatterns = [
         /\b(trend|over time|history|historical)\b/,
         /(last\s+\d+|\bhour\b|\bday\b|\bweek\b|\bmonth\b)/,
@@ -698,6 +689,15 @@ export function classifyAskIntent(question: string): AskIntent {
     ];
     if (analyticsPatterns.some((p) => p.test(q))) {
         return "analytics";
+    }
+    const opsPatterns = [
+        /\b(alarm|warning|critical|fault|trip)\b/,
+        /\b(hottest|temperature|temp|nacelle|vibration|wind)\b/,
+        /(how many|\bcount\b|\btotal\b)/,
+        /\b(highest|lowest|top|worst|best)\b/,
+    ];
+    if (opsPatterns.some((p) => p.test(q))) {
+        return "ops-fastpath";
     }
     return "hybrid";
 }
