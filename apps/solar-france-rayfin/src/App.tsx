@@ -28,6 +28,7 @@ import {
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/services/operator-role.service";
 import { HISTORY_WINDOWS, historyPointLimit, type HistoryWindow } from "@/services/history-window.service";
+import { SceneErrorBoundary } from "@/components/SceneErrorBoundary";
 
 type PlantStatus = "healthy" | "warning" | "alarm";
 
@@ -2348,9 +2349,11 @@ function App() {
                 <section className="relative min-h-0 flex-1">
                     {view === "map" && (
                         <div className="relative h-full min-h-[420px] md:min-h-[520px]">
-                            <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
-                                <LazySolarFleetScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
-                            </Suspense>
+                            <SceneErrorBoundary label="Fleet map">
+                                <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
+                                    <LazySolarFleetScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
+                                </Suspense>
+                            </SceneErrorBoundary>
 
                             <div className="absolute left-2 right-2 top-2 rounded-lg border border-slate-700/60 bg-[#06101fd9] p-2 backdrop-blur sm:left-3 sm:right-auto sm:max-w-[78%]">
                                 {toolbar}
@@ -2414,9 +2417,11 @@ function App() {
                                     </div>
 
                                     <div className="relative h-[480px] overflow-hidden rounded-xl border border-slate-700/60 bg-[#051020]">
-                                        <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
-                                            <LazyPlantTwinScene turbine={selected} paused={!live} />
-                                        </Suspense>
+                                        <SceneErrorBoundary label="Digital twin">
+                                            <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
+                                                <LazyPlantTwinScene turbine={selected} paused={!live} />
+                                            </Suspense>
+                                        </SceneErrorBoundary>
                                         <div className="absolute left-3 top-3 rounded-lg border border-slate-700/60 bg-[#06101fcc] px-3 py-2 backdrop-blur">
                                             <p className="text-sm font-semibold">{selected.id}</p>
                                             <p className="text-xs text-slate-400">{selected.siteName} · {selected.latitude.toFixed(2)}, {selected.longitude.toFixed(2)}</p>
