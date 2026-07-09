@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, classifyAskIntent, normalizeAskQuestion } from "@/App";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
 
@@ -118,6 +118,28 @@ describe("sourceLabel", () => {
 
     it("labels an offline local answer", () => {
         expect(sourceLabel("local")).toMatch(/offline/i);
+    });
+});
+
+describe("normalizeAskQuestion", () => {
+    it("trims and collapses whitespace", () => {
+        expect(normalizeAskQuestion("  Which   site has  alarms?  ")).toBe("which site has alarms?");
+    });
+});
+
+describe("classifyAskIntent", () => {
+    it("routes operational triage prompts to fastpath", () => {
+        expect(classifyAskIntent("Any turbines in alarm right now?")).toBe("ops-fastpath");
+        expect(classifyAskIntent("What is the hottest nacelle?")).toBe("ops-fastpath");
+    });
+
+    it("routes analytical prompts to analytics", () => {
+        expect(classifyAskIntent("Show output trend over time by site")).toBe("analytics");
+        expect(classifyAskIntent("Compare last 24 hour average by country")).toBe("analytics");
+    });
+
+    it("keeps ambiguous prompts in hybrid mode", () => {
+        expect(classifyAskIntent("Why is SITE-TX-WT-01 underperforming?")).toBe("hybrid");
     });
 });
 

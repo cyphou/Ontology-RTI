@@ -58,7 +58,14 @@ type AskResult = {
     summary: string;
     generatedAt: string;
     queryText?: string;
+    confidence?: number;
+    evidence?: string[];
+    cacheHit?: boolean;
 };
+
+type AskIntent = "ops-fastpath" | "analytics" | "hybrid";
+
+const ASK_CACHE_TTL_MS = 30_000;
 
 type TurbineRenderRefs = {
     blades: THREE.Group;
@@ -608,8 +615,23 @@ function useLiveTelemetry(): { turbines: TurbineTelemetry[]; sites: WindSite[] }
 }
 
 async function askFabricIQ(question: string, context: Record<string, unknown>): Promise<AskResult> {
-    // Prefer a real deployed Fabric Data Agent when one is configured; fall back
-    // to the ontology-grounded local engine if it is absent or unreachable.
+    const telemetry = (context.telemetry as TurbineTelemetry[] | undefined) ?? [];
+    const intent = classifyAskIntent(question);
+
+    // Fast operational intents are answered deterministically to minimize latency,
+    // avoid unnecessary remote calls, and keep triage behavior stable.
+    if (intent === "ops-fastpath") {
+        return {
+            source: "local",
+            summary: answerQuestion(question, telemetry),
+            generatedAt: new Date().toISOString(),
+            queryText: "Deterministic local rule engine",
+            confidence: 0.98,
+            evidence: [`telemetry rows: ${telemetry.length}`, "routing: ops-fastpath"],
+        };
+    }
+
+    // Route analytics-heavy prompts to the live Data Agent whenever configured.
     if (isDataAgentConfigured()) {
         try {
             const agent = await queryDataAgent(question, context);
@@ -618,18 +640,66 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
                 summary: agent.summary,
                 generatedAt: new Date().toISOString(),
                 queryText: agent.queryText,
+                confidence: agent.confidence,
+                evidence: agent.evidence,
             };
         } catch {
             /* fall through to ontology-grounded reasoning */
         }
     }
-    const { summary, queryText } = await askOntology(question, context);
-    return {
-        source: "ontology",
-        summary,
-        generatedAt: new Date().toISOString(),
-        queryText,
-    };
+
+    try {
+        const { summary, queryText } = await askOntology(question, context);
+        return {
+            source: "ontology",
+            summary,
+            generatedAt: new Date().toISOString(),
+            queryText,
+            confidence: 0.85,
+            evidence: ["routing: ontology-grounded"],
+        };
+    } catch {
+        return {
+            source: "local",
+            summary: `${answerQuestion(question, telemetry)} (offline — ontology backend unreachable)`,
+            generatedAt: new Date().toISOString(),
+            queryText: "Deterministic local fallback",
+            confidence: 0.72,
+            evidence: ["ontology backend unreachable", "routing: local fallback"],
+        };
+    }
+}
+
+export function normalizeAskQuestion(question: string): string {
+    return question.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+// Lightweight intent router so deterministic operational Q&A avoids remote
+// round-trips while analytical prompts prefer the live Data Agent.
+export function classifyAskIntent(question: string): AskIntent {
+    const q = normalizeAskQuestion(question);
+    if (!q) {
+        return "ops-fastpath";
+    }
+    const opsPatterns = [
+        /\b(alarm|warning|critical|fault|trip)\b/,
+        /\b(hottest|temperature|temp|nacelle|vibration|wind)\b/,
+        /(how many|\bcount\b|\btotal\b)/,
+        /\b(highest|lowest|top|worst|best)\b/,
+    ];
+    if (opsPatterns.some((p) => p.test(q))) {
+        return "ops-fastpath";
+    }
+    const analyticsPatterns = [
+        /\b(trend|over time|history|historical)\b/,
+        /(last\s+\d+|\bhour\b|\bday\b|\bweek\b|\bmonth\b)/,
+        /\b(compare|correlation|distribution|average|median|percentile)\b/,
+        /(by site|per site|by country|per country)/,
+    ];
+    if (analyticsPatterns.some((p) => p.test(q))) {
+        return "analytics";
+    }
+    return "hybrid";
 }
 
 // Human-readable provenance for an answer's backing engine.
@@ -1790,6 +1860,7 @@ function App() {
     const [askLoading, setAskLoading] = useState(false);
     const [askError, setAskError] = useState<string | null>(null);
     const [askResult, setAskResult] = useState<AskResult | null>(null);
+    const askCacheRef = useRef<Map<string, { at: number; result: AskResult }>>(new Map());
     const [writebackMessage, setWritebackMessage] = useState<string | null>(null);
     const [ackLog, setAckLog] = useState<Record<string, { at: string; by: string }>>(() => JSON.parse(localStorage.getItem("wind-ack-log") ?? "{}"));
     const [ackMessage, setAckMessage] = useState<string | null>(null);
@@ -2091,10 +2162,46 @@ function App() {
                 throw new Error("Please enter a question.");
             }
 
+            const alarmsNow = turbines.filter((t) => t.status === "alarm").length;
+            const warningsNow = turbines.filter((t) => t.status === "warning").length;
+            const fleetKwNow = turbines.reduce((sum, t) => sum + t.powerKw, 0);
+            const signature = `${turbines.length}:${alarmsNow}:${warningsNow}:${Math.round(fleetKwNow / 50)}:${selected.id}`;
+            const cacheKey = `${normalizeAskQuestion(trimmed)}|${signature}`;
+            const now = Date.now();
+            const cached = askCacheRef.current.get(cacheKey);
+            if (cached && now - cached.at <= ASK_CACHE_TTL_MS) {
+                setAskResult({ ...cached.result, cacheHit: true });
+                return;
+            }
+
+            const topAlerts = [...turbines]
+                .sort((a, b) => anomalyScore(b) - anomalyScore(a))
+                .slice(0, 8)
+                .map((t) => ({
+                    id: t.id,
+                    siteId: t.siteId,
+                    status: t.status,
+                    powerKw: t.powerKw,
+                    nacelleTempC: t.nacelleTempC,
+                    vibrationMmS: t.vibrationMmS,
+                }));
+            const topOutput = [...turbines]
+                .sort((a, b) => b.powerKw - a.powerKw)
+                .slice(0, 8)
+                .map((t) => ({ id: t.id, siteId: t.siteId, powerKw: t.powerKw, windMs: t.windMs }));
+
             const result = await askFabricIQ(trimmed, {
                 selectedTurbineId: selected.id,
                 selectedSite: selected.siteName,
-                telemetry: turbines.map((t) => ({
+                fleet: {
+                    turbines: turbines.length,
+                    alarms: alarmsNow,
+                    warnings: warningsNow,
+                    totalMw: Number((fleetKwNow / 1000).toFixed(2)),
+                },
+                topAlerts,
+                topOutput,
+                telemetry: turbines.slice(0, 24).map((t) => ({
                     id: t.id,
                     siteId: t.siteId,
                     siteName: t.siteName,
@@ -2104,13 +2211,17 @@ function App() {
                     vibrationMmS: t.vibrationMmS,
                     status: t.status,
                 })),
-            }).catch(() => ({
-                source: "local" as const,
-                summary: `${answerQuestion(trimmed, turbines)} (offline — ontology backend unreachable)`,
-                generatedAt: new Date().toISOString(),
-            }));
+            });
 
-            setAskResult(result);
+            const storable = { ...result, cacheHit: false };
+            askCacheRef.current.set(cacheKey, { at: now, result: storable });
+            if (askCacheRef.current.size > 80) {
+                const oldest = askCacheRef.current.keys().next().value as string | undefined;
+                if (oldest) {
+                    askCacheRef.current.delete(oldest);
+                }
+            }
+            setAskResult(storable);
         } catch (err) {
             setAskError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -2788,11 +2899,22 @@ function App() {
                                     {askError && <p className="mt-2 text-xs text-rose-300">{askError}</p>}
                                     {askResult && (
                                         <div className="mt-3 rounded border border-slate-700 bg-[#081226] p-3 text-sm text-slate-200">
-                                            <div className="flex items-center justify-between text-xs text-slate-400">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                                                 <span>Source: {sourceLabel(askResult.source)}</span>
-                                                <span>{new Date(askResult.generatedAt).toLocaleTimeString()}</span>
+                                                <span className="flex items-center gap-2">
+                                                    {typeof askResult.confidence === "number" && <span>Confidence: {Math.round(askResult.confidence * 100)}%</span>}
+                                                    {askResult.cacheHit && <span>cached</span>}
+                                                    <span>{new Date(askResult.generatedAt).toLocaleTimeString()}</span>
+                                                </span>
                                             </div>
                                             <p className="mt-1">{askResult.summary}</p>
+                                            {askResult.evidence && askResult.evidence.length > 0 && (
+                                                <ul className="mt-2 list-disc pl-4 text-xs text-slate-400">
+                                                    {askResult.evidence.slice(0, 3).map((ev, i) => (
+                                                        <li key={`${ev}-${i}`}>{ev}</li>
+                                                    ))}
+                                                </ul>
+                                            )}
                                             {askResult.queryText && <p className="mt-2 text-xs text-slate-400">Trace: {askResult.queryText}</p>}
                                         </div>
                                     )}

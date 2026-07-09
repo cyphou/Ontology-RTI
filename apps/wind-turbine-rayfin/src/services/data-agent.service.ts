@@ -20,6 +20,8 @@
 export interface DataAgentAnswer {
     summary: string;
     queryText: string;
+    confidence?: number;
+    evidence?: string[];
 }
 
 /** True when a real Data Agent endpoint has been wired up via env. */
@@ -79,6 +81,52 @@ export function extractAgentAnswer(payload: unknown): string {
     return "";
 }
 
+/** Parse a best-effort confidence score from multiple payload shapes. */
+export function extractAgentConfidence(payload: unknown): number | undefined {
+    if (!payload || typeof payload !== "object") {
+        return undefined;
+    }
+    const obj = payload as Record<string, unknown>;
+    for (const key of ["confidence", "score", "confidenceScore"]) {
+        const v = obj[key];
+        if (typeof v === "number" && Number.isFinite(v)) {
+            return Math.max(0, Math.min(1, v > 1 ? v / 100 : v));
+        }
+    }
+    return undefined;
+}
+
+/** Parse a short evidence/citation list from tolerant payload shapes. */
+export function extractAgentEvidence(payload: unknown): string[] {
+    if (!payload || typeof payload !== "object") {
+        return [];
+    }
+    const obj = payload as Record<string, unknown>;
+    for (const key of ["evidence", "citations", "reasons", "highlights"]) {
+        const v = obj[key];
+        if (Array.isArray(v)) {
+            const list = v
+                .map((x) => {
+                    if (typeof x === "string") {
+                        return x.trim();
+                    }
+                    if (x && typeof x === "object") {
+                        const text = (x as Record<string, unknown>).text;
+                        if (typeof text === "string") {
+                            return text.trim();
+                        }
+                    }
+                    return "";
+                })
+                .filter(Boolean);
+            if (list.length > 0) {
+                return list.slice(0, 5);
+            }
+        }
+    }
+    return [];
+}
+
 /**
  * Send a question to the configured Fabric Data Agent. Throws when the endpoint
  * is not configured, the request fails, or no answer can be parsed — callers are
@@ -113,7 +161,12 @@ export async function queryDataAgent(question: string, context: Record<string, u
         if (!summary) {
             throw new Error("Data Agent returned no parsable answer.");
         }
-        return { summary, queryText: "Fabric Data Agent · live query over Lakehouse/Eventhouse" };
+        return {
+            summary,
+            queryText: "Fabric Data Agent · live query over Lakehouse/Eventhouse",
+            confidence: extractAgentConfidence(payload),
+            evidence: extractAgentEvidence(payload),
+        };
     } finally {
         window.clearTimeout(timeout);
     }
