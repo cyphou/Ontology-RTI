@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect } from "vitest";
-import { extractAgentAnswer } from "@/services/data-agent.service";
+import { extractAgentAnswer, extractAgentConfidence, extractAgentEvidence } from "@/services/data-agent.service";
 
 describe("extractAgentAnswer", () => {
     it("returns a trimmed plain string", () => {
@@ -34,5 +34,35 @@ describe("extractAgentAnswer", () => {
         expect(extractAgentAnswer({})).toBe("");
         expect(extractAgentAnswer({ choices: [] })).toBe("");
         expect(extractAgentAnswer(42)).toBe("");
+    });
+});
+
+describe("extractAgentConfidence", () => {
+    it("reads direct normalized confidence", () => {
+        expect(extractAgentConfidence({ confidence: 0.82 })).toBe(0.82);
+    });
+
+    it("normalizes percentage-like confidence", () => {
+        expect(extractAgentConfidence({ confidenceScore: 87 })).toBeCloseTo(0.87, 6);
+    });
+
+    it("returns undefined when no numeric confidence exists", () => {
+        expect(extractAgentConfidence({})).toBeUndefined();
+        expect(extractAgentConfidence({ confidence: "hi" })).toBeUndefined();
+    });
+});
+
+describe("extractAgentEvidence", () => {
+    it("reads string evidence arrays", () => {
+        expect(extractAgentEvidence({ evidence: ["a", "b"] })).toEqual(["a", "b"]);
+    });
+
+    it("reads object evidence arrays with text fields", () => {
+        expect(extractAgentEvidence({ citations: [{ text: "row 1" }, { text: "row 2" }] })).toEqual(["row 1", "row 2"]);
+    });
+
+    it("returns an empty list when no evidence is present", () => {
+        expect(extractAgentEvidence({})).toEqual([]);
+        expect(extractAgentEvidence(null)).toEqual([]);
     });
 });
