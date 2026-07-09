@@ -26,6 +26,7 @@ import {
     type LiveTelemetrySnapshot,
 } from "@/services/live-telemetry.service";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
+import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/services/operator-role.service";
 
 type TurbineStatus = "healthy" | "warning" | "alarm";
 
@@ -1831,6 +1832,7 @@ function App() {
     const [writebackMessage, setWritebackMessage] = useState<string | null>(null);
     const [ackLog, setAckLog] = useState<Record<string, { at: string; by: string }>>(() => JSON.parse(localStorage.getItem("wind-ack-log") ?? "{}"));
     const [ackMessage, setAckMessage] = useState<string | null>(null);
+    const [operatorRole, setOperatorRole] = useState<OperatorRole>(() => normalizeOperatorRole(localStorage.getItem("wind-operator-role")));
     const [showAcked, setShowAcked] = useState(false);
     const [graphFilter, setGraphFilter] = useState<StatusFilter>("all");
     const [graphNonce, setGraphNonce] = useState(0);
@@ -1851,6 +1853,11 @@ function App() {
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
     const [wbNote, setWbNote] = useState("");
+    const canWriteback = canManageDispatch(operatorRole);
+
+    useEffect(() => {
+        localStorage.setItem("wind-operator-role", operatorRole);
+    }, [operatorRole]);
 
     useEffect(() => {
         if (!live) {
@@ -1994,6 +2001,10 @@ function App() {
     }, []);
 
     const acknowledgeAlert = useCallback(async (t: TurbineTelemetry) => {
+        if (!canWriteback) {
+            setAckMessage("Viewer mode — switch to Operator to acknowledge alarms.");
+            return;
+        }
         const entry = { at: new Date().toISOString(), by: "operator" };
         setAckLog((prev) => {
             const next = { ...prev, [t.id]: entry };
@@ -2016,7 +2027,7 @@ function App() {
         } catch {
             setAckMessage(`Acknowledged ${t.id} · saved locally (backend unreachable).`);
         }
-    }, [loadNotes]);
+    }, [canWriteback, loadNotes]);
 
     useEffect(() => {
         void loadNotes();
@@ -2198,6 +2209,10 @@ function App() {
 
     const handleWriteback = useCallback(async () => {
         setWritebackMessage(null);
+        if (!canWriteback) {
+            setWritebackMessage("Viewer mode — switch to Operator to write dispatch actions.");
+            return;
+        }
         const parsed = Number(wbSetpoint);
         const setpointKw =
             wbSetpoint.trim() === "" || Number.isNaN(parsed) ? selected.powerKw : Math.max(0, Math.round(parsed));
@@ -2234,6 +2249,7 @@ function App() {
             setWritebackMessage(`Backend unreachable. Saved locally (${fallback.length} records).`);
         }
     }, [
+        canWriteback,
         forecast,
         forecastHorizon,
         loadNotes,
@@ -2275,6 +2291,18 @@ function App() {
 
     const toolbar = (
         <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="flex items-center gap-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-300">
+                <span>Mode</span>
+                <select
+                    value={operatorRole}
+                    onChange={(e) => setOperatorRole(normalizeOperatorRole(e.target.value))}
+                    className="bg-transparent text-slate-100 outline-none"
+                >
+                    <option value="operator">Operator</option>
+                    <option value="viewer">Viewer</option>
+                </select>
+            </label>
+
             <select
                 value={siteFilter}
                 onChange={(e) => setSiteFilter(e.target.value)}
@@ -2545,7 +2573,7 @@ function App() {
                                                         {ackLog[t.id] ? (
                                                             <span className="rounded bg-emerald-900/60 px-2 py-1 text-xs text-emerald-300">✓ Ack {new Date(ackLog[t.id].at).toLocaleTimeString()} · {ackLog[t.id].by}</span>
                                                         ) : (
-                                                            <button type="button" onClick={() => void acknowledgeAlert(t)} className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-500">Acknowledge</button>
+                                                            <button type="button" onClick={() => void acknowledgeAlert(t)} disabled={!canWriteback} className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">{canWriteback ? "Acknowledge" : "Operator only"}</button>
                                                         )}
                                                     </div>
                                                 </li>
@@ -2690,12 +2718,17 @@ function App() {
 
                                     <div className="mt-3 space-y-2 rounded border border-emerald-900/50 bg-[#06231b] p-2">
                                         <p className="text-xs uppercase tracking-wide text-emerald-300">Writeback / Dispatch</p>
+                                        <p className="text-[11px] text-slate-400">
+                                            Current mode: <span className={canWriteback ? "text-emerald-300" : "text-amber-300"}>{canWriteback ? "Operator" : "Viewer"}</span>
+                                            {canWriteback ? " — ontology writeback enabled." : " — dispatch actions are read-only until switched to Operator."}
+                                        </p>
                                         <div className="flex gap-2">
                                             <label className="flex-1 text-xs text-slate-400">
                                                 Action
                                                 <select
                                                     value={wbAction}
                                                     onChange={(e) => setWbAction(e.target.value)}
+                                                    disabled={!canWriteback}
                                                     className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
                                                 >
                                                     {["Acknowledge", "Inspect", "Throttle", "Boost", "Shutdown"].map((a) => (
@@ -2709,6 +2742,7 @@ function App() {
                                                     type="number"
                                                     value={wbSetpoint}
                                                     onChange={(e) => setWbSetpoint(e.target.value)}
+                                                    disabled={!canWriteback}
                                                     placeholder={String(selected.powerKw)}
                                                     className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
                                                 />
@@ -2729,15 +2763,17 @@ function App() {
                                         <input
                                             value={wbNote}
                                             onChange={(e) => setWbNote(e.target.value)}
+                                            disabled={!canWriteback}
                                             placeholder="Optional note…"
                                             className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
                                         />
                                         <button
                                             type="button"
                                             onClick={handleWriteback}
-                                            className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                                            disabled={!canWriteback}
+                                            className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            Write {wbAction} to ontology
+                                            {canWriteback ? `Write ${wbAction} to ontology` : "Viewer mode — writeback disabled"}
                                         </button>
                                         {writebackMessage && <p className="text-xs text-emerald-300">{writebackMessage}</p>}
                                     </div>

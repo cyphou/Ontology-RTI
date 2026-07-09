@@ -38,9 +38,9 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 ## 🔜 Near term (next 1–2 iterations)
 
 - [x] **Fabric Data Agent seam** — “Ask Fabric IQ” routes to a real deployed Data Agent when `VITE_DATA_AGENT_URL` is set (source `fabriciq`), with graceful fallback to the ontology‑grounded engine (`ontology`) and a pure offline engine (`local`). UI now labels the active engine honestly and flags telemetry as **simulated**.
-- [ ] **Real timeseries history** — replace seeded telemetry with persisted readings (Eventhouse/KQL) so sparklines and forecasts reflect actual data.
-- [ ] **Twin signal thresholds from ontology** — drive Meter warn/alarm bounds from ontology property metadata instead of hardcoded constants.
-- [ ] **Lazy‑load the Three.js scenes** — `React.lazy` + `Suspense` so the three chunk loads on demand (the chunk is already split; this defers it off the critical path).
+- [x] **Real timeseries history** — replace seeded telemetry with persisted readings (Eventhouse/KQL) so sparklines and forecasts reflect actual data.
+- [x] **Twin signal thresholds from ontology** — drive Meter warn/alarm bounds from ontology property metadata instead of hardcoded constants.
+- [x] **Lazy‑load the Three.js scenes** — `React.lazy` + `Suspense` so the three chunk loads on demand (the chunk is already split; this defers it off the critical path).
 - [x] **Alarm log & acknowledgement workflow** — active alarms list with persisted ack state (who/when) + auto `DispatchNote` on alarm onset.
 - [x] **URL/state deep‑linking** — `view` + `selectedId` encoded in the URL for shareable views.
 
@@ -48,9 +48,9 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 
 - [x] **Relationship graph view** — interactive ontology graph (plant → site → fleet) with zoom/pan/hover/filter.
 - [x] **Forecast confidence + multi‑horizon** — confidence bands and selectable 3/6/12‑tick horizons.
-- [ ] **Role‑based writeback** — operator vs viewer permissions on dispatch/setpoint actions.
+- [x] **Role‑based writeback** — operator vs viewer permissions on dispatch/setpoint actions.
 - [ ] **Per‑site drill‑down dashboard** — site‑scoped KPIs and plant grid.
-- [ ] **Mobile / responsive layout** — collapsible nav rail and stacked panels.
+- [x] **Mobile / responsive layout** — collapsible nav rail and stacked panels.
 
 ## 🟢 Long term
 
