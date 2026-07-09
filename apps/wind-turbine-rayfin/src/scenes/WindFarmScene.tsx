@@ -67,13 +67,13 @@ function createLabelSprite(text: string, color: string): THREE.Sprite {
     }
     const material = new THREE.SpriteMaterial({ map, transparent: true, depthTest: false, depthWrite: false });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(12, 3, 1);
+    sprite.scale.set(9.5, 2.4, 1);
     sprite.renderOrder = 999;
     return sprite;
 }
 
-// World height for the floating site labels — above the ~13-unit turbine towers.
-const LABEL_HEIGHT = 15;
+// World height for the floating site labels — just above the turbine blade tips.
+const LABEL_HEIGHT = 11;
 
 type TurbineRenderRefs = {
     blades: THREE.Group;
@@ -228,7 +228,7 @@ export default function WindFarmScene({
             const labelText = site.name ?? site.country ?? "";
             if (labelText) {
                 const sprite = createLabelSprite(labelText, SITE_COLORS[idx % SITE_COLORS.length]);
-                sprite.position.set(projectLonToX(site.lon), LABEL_HEIGHT, projectLatToZ(site.lat));
+                sprite.position.set(projectLonToX(site.lon), LABEL_HEIGHT + (idx % 2) * 1.7, projectLatToZ(site.lat));
                 scene.add(sprite);
                 labelSprites.push(sprite);
             }
