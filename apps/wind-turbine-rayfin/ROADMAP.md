@@ -48,6 +48,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 
 - [x] **Relationship graph view** — interactive ontology graph (turbine → site → fleet) with zoom/pan/hover/filter.
 - [x] **Forecast confidence + multi‑horizon** — confidence bands and selectable 3/6/12‑tick horizons.
+- [x] **Selectable history windows** — 1h / 6h / 24h sparkline and forecast context for live and fallback history.
 - [x] **Role‑based writeback** — operator vs viewer permissions on dispatch/setpoint actions.
 - [ ] **Per‑site drill‑down dashboard** — site‑scoped KPIs and turbine grid.
 - [x] **Mobile / responsive layout** — collapsible nav rail and stacked panels.

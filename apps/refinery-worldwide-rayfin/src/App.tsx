@@ -27,6 +27,7 @@ import {
 } from "@/services/live-telemetry.service";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/services/operator-role.service";
+import { HISTORY_WINDOWS, historyPointLimit, type HistoryWindow } from "@/services/history-window.service";
 
 type PlantStatus = "healthy" | "warning" | "alarm";
 
@@ -2022,10 +2023,12 @@ function App() {
     const [thresholdNonce, setThresholdNonce] = useState(0);
 
     const [forecastHorizon, setForecastHorizon] = useState(5);
+    const [historyWindow, setHistoryWindow] = useState<HistoryWindow>("6h");
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
     const [wbNote, setWbNote] = useState("");
     const canWriteback = canManageDispatch(operatorRole);
+    const historyLimit = historyPointLimit(historyWindow);
 
     useEffect(() => {
         localStorage.setItem("refinery-operator-role", operatorRole);
@@ -2130,9 +2133,9 @@ function App() {
         setPowerHistory((prev) => {
             const base = historyKeyRef.current === selectedId ? prev : [];
             historyKeyRef.current = selectedId;
-            return [...base, selected.powerKw].slice(-40);
+            return [...base, selected.powerKw].slice(-historyLimit);
         });
-    }, [selected.powerKw, selectedId]);
+    }, [historyLimit, selected.powerKw, selectedId]);
 
     // Seed the sparkline / forecast window from persisted Lakehouse-backed
     // history when a live semantic model is configured, so it reflects real
@@ -2146,17 +2149,17 @@ function App() {
         }
         let cancelled = false;
         void (async () => {
-            const history = await fetchPowerHistory(selectedId, 40);
+            const history = await fetchPowerHistory(selectedId, historyLimit);
             if (cancelled || !history || history.length === 0) {
                 return;
             }
             historyKeyRef.current = selectedId;
-            setPowerHistory(history.slice(-40));
+            setPowerHistory(history.slice(-historyLimit));
         })();
         return () => {
             cancelled = true;
         };
-    }, [selectedId]);
+    }, [historyLimit, selectedId]);
 
     const loadNotes = useCallback(async () => {
         setNotesLoading(true);
@@ -2864,7 +2867,16 @@ function App() {
                                     </dl>
 
                                     <div className="mt-2">
-                                        <p className="text-xs text-slate-400">Throughput trend (live)</p>
+                                        <div className="mb-1 flex items-center justify-between gap-2">
+                                            <p className="text-xs text-slate-400">Throughput trend (live)</p>
+                                            <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
+                                                {HISTORY_WINDOWS.map((window) => (
+                                                    <button key={window} type="button" onClick={() => setHistoryWindow(window)} className={`px-2 py-1 ${historyWindow === window ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>
+                                                        {window}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
                                     </div>
                                     <div className="mt-2 rounded border border-cyan-900/60 bg-[#06182f] px-2 py-2 text-xs">
@@ -2928,6 +2940,16 @@ function App() {
                                                 <option value={3}>3 ticks</option>
                                                 <option value={5}>5 ticks</option>
                                                 <option value={10}>10 ticks</option>
+                                            </select>
+                                            <span className="ml-2 text-slate-500">History</span>
+                                            <select
+                                                value={historyWindow}
+                                                onChange={(e) => setHistoryWindow(e.target.value as HistoryWindow)}
+                                                className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100"
+                                            >
+                                                {HISTORY_WINDOWS.map((window) => (
+                                                    <option key={window} value={window}>{window}</option>
+                                                ))}
                                             </select>
                                         </div>
                                         <input
@@ -3125,7 +3147,16 @@ function App() {
                         </dl>
 
                         <div className="mt-3">
-                            <p className="text-xs text-slate-400">Throughput trend (live)</p>
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                                <p className="text-xs text-slate-400">Throughput trend (live)</p>
+                                <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
+                                    {HISTORY_WINDOWS.map((window) => (
+                                        <button key={window} type="button" onClick={() => setHistoryWindow(window)} className={`px-2 py-1 ${historyWindow === window ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>
+                                            {window}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
                         </div>
                         <div className="mt-2 flex items-center justify-between rounded border border-cyan-900/60 bg-[#06182f] px-3 py-1.5 text-xs">

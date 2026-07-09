@@ -235,7 +235,7 @@ gantt
 | ⚡ | Lazy-load Three.js scenes (`React.lazy` + `Suspense`) to cut initial bundle | 🟡 Medium | ✅ Done |
 | 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | ✅ Done |
 | 🔐 | Role-based writeback (operator vs viewer) | 🟡 Medium | ✅ Done |
-| 🕰️ | Selectable history window (1h / 6h / 24h) on the sparkline | 🟡 Medium | 🔲 |
+| 🕰️ | Selectable history window (1h / 6h / 24h) on the sparkline | 🟡 Medium | ✅ Done |
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | 🔲 |
 | 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | 🔲 |
 | 🏗️ | Multi-domain app shell for the remaining four domains | 🟢 Low | 🔲 |
