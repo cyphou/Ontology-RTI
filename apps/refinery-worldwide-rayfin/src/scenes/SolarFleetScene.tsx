@@ -139,7 +139,7 @@ export default function SolarFleetScene({
         // Transparent + depthWrite:false so the ocean shows through and turbines stay on top.
         const mapTexture = createMapTexture(sites);
         const mapPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(92, 52, 1, 1),
+            new THREE.PlaneGeometry(92, 46, 1, 1),
             new THREE.MeshBasicMaterial({ map: mapTexture, transparent: true, depthWrite: false })
         );
         mapPlane.rotation.x = -Math.PI / 2;
@@ -147,6 +147,7 @@ export default function SolarFleetScene({
         scene.add(mapPlane);
 
         const grid = new THREE.GridHelper(92, 24, 0x2a557f, 0x2a557f);
+        grid.scale.z = 46 / 92; // constrain the square grid to the 92 x 46 map footprint
         grid.position.y = 0.02;
         grid.material.transparent = true;
         grid.material.opacity = 0.12;

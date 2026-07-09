@@ -108,7 +108,10 @@ export function projectLonToX(lon: number) {
 }
 
 export function projectLatToZ(lat: number) {
-    return ((90 - lat) / 180) * 52 - 26;
+    // Equirectangular is a 2:1 projection (360° lon × 180° lat). With the map
+    // plane 92 units wide, the depth must be 46 (92 / 2) so continents keep their
+    // true proportions instead of being stretched vertically.
+    return ((90 - lat) / 180) * 46 - 23;
 }
 
 // Real-world coastline outlines in [lon, lat], anchored so turbine sites land on
@@ -788,12 +791,13 @@ function WindFarmScene({
         terrain.geometry.computeVertexNormals();
         scene.add(terrain);
 
-        // Map plane spans exactly 92 x 52 world units so lon/lat -> X/Z matches
-        // projectLonToX / projectLatToZ, pinning every turbine to its real location.
+        // Map plane spans exactly 92 x 46 world units (true 2:1 equirectangular) so
+        // lon/lat -> X/Z matches projectLonToX / projectLatToZ, pinning every turbine
+        // to its real location without vertical distortion.
         // Transparent + depthWrite:false so the ocean shows through and turbines stay on top.
         const mapTexture = createMapTexture(sites);
         const mapPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(92, 52, 1, 1),
+            new THREE.PlaneGeometry(92, 46, 1, 1),
             new THREE.MeshBasicMaterial({ map: mapTexture, transparent: true, depthWrite: false })
         );
         mapPlane.rotation.x = -Math.PI / 2;
@@ -801,6 +805,7 @@ function WindFarmScene({
         scene.add(mapPlane);
 
         const grid = new THREE.GridHelper(92, 24, 0x2a557f, 0x2a557f);
+        grid.scale.z = 46 / 92; // constrain the square grid to the 92 x 46 map footprint
         grid.position.y = 0.02;
         grid.material.transparent = true;
         grid.material.opacity = 0.12;
