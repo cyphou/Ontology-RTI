@@ -27,8 +27,6 @@ import {
 } from "@/services/live-telemetry.service";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
-export { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
-
 type PlantStatus = "healthy" | "warning" | "alarm";
 
 type PlantTelemetry = {

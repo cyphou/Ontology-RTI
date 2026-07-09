@@ -6,7 +6,8 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, classifyAskIntent, normalizeAskQuestion } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides } from "@/App";
+import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
 
