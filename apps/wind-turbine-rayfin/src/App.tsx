@@ -29,6 +29,7 @@ import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.
 import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/services/operator-role.service";
 import { HISTORY_WINDOWS, historyPointLimit, type HistoryWindow } from "@/services/history-window.service";
 import { SceneErrorBoundary } from "@/components/SceneErrorBoundary";
+import { isTeamsAlertConfigured, postTeamsAlert } from "@/services/teams-alert.service";
 
 type TurbineStatus = "healthy" | "warning" | "alarm";
 
@@ -2229,6 +2230,13 @@ function App() {
                 } catch {
                     /* best effort — backend may be unreachable */
                 }
+                void postTeamsAlert({
+                    id: t.id,
+                    siteName: t.siteName,
+                    status: t.status,
+                    powerKw: t.powerKw,
+                    detail: `temp ${t.nacelleTempC} C, vib ${t.vibrationMmS} mm/s`,
+                });
             }
             void loadNotes();
         })();
@@ -2741,7 +2749,7 @@ function App() {
                                         </ul>
                                     )}
                                     {ackMessage && <p className="mt-2 text-xs text-emerald-300">{ackMessage}</p>}
-                                    <p className="mt-2 text-[11px] text-slate-500">Auto-logged {autoLogCount} alarm onset{autoLogCount === 1 ? "" : "s"} to dispatch notes this session.</p>
+                                    <p className="mt-2 text-[11px] text-slate-500">Auto-logged {autoLogCount} alarm onset{autoLogCount === 1 ? "" : "s"} to dispatch notes this session.{isTeamsAlertConfigured() ? " · Teams alerts on" : ""}</p>
                                 </Panel>
 
                                 <Panel title="Anomaly watch (predictive)">
