@@ -57,7 +57,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 
 - [x] **Anomaly detection** — predictive anomaly watch + auto‑logging, plus slope‑based escalation forecast (rising/falling trend + ETA‑to‑alarm) from a rolling anomaly‑score window.
 - [x] **Teams proactive alerts** — fallback-safe incoming-webhook seam posts a MessageCard on alarm onset when `VITE_TEAMS_WEBHOOK_URL` is set (no-op otherwise).
-- [ ] **Multi‑ontology / domain switch** — reuse the shell for the other accelerator domains (Solar, Manufacturing, etc.).
+- [~] **Multi‑ontology / domain switch** — reuse the shell for the other accelerator domains (Solar, Manufacturing, etc.). Scaffolder `apps/tools/scaffold-domain-app.mjs` stamps a new domain app from a template via a tested domain manifest; per-domain scene/telemetry authored on top.
 - [x] **Scenario / what‑if simulator** — model curtailment and maintenance windows against forecast output.
 
 ---

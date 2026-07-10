@@ -209,7 +209,7 @@ gantt
 | 📱 | Mobile / responsive layout (collapsible nav, stacked panels) | 🟡 Medium | ✅ Done |
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | ✅ Done |
 | 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | ✅ Done |
-| 🏗️ | Multi-domain shell — reuse the app shell for remaining domains | 🟢 Low | 🔲 |
+| 🏗️ | Multi-domain shell — reuse the app shell for remaining domains | 🟢 Low | � Scaffolder shipped |
 
 **Shipped increment — `Jul 2026`:**
 
@@ -238,7 +238,7 @@ gantt
 | 🕰️ | Selectable history window (1h / 6h / 24h) on the sparkline | 🟡 Medium | ✅ Done |
 | 📨 | Teams proactive alerts via the Operations Agent | 🟢 Low | ✅ Done |
 | 🎛️ | Scenario / what-if simulator (curtailment, maintenance windows) | 🟢 Low | ✅ Done |
-| 🏗️ | Multi-domain app shell for the remaining four domains | 🟢 Low | 🔲 |
+| 🏗️ | Multi-domain app shell for the remaining four domains | 🟢 Low | � Scaffolder shipped |
 
 **Shipped increment — `Aug 2026`:**
 
