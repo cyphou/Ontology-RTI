@@ -30,11 +30,34 @@ export interface DispatchNoteRecord {
     createdAt: string;
 }
 
+/**
+ * Predictive maintenance work order (a structured writeback target). Raised from
+ * the anomaly escalation forecast + what-if simulator, it captures the suspected
+ * component, priority, the planned curtailment/downtime intervention and its
+ * projected energy impact, and a lifecycle status — so a predicted failure turns
+ * into a tracked, auditable action rather than a free-text note.
+ */
+export interface MaintenanceOrderRecord {
+    id?: string;
+    turbineId: string;
+    siteId: string;
+    component: string;
+    priority: string;
+    status: string;
+    curtailPct: number;
+    downtimeTicks: number;
+    projectedDeltaKwt: number;
+    assignee: string;
+    note: string;
+    createdAt: string;
+}
+
 /** Schema map consumed by {@link RayfinClient} for typed GraphQL proxies. */
 export type OntologyDataSchema = {
     WindSite: OntologySiteRecord;
     DispatchNote: DispatchNoteRecord;
     SensorThreshold: SignalThresholdRecord;
+    MaintenanceOrder: MaintenanceOrderRecord;
 };
 
 /**
@@ -116,6 +139,32 @@ export async function recentDispatchNotes(limit = 50): Promise<DispatchNoteRecor
         .data.DispatchNote.select(["id", "turbineId", "siteId", "status", "powerKw", "createdAt"])
         .orderBy({ createdAt: "desc" })
         .execute()) as DispatchNoteRecord[];
+    return rows.slice(0, limit);
+}
+
+/** Persist a maintenance work order to the ontology-backed store. Throws if the backend is unreachable. */
+export async function saveMaintenanceOrder(order: MaintenanceOrderRecord): Promise<MaintenanceOrderRecord> {
+    return getRayfinClient().data.MaintenanceOrder.create({
+        turbineId: order.turbineId,
+        siteId: order.siteId,
+        component: order.component,
+        priority: order.priority,
+        status: order.status,
+        curtailPct: order.curtailPct,
+        downtimeTicks: order.downtimeTicks,
+        projectedDeltaKwt: order.projectedDeltaKwt,
+        assignee: order.assignee,
+        note: order.note,
+        createdAt: new Date(order.createdAt),
+    }) as Promise<MaintenanceOrderRecord>;
+}
+
+/** Read the most recent maintenance work orders (newest first). Throws if the backend is unreachable. */
+export async function recentMaintenanceOrders(limit = 20): Promise<MaintenanceOrderRecord[]> {
+    const rows = (await getRayfinClient()
+        .data.MaintenanceOrder.select(["id", "turbineId", "siteId", "component", "priority", "status", "projectedDeltaKwt", "assignee", "createdAt"])
+        .orderBy({ createdAt: "desc" })
+        .execute()) as MaintenanceOrderRecord[];
     return rows.slice(0, limit);
 }
 

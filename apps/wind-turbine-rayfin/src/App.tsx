@@ -14,8 +14,11 @@ import {
     ensureSignalThresholds,
     listSignalThresholds,
     recentDispatchNotes,
+    recentMaintenanceOrders,
     saveDispatchNote,
+    saveMaintenanceOrder,
     type DispatchNoteRecord,
+    type MaintenanceOrderRecord,
     type SignalThresholdRecord,
 } from "@/services/ontology-data.service";
 import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
@@ -1227,6 +1230,31 @@ export function simulateScenario(input: ScenarioInput): ScenarioResult {
     };
 }
 
+export type WorkOrderPriority = "P1" | "P2" | "P3";
+export type WorkOrderComponent = "Gearbox" | "Generator";
+
+// Work-order priority from current severity (anomaly score 0..1) and imminence
+// (ticks-to-alarm from the escalation forecast; null when not trending up).
+// P1 = act now, P2 = schedule soon, P3 = monitor.
+export function derivePriority(anomalyScoreValue: number, etaToAlarmTicks: number | null): WorkOrderPriority {
+    if (anomalyScoreValue >= 0.75 || (etaToAlarmTicks != null && etaToAlarmTicks <= 3)) {
+        return "P1";
+    }
+    if (anomalyScoreValue >= 0.5 || (etaToAlarmTicks != null && etaToAlarmTicks <= 8)) {
+        return "P2";
+    }
+    return "P3";
+}
+
+// Suspected component from the dominant abnormal signal, each normalised against
+// its own warn->alarm band: vibration points at the mechanical drivetrain
+// (gearbox), thermal load at the generator.
+export function recommendComponent(nacelleTempC: number, vibrationMmS: number): WorkOrderComponent {
+    const tempSeverity = (nacelleTempC - SIGNAL_METADATA.temp.warn) / Math.max(1, SIGNAL_METADATA.temp.alarm - SIGNAL_METADATA.temp.warn);
+    const vibSeverity = (vibrationMmS - SIGNAL_METADATA.vibration.warn) / Math.max(1, SIGNAL_METADATA.vibration.alarm - SIGNAL_METADATA.vibration.warn);
+    return vibSeverity >= tempSeverity ? "Gearbox" : "Generator";
+}
+
 // Ids of turbines that transitioned into "alarm" since the previous status snapshot.
 export function newlyAlarmed(prev: Record<string, TurbineStatus>, turbines: { id: string; status: TurbineStatus }[]): string[] {
     return turbines.filter((t) => t.status === "alarm" && prev[t.id] !== "alarm").map((t) => t.id);
@@ -1977,6 +2005,9 @@ function App() {
     const [simCurtail, setSimCurtail] = useState(0);
     const [simDowntime, setSimDowntime] = useState(0);
     const [simHorizon, setSimHorizon] = useState(12);
+    const [maintenanceOrders, setMaintenanceOrders] = useState<MaintenanceOrderRecord[]>([]);
+    const [woAssignee, setWoAssignee] = useState("");
+    const [woMessage, setWoMessage] = useState<string | null>(null);
     const [historyWindow, setHistoryWindow] = useState<HistoryWindow>("6h");
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
@@ -2150,6 +2181,18 @@ function App() {
         }
     }, []);
 
+    const loadOrders = useCallback(async () => {
+        try {
+            setMaintenanceOrders(await recentMaintenanceOrders(10));
+        } catch {
+            /* backend not ready — best effort */
+        }
+    }, []);
+
+    useEffect(() => {
+        void loadOrders();
+    }, [loadOrders]);
+
     const acknowledgeAlert = useCallback(async (t: TurbineTelemetry) => {
         if (!canWriteback) {
             setAckMessage("Viewer mode — switch to Operator to acknowledge alarms.");
@@ -2291,6 +2334,44 @@ function App() {
     const siteSummaries = useMemo(() => summarizeSites(turbines, sites), [turbines, sites]);
 
     const scenario = simulateScenario({ baselineKw: selected.powerKw, curtailmentPct: simCurtail, downtimeTicks: simDowntime, horizonTicks: simHorizon });
+
+    const selectedForecast = forecastEscalation(anomalyHistRef.current.get(selected.id) ?? []);
+    const suggestedPriority = derivePriority(anomalyScore(selected), selectedForecast.etaToAlarmTicks);
+    const suggestedComponent = recommendComponent(selected.nacelleTempC, selected.vibrationMmS);
+
+    const handleRaiseWorkOrder = useCallback(async () => {
+        setWoMessage(null);
+        if (!canWriteback) {
+            setWoMessage("Viewer mode — switch to Operator to raise work orders.");
+            return;
+        }
+        const deltaKwt = Math.round(scenario.energyDeltaKwt);
+        const order: MaintenanceOrderRecord = {
+            turbineId: selected.id,
+            siteId: selected.siteId,
+            component: suggestedComponent,
+            priority: suggestedPriority,
+            status: "Open",
+            curtailPct: simCurtail,
+            downtimeTicks: simDowntime,
+            projectedDeltaKwt: deltaKwt,
+            assignee: woAssignee.trim() || "unassigned",
+            note: `${suggestedComponent} · plan curtail ${simCurtail}% / downtime ${simDowntime}t · projected ${deltaKwt.toLocaleString()} kW·t`.slice(0, 500),
+            createdAt: new Date().toISOString(),
+        };
+        try {
+            const saved = await saveMaintenanceOrder(order);
+            const ref = saved.id ? ` (id ${saved.id.slice(0, 8)})` : "";
+            setWoMessage(`${suggestedPriority} work order raised for ${selected.id} — ${suggestedComponent}${ref}.`);
+            setWoAssignee("");
+            void loadOrders();
+        } catch {
+            const fallback = JSON.parse(localStorage.getItem("wind-workorders") ?? "[]") as unknown[];
+            fallback.push(order);
+            localStorage.setItem("wind-workorders", JSON.stringify(fallback));
+            setWoMessage(`Backend unreachable. Work order saved locally (${fallback.length}).`);
+        }
+    }, [canWriteback, loadOrders, scenario.energyDeltaKwt, selected.id, selected.siteId, simCurtail, simDowntime, suggestedComponent, suggestedPriority, woAssignee]);
 
     const runAsk = useCallback(async (override?: string) => {
         setAskLoading(true);
@@ -3041,6 +3122,30 @@ function App() {
                                         <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
                                         <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
                                     </dl>
+                                </Panel>
+
+                                <Panel title="Predictive work order">
+                                    <p className="mb-2 text-[11px] text-slate-400">Turn the anomaly forecast and simulated intervention into a tracked work order for {selected.id}.</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Suspected</span><div className="text-slate-100">{suggestedComponent}</div></div>
+                                        <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Priority</span><div className={suggestedPriority === "P1" ? "text-rose-300" : suggestedPriority === "P2" ? "text-amber-300" : "text-emerald-300"}>{suggestedPriority}{selectedForecast.etaToAlarmTicks != null ? ` · ETA ~${selectedForecast.etaToAlarmTicks}t` : ""}</div></div>
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-slate-400">Plan (from simulator): curtail {simCurtail}% · downtime {simDowntime}t · projected {scenario.energyDeltaKwt.toLocaleString()} kW·t</p>
+                                    <input value={woAssignee} onChange={(e) => setWoAssignee(e.target.value)} disabled={!canWriteback} placeholder="Assign to… (optional)" aria-label="Assign work order to" className="mt-2 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100" />
+                                    <button type="button" onClick={handleRaiseWorkOrder} disabled={!canWriteback} className="mt-2 w-full rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50">{canWriteback ? `Raise ${suggestedPriority} work order` : "Viewer mode — writeback disabled"}</button>
+                                    {woMessage && <p className="mt-2 text-xs text-cyan-200">{woMessage}</p>}
+                                    {maintenanceOrders.length > 0 && (
+                                        <ul className="mt-3 space-y-1 text-xs">
+                                            {maintenanceOrders.slice(0, 5).map((o) => (
+                                                <li key={o.id ?? `${o.turbineId}-${o.createdAt}`} className="rounded bg-[#0b1d38aa] px-2 py-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-slate-200">{o.turbineId}</span>
+                                                        <span className={o.priority === "P1" ? "text-rose-300" : o.priority === "P2" ? "text-amber-300" : "text-emerald-300"}>{o.priority} · {o.component} · {o.status}</span>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </Panel>
 
                                 <Panel

@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario, derivePriority, recommendComponent } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -165,6 +165,32 @@ describe("forecastEscalation", () => {
 
     it("treats a flat trend as stable", () => {
         expect(forecastEscalation([0.5, 0.5, 0.5, 0.5]).direction).toBe("stable");
+    });
+});
+
+describe("derivePriority", () => {
+    it("escalates to P1 on high severity or imminent alarm", () => {
+        expect(derivePriority(0.8, null)).toBe("P1");
+        expect(derivePriority(0.2, 2)).toBe("P1");
+    });
+
+    it("uses P2 for moderate severity or a near-term ETA", () => {
+        expect(derivePriority(0.55, null)).toBe("P2");
+        expect(derivePriority(0.1, 6)).toBe("P2");
+    });
+
+    it("defaults to P3 when calm and not trending up", () => {
+        expect(derivePriority(0.2, null)).toBe("P3");
+    });
+});
+
+describe("recommendComponent", () => {
+    it("points at the gearbox when vibration dominates", () => {
+        expect(recommendComponent(60, 9)).toBe("Gearbox");
+    });
+
+    it("points at the generator when thermal load dominates", () => {
+        expect(recommendComponent(95, 3)).toBe("Generator");
     });
 });
 

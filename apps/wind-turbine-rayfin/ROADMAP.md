@@ -26,9 +26,10 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 | **Graph view** | Interactive ontology relationship graph (Fleet → Site → Turbine) with zoom, pan, hover edge‑tracing, status filter, and reset |
 | **Forecasting** | Linear‑regression forecast with confidence bands, multi‑horizon (3/6/12), sparkline overlay |
 | **Alarm automation** | Auto‑writes a `DispatchNote` the first time a turbine crosses into alarm (deduped per onset) |
+| **Predictive work orders** | Raise a structured, tracked `MaintenanceOrder` from a turbine — suspected component + P1/P2/P3 priority derived from the anomaly escalation forecast, planned curtailment/downtime and projected energy impact pulled from the what‑if simulator; operator‑gated, fallback‑safe |
 | **Deep‑linking** | `view` + `selectedId` encoded in the URL hash for shareable views |
 | **Ask Fabric IQ** | Grounded NL Q&A over telemetry + sites + notes, suggested questions |
-| **Ontology backend** | `WindSite` + `DispatchNote` entities, ensure‑sites bootstrap, dispatch note persistence |
+| **Ontology backend** | `WindSite` + `DispatchNote` + `SensorThreshold` + `MaintenanceOrder` entities, ensure‑sites bootstrap, dispatch note & work‑order persistence |
 | **Shell** | Menu‑driven nav rail (with badges), KPI header strip, pause/resume, refresh interval, turbine detail modal |
 | **Bundle** | Three.js split into its own cached chunk via `manualChunks` |
 | **Quality** | 56 passing tests, clean `build:fabric`, one‑command `rayfin up` deploy |
