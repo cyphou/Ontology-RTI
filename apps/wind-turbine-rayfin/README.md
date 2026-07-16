@@ -35,9 +35,10 @@ Wind-farm operations teams often monitor telemetry, alarms, and maintenance cont
 
 ### Reusable Fabric Connections (Across Apps)
 This pattern is reusable beyond Wind Turbine. Rayfin apps can be connected to:
+- Real-Time Intelligence (RTI) — Eventhouse/KQL as the telemetry backend for live and near-real-time signals
+- Ontology + Graph model as the backbone for the digital twin (asset topology, component/device relationships)
 - Ontology Data Agent endpoints for natural-language, ontology-grounded Q&A
-- Semantic Models for live telemetry and KPI querying
-- Eventhouse/KQL pipelines for near-real-time operational signals
+- Semantic Models for live telemetry aggregation and KPI querying
 - Ontology-backed entities for writeback workflows (notes, dispatch, configuration)
 
 ### Solution Architecture
@@ -52,13 +53,17 @@ flowchart LR
 
       subgraph Fabric
          H[Host Bridge]
+         R[RTI\nEventhouse / KQL Telemetry]
          S[Semantic Model]
+         O[Ontology + Graph\nDigital Twin]
          D[Data Agent]
          B[TurbineDevice Backend]
       end
 
       A --> H
+      H --> R
       H --> S
+      H --> O
       H --> D
       H --> B
 

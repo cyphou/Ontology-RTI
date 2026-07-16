@@ -1,5 +1,13 @@
 # Wind Turbine Rayfin App - Hackathon Submission
 
+> If your environment blocks external badge hosts, local icons and emoji markers below provide the same visual cues.
+
+<p align="center">
+   <img src="../../assets/icons/wind-turbine.svg" alt="Wind Turbine" width="56"/>
+   <img src="../../assets/icons/solar.svg" alt="Solar" width="56"/>
+   <img src="../../assets/icons/smart-building.svg" alt="Smart Building" width="56"/>
+</p>
+
 <p align="center">
    <img src="https://img.shields.io/badge/Microsoft%20Fabric-742774?style=for-the-badge&logo=microsoftfabric&logoColor=white" alt="Microsoft Fabric"/>
    <img src="https://img.shields.io/badge/Rayfin-Fabric%20Apps-0078D4?style=for-the-badge" alt="Rayfin"/>
@@ -17,6 +25,12 @@
 ## Project
 **Geo Wind Twin Command Center**
 
+### 🌟 At a Glance
+- 🧭 Operations-first wind command center
+- 🛰️ Live or simulated telemetry
+- 🤖 Ontology Data Agent + Fabric integrations
+- 📦 Exportable mission evidence for judges
+
 A Rayfin + Microsoft Fabric demo app for wind-farm operations that combines a live fleet map, per-turbine digital twins, AI-assisted triage, and mission reporting.
 
 ## Quick Navigation
@@ -33,16 +47,19 @@ A Rayfin + Microsoft Fabric demo app for wind-farm operations that combines a li
 - [Submission Checklist](#submission-checklist)
 
 ## 1) Problem Statement
+### 🎯 Problem Statement
 Wind-farm operations teams often monitor telemetry, alarms, and maintenance context across disconnected tools. This causes slower triage, delayed dispatch decisions, and inconsistent operator handoffs.
 
 This project addresses that gap with one operational command center that unifies live status, diagnostics, and action workflows in a single experience.
 
 ## 2) Target User
+### 👥 Target User
 - Primary user: Wind operations controller (NOC / dispatch operator)
 - Secondary users: Site technicians, reliability engineers, and demo/field solution architects
 - Stakeholders: Energy customers evaluating Fabric Apps and Rayfin reusable templates
 
 ## 3) Use-Case Strength and Impact
+### ⚡ Use-Case Strength and Impact
 ### Core use-case
 When incidents spike, an operator needs to quickly identify the highest-risk turbine, understand probable cause, and dispatch the right response.
 
@@ -58,6 +75,7 @@ When incidents spike, an operator needs to quickly identify the highest-risk tur
 - Better cross-team communication through exportable run reports
 
 ## 4) What We Built
+### 🛠️ What We Built
 - 3D multi-site wind fleet map with turbine-level selection
 - Digital twin scene with component and device hierarchy
 - Persisted twin-device metadata in Fabric backend (`TurbineDevice`)
@@ -69,12 +87,14 @@ When incidents spike, an operator needs to quickly identify the highest-risk tur
 
 ### Reusable Fabric Connections (Across Apps)
 This approach is reusable beyond the wind scenario. Rayfin apps can connect to:
+- Real-Time Intelligence (RTI) — Eventhouse/KQL as the telemetry backbone for live and near-real-time signals
+- Ontology + Graph model as the backbone for the digital twin (asset topology, component/device relationships)
 - Ontology Data Agent endpoints for ontology-grounded Q&A
-- Semantic Models for live telemetry and KPI queries
-- Eventhouse/KQL streams for near-real-time operations
-- Ontology-backed entities for writeback workflows
+- Semantic Models for live telemetry aggregation and KPI queries
+- Ontology-backed entities for writeback workflows (notes, dispatch, configuration)
 
 ## 5) Solution Architecture
+### 🏗️ Solution Architecture
 
 ```mermaid
 flowchart LR
@@ -86,13 +106,17 @@ flowchart LR
 
       subgraph Fabric
          H[Fabric Host Bridge]
-         S[Semantic Model\nLive Telemetry]
+         R[Real-Time Intelligence\nEventhouse / KQL Telemetry]
+         S[Semantic Model\nAggregation + KPIs]
+         O[Ontology + Graph\nDigital Twin Topology]
          D[Data Agent]
          B[TurbineDevice Backend]
       end
 
       A --> H
+      H --> R
       H --> S
+      H --> O
       H --> D
       H --> B
 
@@ -113,14 +137,17 @@ flowchart LR
 
 ### Fabric integration seams
 1. Fabric host/client bridge
-2. Semantic model telemetry (Direct Lake-backed querying)
-3. Data Agent for natural-language answers
+2. Real-Time Intelligence (RTI): Eventhouse/KQL as the telemetry backend for streaming signals
+3. Semantic model telemetry (Direct Lake-backed aggregation and KPIs)
+4. Ontology + Graph model powering the digital twin topology and relationships
+5. Data Agent for natural-language answers
 
 ### Data modes
 - Live mode: connected to Fabric semantic model + agent
 - Simulation mode: synthetic telemetry generator with same UX surfaces
 
 ## 6) Reusability and Quality
+### ♻️ Reusability and Quality
 ### Reusability
 - Designed as a reusable industry template pattern for Rayfin
 - Config-driven runtime wiring through environment variables
@@ -133,12 +160,14 @@ flowchart LR
 - Operator-focused UX with explicit source labeling for trust
 
 ## 7) Uniqueness
+### 💎 Uniqueness
 - Combines geospatial fleet awareness and turbine-level twin diagnostics in one app
 - Adds mission-style guided storytelling for operational incident scenarios
 - Includes exportable, structured run evidence (mission report) for reproducible demos
 - Uses a persistent device graph model to bridge visual twin and operational metadata
 
 ## 8) Product Feedback Quality
+### 🧠 Product Feedback Quality
 ### What worked well
 - Fast iteration cycle with Rayfin app structure
 - Good separation between host integration and local dev
@@ -155,6 +184,7 @@ flowchart LR
 - Provide packaged incident response template blocks (panel, scoring, reporting)
 
 ## 9) Demo and Run Instructions
+### 🎬 Demo and Run Instructions
 ```mermaid
 flowchart TD
       A[npm install] --> B[npm run dev]
@@ -176,11 +206,13 @@ flowchart TD
 5. Export Mission Report JSON as judging artifact
 
 ## 10) Submission Metadata
+### 📌 Submission Metadata
 - Repository: https://github.com/cyphou/Ontology-RTI
 - App folder: `apps/wind-turbine-rayfin`
 - Final branch for submission: `main`
 
 ## Submission Checklist
+### ✅ Submission Checklist
 - [x] Public repository link provided
 - [x] Final app available on `main`
 - [x] Problem statement documented
