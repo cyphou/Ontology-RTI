@@ -2584,7 +2584,6 @@ function App() {
         [onCallOnly, responderLoad, responderShiftFilter, selected.siteId, suggestedComponent, suggestedPriority],
     );
     const primaryResponder = suggestedResponders[0] ?? null;
-    const nextResponders = suggestedResponders.slice(1, 3);
     const responderAvailability = useMemo(
         () => summarizeResponderAvailability(suggestedResponders.map((r) => ({ shift: r.shift, onCall: r.onCall, currentLoad: r.currentLoad }))),
         [suggestedResponders],
@@ -4522,62 +4521,25 @@ function App() {
 
                                 {/* 2 — Plan work order (primary) + live analytics / SLA sidebar */}
                                 <div className="ops-section grid grid-cols-1 gap-4 lg:grid-cols-3">
-                                    {/* Plan work order — the marquee */}
+                                    {/* Dispatch console — escalation, what-if planning & expert controls */}
                                     <div className="ops-plan rounded-2xl border border-cyan-500/25 bg-gradient-to-b from-cyan-500/[0.06] via-transparent to-transparent p-4 shadow-[0_18px_40px_rgba(4,20,40,0.4)] lg:col-span-2">
                                         <div className="flex flex-wrap items-start justify-between gap-2">
                                             <div>
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300">Plan work order</p>
-                                                <p className="mt-0.5 text-xs text-slate-400">AI-suggested intervention for {selected.id}</p>
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300">Dispatch console</p>
+                                                <p className="mt-0.5 text-xs text-slate-400">Suspected <span className="font-semibold text-slate-200">{suggestedComponent}</span> on {selected.id} — schedule &amp; dispatch technicians from the Workers timetable below.</p>
                                             </div>
                                             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${suggestedPriority === "P1" ? "bg-rose-500/10 text-rose-300 ring-rose-500/40" : suggestedPriority === "P2" ? "bg-amber-500/10 text-amber-300 ring-amber-500/40" : "bg-emerald-500/10 text-emerald-300 ring-emerald-500/40"}`}>
                                                 {suggestedPriority}{selectedForecast.etaToAlarmTicks != null ? ` · ETA ~${selectedForecast.etaToAlarmTicks}t` : ""}
                                             </span>
                                         </div>
 
-                                        {/* Suggested component / priority / projected impact */}
-                                        <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                                            <div className="rounded-xl border border-white/5 bg-[#0a1830]/70 px-3 py-2.5">
-                                                <p className="text-[10px] uppercase tracking-wide text-slate-400">Suspected component</p>
-                                                <p className="mt-0.5 text-base font-semibold text-slate-100">{suggestedComponent}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-white/5 bg-[#0a1830]/70 px-3 py-2.5">
-                                                <p className="text-[10px] uppercase tracking-wide text-slate-400">Priority</p>
-                                                <p className={`mt-0.5 text-base font-semibold ${suggestedPriority === "P1" ? "text-rose-300" : suggestedPriority === "P2" ? "text-amber-300" : "text-emerald-300"}`}>{suggestedPriority}</p>
-                                            </div>
-                                            <div className={`rounded-xl border px-3 py-2.5 ${scenario.energyDeltaKwt < 0 ? "border-rose-500/30 bg-rose-500/[0.07]" : "border-emerald-500/30 bg-emerald-500/[0.07]"}`}>
+                                        {/* Projected impact snapshot (from the what-if plan) */}
+                                        <div className={`mt-3 flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${scenario.energyDeltaKwt < 0 ? "border-rose-500/30 bg-rose-500/[0.07]" : "border-emerald-500/30 bg-emerald-500/[0.07]"}`}>
+                                            <div>
                                                 <p className="text-[10px] uppercase tracking-wide text-slate-400">Projected impact</p>
-                                                <p className={`mt-0.5 text-xl font-bold ${scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()}<span className="text-xs font-medium text-slate-400"> kW·t</span></p>
+                                                <p className="mt-0.5 text-[11px] text-slate-400">curtail {simCurtail}% · downtime {simDowntime}t · horizon {simHorizon}t</p>
                                             </div>
-                                        </div>
-
-                                        {/* WorkIQ roster summary + incident storytelling */}
-                                        <div className="mt-3 rounded-xl border border-cyan-800/40 bg-[#0a1c2f] p-3">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-300">Incident story · WorkIQ roster</p>
-                                                <p className="truncate text-[10px] text-slate-400">
-                                                    Primary <span className="text-slate-200">{primaryResponder ? `${primaryResponder.name.split(" ")[0]} ${Math.round(primaryResponder.score)}%` : "none"}</span>
-                                                    {nextResponders.length > 0 && <span className="text-slate-500"> · next {nextResponders.map((r) => `${r.name.split(" ")[0]} ${Math.round(r.score)}%`).join(" • ")}</span>}
-                                                </p>
-                                            </div>
-                                            {primaryResponder ? (
-                                                <div className="mt-2 flex items-start gap-3">
-                                                    <img src={primaryResponder.photo} alt={`${primaryResponder.name} portrait`} className="h-14 w-14 rounded-xl border border-[#3a4657] object-cover" />
-                                                    <div className="min-w-0 flex-1 text-[11px]">
-                                                        <p className="text-sm font-semibold text-slate-100">{primaryResponder.name}</p>
-                                                        <p className="text-slate-400">{primaryResponder.role} · ETA {primaryResponder.etaMin} min · shift {primaryResponder.shift}</p>
-                                                        <p className="mt-1 leading-5 text-slate-300">{incidentStory}</p>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => { setTechPopupResponderId(primaryResponder.id); setTechPopupOpen(true); }}
-                                                            className="mt-1.5 rounded-lg border border-cyan-700/60 bg-cyan-900/20 px-2.5 py-1 text-[10px] font-medium text-cyan-200 hover:bg-cyan-900/40"
-                                                        >
-                                                            View full profile
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <p className="mt-2 text-[11px] text-slate-400">No primary responder selected.</p>
-                                            )}
+                                            <p className={`text-xl font-bold ${scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()}<span className="text-xs font-medium text-slate-400"> kW·t</span></p>
                                         </div>
 
                                         {needsEscalation && (
@@ -4593,40 +4555,35 @@ function App() {
                                             </div>
                                         )}
 
-                                        {/* Simulate intervention (what-if plan) */}
-                                        <div className="mt-3 rounded-xl border border-white/5 bg-[#0a1830]/60 p-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">Simulate intervention</p>
-                                            <p className="mb-2 mt-0.5 text-[11px] text-slate-400">Model curtailment and a maintenance window against {selected.id}'s current output baseline.</p>
-                                            <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
-                                                <label className="flex flex-col gap-1">
-                                                    Curtail %
-                                                    <input type="number" min={0} max={100} value={simCurtail} onChange={(e) => setSimCurtail(Number(e.target.value))} aria-label="Curtailment percent" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
-                                                <label className="flex flex-col gap-1">
-                                                    Downtime (t)
-                                                    <input type="number" min={0} max={simHorizon} value={simDowntime} onChange={(e) => setSimDowntime(Number(e.target.value))} aria-label="Maintenance downtime ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
-                                                <label className="flex flex-col gap-1">
-                                                    Horizon (t)
-                                                    <input type="number" min={1} max={96} value={simHorizon} onChange={(e) => setSimHorizon(Number(e.target.value))} aria-label="Scenario horizon ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
+                                        {/* What-if planning — collapsible; feeds the scenario used by every raised work order */}
+                                        <details className="wow-disclosure mt-3">
+                                            <summary>What-if planning</summary>
+                                            <div className="wow-disclosure-body">
+                                                <div className="rounded-xl border border-white/5 bg-[#0a1830]/60 p-3">
+                                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">Simulate intervention</p>
+                                                    <p className="mb-2 mt-0.5 text-[11px] text-slate-400">Model curtailment and a maintenance window against {selected.id}'s current output baseline. These values are attached to every work order you raise.</p>
+                                                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
+                                                        <label className="flex flex-col gap-1">
+                                                            Curtail %
+                                                            <input type="number" min={0} max={100} value={simCurtail} onChange={(e) => setSimCurtail(Number(e.target.value))} aria-label="Curtailment percent" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                        <label className="flex flex-col gap-1">
+                                                            Downtime (t)
+                                                            <input type="number" min={0} max={simHorizon} value={simDowntime} onChange={(e) => setSimDowntime(Number(e.target.value))} aria-label="Maintenance downtime ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                        <label className="flex flex-col gap-1">
+                                                            Horizon (t)
+                                                            <input type="number" min={1} max={96} value={simHorizon} onChange={(e) => setSimHorizon(Number(e.target.value))} aria-label="Scenario horizon ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                    </div>
+                                                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
+                                                        <div className="flex justify-between"><dt className="text-slate-400">Projected output</dt><dd>{scenario.projectedKw.toLocaleString()} kW</dd></div>
+                                                        <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
+                                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
+                                                    </dl>
+                                                </div>
                                             </div>
-                                            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
-                                                <div className="flex justify-between"><dt className="text-slate-400">Projected output</dt><dd>{scenario.projectedKw.toLocaleString()} kW</dd></div>
-                                                <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
-                                                <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
-                                            </dl>
-                                        </div>
-
-                                        {/* Assign + primary CTA */}
-                                        <div className="mt-3 rounded-xl border border-cyan-500/20 bg-[#08142a]/70 p-3">
-                                            <p className="text-[11px] text-slate-400">Plan: curtail {simCurtail}% · downtime {simDowntime}t · projected {scenario.energyDeltaKwt.toLocaleString()} kW·t</p>
-                                            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                                                <input value={woAssignee} onChange={(e) => setWoAssignee(e.target.value)} placeholder="Assign to… (optional)" aria-label="Assign work order to" className="w-full rounded-lg border border-slate-700 bg-[#08142a] px-3 py-2 text-sm text-slate-100 sm:flex-1" />
-                                                <button type="button" onClick={handleRaiseWorkOrder} className="ops-raise-btn w-full rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(6,182,212,0.4)] hover:from-cyan-400 hover:to-cyan-500 sm:w-auto sm:whitespace-nowrap">{`Raise ${suggestedPriority} work order`}</button>
-                                            </div>
-                                            {woMessage && <p className="mt-2 text-xs text-cyan-200">{woMessage}</p>}
-                                        </div>
+                                        </details>
 
                                         {/* Expert controls — collapsed by default */}
                                         <details className="wow-disclosure mt-3">
@@ -4900,12 +4857,117 @@ function App() {
                                     </div>
                                 </div>
 
+                                {/* 2.5 — Workers timetable: full roster scheduling board */}
+                                <section className="ops-section ops-timetable relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#07142a] p-4 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
+                                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgba(6,182,212,0.18),transparent_55%),radial-gradient(circle_at_5%_130%,rgba(16,185,129,0.12),transparent_50%)]" />
+                                    <div className="relative">
+                                        <div className="flex flex-wrap items-end justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">Workers timetable</p>
+                                                <h3 className="mt-1 text-lg font-bold text-white">Field crew schedule</h3>
+                                                <p className="mt-0.5 text-xs text-slate-400">All {MOCK_WORKIQ_RESPONDERS.length} technicians across shifts · assign work orders for <span className="font-semibold text-slate-200">{selected.id}</span> ({suggestedComponent} · {suggestedPriority}).</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleRaiseWorkOrder()}
+                                                className="ops-raise-btn inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(6,182,212,0.4)] hover:from-cyan-400 hover:to-cyan-500"
+                                            >
+                                                <span aria-hidden="true">＋</span> Add work order
+                                            </button>
+                                        </div>
+
+                                        {woMessage && <p className="mt-2 rounded-lg border border-cyan-500/25 bg-cyan-500/[0.07] px-3 py-1.5 text-xs text-cyan-200">{woMessage}</p>}
+
+                                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                                            {([
+                                                { key: "day", label: "Day", hint: "07:00–15:00" },
+                                                { key: "swing", label: "Swing", hint: "15:00–23:00" },
+                                                { key: "night", label: "Night", hint: "23:00–07:00" },
+                                            ] as const).map((col) => {
+                                                const crew = MOCK_WORKIQ_RESPONDERS.filter((w) => w.shift === col.key);
+                                                return (
+                                                    <div key={col.key} className="rounded-xl border border-[#22303f] bg-[#0a1830]/50 p-2.5">
+                                                        <div className="mb-2 flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">{col.label}</p>
+                                                            </div>
+                                                            <p className="text-[10px] text-slate-500">{col.hint} · {crew.length}</p>
+                                                        </div>
+                                                        {crew.length === 0 ? (
+                                                            <p className="rounded-lg border border-[#22303f] bg-[#101c2e] px-2 py-3 text-center text-[11px] text-slate-500">No crew on this shift.</p>
+                                                        ) : (
+                                                            <ul className="space-y-2">
+                                                                {crew.map((person) => {
+                                                                    const load = responderLoad[person.id] ?? 0;
+                                                                    const workerOrders = maintenanceOrders
+                                                                        .filter((o) => o.assignee === person.name)
+                                                                        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+                                                                    return (
+                                                                        <li key={person.id} className="ops-worker rounded-xl border border-[#2a313b]/70 bg-[#101c2e] p-2.5">
+                                                                            <div className="flex items-start gap-2.5">
+                                                                                <img src={person.photo} alt={`${person.name} portrait`} className="h-11 w-11 shrink-0 rounded-lg border border-[#3a4657] object-cover" />
+                                                                                <div className="min-w-0 flex-1">
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <p className="truncate text-sm font-semibold text-slate-100">{person.name}</p>
+                                                                                        {person.onCall && <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-500/40">On-call</span>}
+                                                                                    </div>
+                                                                                    <p className="truncate text-[11px] text-slate-400">{person.role}</p>
+                                                                                </div>
+                                                                                <span className="shrink-0 rounded-md bg-[#0a1830] px-1.5 py-0.5 text-[10px] text-slate-300 ring-1 ring-[#2a313b]">Load {load}</span>
+                                                                            </div>
+                                                                            <div className="mt-2 flex flex-wrap items-center gap-1">
+                                                                                {person.skills.map((skill) => (
+                                                                                    <span key={skill} className="rounded-md bg-cyan-500/10 px-1.5 py-0.5 text-[10px] text-cyan-200 ring-1 ring-cyan-500/30">{skill}</span>
+                                                                                ))}
+                                                                                <span className="ml-auto text-[10px] text-slate-500">ETA {person.etaMin}m</span>
+                                                                            </div>
+                                                                            <div className="mt-2 rounded-lg border border-[#22303f] bg-[#0a1830]/60 p-2">
+                                                                                <p className="text-[10px] uppercase tracking-wide text-slate-500">Assigned ({workerOrders.length})</p>
+                                                                                {workerOrders.length === 0 ? (
+                                                                                    <p className="mt-1 text-[11px] text-slate-500">No active work orders.</p>
+                                                                                ) : (
+                                                                                    <ul className="mt-1 space-y-1">
+                                                                                        {workerOrders.slice(0, 2).map((o) => {
+                                                                                            const dot = o.priority === "P1" ? "bg-rose-500" : o.priority === "P2" ? "bg-amber-500" : "bg-emerald-500";
+                                                                                            const chip = o.priority === "P1" ? "text-rose-300" : o.priority === "P2" ? "text-amber-300" : "text-emerald-300";
+                                                                                            return (
+                                                                                                <li key={o.id ?? `${o.turbineId}-${o.createdAt}`} className="flex items-center gap-1.5 text-[11px]">
+                                                                                                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+                                                                                                    <span className="truncate text-slate-300">{o.turbineId} · {o.component}</span>
+                                                                                                    <span className={`ml-auto shrink-0 font-semibold ${chip}`}>{o.priority}</span>
+                                                                                                    <span className="shrink-0 capitalize text-slate-500">{o.status}</span>
+                                                                                                </li>
+                                                                                            );
+                                                                                        })}
+                                                                                    </ul>
+                                                                                )}
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => void handleDispatchResponder(person)}
+                                                                                className="mt-2 w-full rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2 py-1.5 text-[11px] font-semibold text-cyan-200 transition-colors hover:bg-cyan-500/20"
+                                                                            >
+                                                                                Assign {suggestedPriority} to {person.name.split(" ")[0]}
+                                                                            </button>
+                                                                        </li>
+                                                                    );
+                                                                })}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </section>
+
                                 {/* 3 — Work orders board + dispatch notes */}
                                 <div className="ops-section grid grid-cols-1 gap-4 lg:grid-cols-3">
                                     <div className="lg:col-span-2">
                                         <Panel title={`Work orders (${maintenanceOrders.length})`}>
                                             {maintenanceOrders.length === 0 ? (
-                                                <p className="text-xs text-slate-400">No work orders yet. Plan and raise one from the panel above.</p>
+                                                <p className="text-xs text-slate-400">No work orders yet. Add one from the Workers timetable above.</p>
                                             ) : (
                                                 <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                                     {maintenanceOrders.slice(0, 8).map((o) => {

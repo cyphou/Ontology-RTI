@@ -728,6 +728,16 @@ body,
   box-shadow: 0 14px 32px rgba(6, 182, 212, 0.42);
 }
 
+.ops-worker {
+  transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.ops-worker:hover {
+  transform: translateY(-1px);
+  border-color: rgba(103, 232, 249, 0.35);
+  box-shadow: 0 14px 30px rgba(1, 8, 20, 0.5);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ops-section {
     animation: none;
@@ -735,7 +745,8 @@ body,
 
   .ops-kpi:hover,
   .ops-order-card:hover,
-  .ops-raise-btn:hover {
+  .ops-raise-btn:hover,
+  .ops-worker:hover {
     transform: none;
   }
 }
