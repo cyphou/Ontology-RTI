@@ -4533,7 +4533,7 @@ function App() {
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => void handleRaiseWorkOrder()}
+                                                onClick={() => setTechPopupOpen(true)}
                                                 className="ops-raise-btn inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(6,182,212,0.4)] hover:from-cyan-400 hover:to-cyan-500"
                                             >
                                                 <span aria-hidden="true">＋</span> Add work order
