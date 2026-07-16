@@ -4521,7 +4521,6 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                         )}
                     </div>
                     <div className="hidden text-right sm:block">
-                        <div className="text-slate-400">pde_windturbine</div>
                         <div>{new Date().toLocaleTimeString()}</div>
                     </div>
                 </div>
