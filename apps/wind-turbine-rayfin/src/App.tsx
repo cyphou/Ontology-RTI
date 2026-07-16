@@ -3554,6 +3554,44 @@ function App() {
         return true;
     }, [canWriteback, escalationThreshold, handleDispatchResponder, handleEscalateManager, suggestedResponders]);
 
+    // Close the loop: confirm resolution of the current open order (distinct from
+    // dispatch). If nothing was dispatched yet, there is no loop to close, so we
+    // escalate for review instead of silently doing nothing.
+    const handleCloseLoop = useCallback(async () => {
+        if (!selectedOpenOrder) {
+            setWoMessage("Close the loop: no open order to resolve — escalating for review.");
+            await handleEscalateManager(!canWriteback);
+            return false;
+        }
+        if (!canWriteback) {
+            setOperatorRole("operator");
+            setWoMessage("Close the loop demo override: switched to Operator.");
+        }
+        const resolution: MaintenanceOrderRecord = {
+            turbineId: selectedOpenOrder.turbineId,
+            siteId: selectedOpenOrder.siteId,
+            component: selectedOpenOrder.component,
+            priority: selectedOpenOrder.priority,
+            status: "Resolved",
+            curtailPct: selectedOpenOrder.curtailPct ?? simCurtail,
+            downtimeTicks: selectedOpenOrder.downtimeTicks ?? simDowntime,
+            projectedDeltaKwt: selectedOpenOrder.projectedDeltaKwt ?? 0,
+            assignee: selectedOpenOrder.assignee ?? "unassigned",
+            note: `Resolution confirmed — recovery verified for ${selectedOpenOrder.turbineId}.`,
+            createdAt: new Date().toISOString(),
+        };
+        try {
+            await saveMaintenanceOrder(resolution);
+            setEscalationStage("none");
+            setWoMessage(`Loop closed — ${selectedOpenOrder.turbineId} order marked Resolved.`);
+            void loadOrders();
+            return true;
+        } catch {
+            setWoMessage("Close the loop: backend unreachable, resolution not persisted.");
+            return false;
+        }
+    }, [canWriteback, handleEscalateManager, loadOrders, selectedOpenOrder, simCurtail, simDowntime]);
+
     const handleAutoRunDemo = useCallback(async () => {
         if (autoPlayRunning) {
             return;
@@ -3585,13 +3623,14 @@ function App() {
             setTechPopupOpen(false);
             setDemoRunLog((log) => [...log, { step: "dispatch", at: new Date().toISOString(), detail: "Running guided dispatch" }]);
             setAutoPlayStatus("Demo script: Step 3/4 - running guided dispatch...");
-            const healed = await handleAutoHealNow();
+            await handleAutoHealNow();
             await delay(2000);
-            // Step 4 — close the loop.
+            // Step 4 — close the loop by confirming resolution of the raised order.
             setDemoScriptStep("heal");
             setDemoStepIndex(3);
-            setDemoRunLog((log) => [...log, { step: "heal", at: new Date().toISOString(), detail: healed ? "AutoHeal complete, order sent" : "AutoHeal ready, operator confirmation pending" }]);
-            setAutoPlayStatus(healed ? "Demo script: Step 4/4 - complete, order sent." : "Demo script: Step 4/4 - ready, switch to Operator to complete.");
+            const closed = await handleCloseLoop();
+            setDemoRunLog((log) => [...log, { step: "heal", at: new Date().toISOString(), detail: closed ? "Loop closed — order resolved" : "Loop close attempted — escalated for review" }]);
+            setAutoPlayStatus(closed ? "Demo script: Step 4/4 - loop closed, order resolved." : "Demo script: Step 4/4 - escalated for review.");
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
         } finally {
@@ -3599,7 +3638,7 @@ function App() {
             setAutoPlayRunning(false);
             setDemoScriptStep("idle");
         }
-    }, [autoPlayRunning, handleAutoHealNow, handlePrimeDemoStory]);
+    }, [autoPlayRunning, handleAutoHealNow, handleCloseLoop, handlePrimeDemoStory]);
 
     const handleOpenTechPopupWindow = useCallback(() => {
         const tech = techPopupResponder ?? primaryResponder;
@@ -3682,16 +3721,16 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
         },
         {
             id: "heal",
-            label: "4. AutoHeal",
-            detail: "Run the guided recovery path and close the loop.",
+            label: "4. Close the loop",
+            detail: "Confirm resolution of the raised order (auto-escalates if none).",
             action: async () => {
                 setDemoScriptStep("heal");
                 setView("operations");
                 setTechPopupOpen(false);
-                await handleAutoHealNow();
+                await handleCloseLoop();
             },
         },
-    ], [demoScriptLead, handleAutoHealNow, handleDispatchResponder, handlePrimeDemoStory, techPopupEvidence]);
+    ], [demoScriptLead, handleCloseLoop, handleDispatchResponder, handlePrimeDemoStory, techPopupEvidence]);
 
     const handleStartDemoFromIntro = useCallback(() => {
         setDemoIntroOpen(false);
@@ -5778,9 +5817,9 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                             <button type="button" onClick={() => {
                                 setView("operations");
                                 setTechPopupOpen(false);
-                                void handleAutoHealNow();
+                                void handleCloseLoop();
                             }} className="flex-1 rounded border border-emerald-700/70 bg-emerald-900/20 px-3 py-2 text-sm font-medium text-emerald-200 hover:bg-emerald-900/35">
-                                AutoHeal
+                                Close the loop
                             </button>
                         </div>
                     </div>

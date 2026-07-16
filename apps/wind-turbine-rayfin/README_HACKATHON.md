@@ -96,7 +96,7 @@ Steps (`story → evidence → dispatch → heal`):
 1. Story — the ontology surfaces the probable component, priority, and a lead technician for the affected turbine.
 2. Evidence — the technician card opens and the matching asset image is focused to justify the decision.
 3. Dispatch — a tracked maintenance work order is raised and assigned, with projected energy impact.
-4. AutoHeal — the guided recovery path runs and closes the loop, auto-escalating if match confidence is below threshold.
+4. Close the loop — confirms resolution of the raised order (marks it Resolved), and auto-escalates for review if no order exists.
 
 Two run modes:
 - Run all (auto-play): the four steps chain automatically with on-screen narration (`Step X of N`).
