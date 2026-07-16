@@ -567,8 +567,12 @@ if (Test-Path $tmdlRoot) {
 
         # Replace placeholders in expressions.tmdl with actual lakehouse connection info
         if ($f.Name -eq "expressions.tmdl") {
-            $fileContent = $fileContent -replace '\{\{SQL_ENDPOINT\}\}', $sqlEndpointConnStr
-            $fileContent = $fileContent -replace '\{\{LAKEHOUSE_NAME\}\}', $LakehouseName
+            # Escape embedded quotes so generated M stays valid string literal syntax.
+            $sqlEndpointForM = if ($null -eq $sqlEndpointConnStr) { "" } else { $sqlEndpointConnStr.Replace('"', '""') }
+            $lakehouseNameForM = if ($null -eq $LakehouseName) { "" } else { $LakehouseName.Replace('"', '""') }
+            # Use literal replacement (not regex) to avoid replacement-string semantics.
+            $fileContent = $fileContent.Replace('{{SQL_ENDPOINT}}', $sqlEndpointForM)
+            $fileContent = $fileContent.Replace('{{LAKEHOUSE_NAME}}', $lakehouseNameForM)
         }
 
         $fileBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($fileContent))
