@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import {
     SITE_COLORS,
@@ -55,12 +55,12 @@ function createLabelSprite(text: string, color: string): THREE.Sprite {
         } else {
             ctx.rect(rx, ry, rw, rh);
         }
-        ctx.fillStyle = "rgba(6, 16, 31, 0.78)";
+        ctx.fillStyle = "rgba(23, 27, 33, 0.82)";
         ctx.fill();
         ctx.lineWidth = 3;
         ctx.strokeStyle = color;
         ctx.stroke();
-        ctx.fillStyle = "#eefcff";
+        ctx.fillStyle = "#f3e7ce";
         ctx.fillText(text, canvas.width / 2, ry + rh / 2 + 1);
         map.colorSpace = THREE.SRGBColorSpace;
         map.needsUpdate = true;
@@ -80,6 +80,8 @@ type TurbineRenderRefs = {
     nacelleMat: THREE.MeshStandardMaterial;
     ringMat: THREE.MeshBasicMaterial;
     ring: THREE.Mesh;
+    wakeMat: THREE.MeshBasicMaterial;
+    wake: THREE.Mesh;
     spin: number;
 };
 
@@ -103,15 +105,36 @@ export default function WindFarmScene({
     paused: boolean;
     onSelect: (id: string) => void;
 }) {
+    type LightingMode = "day" | "night";
+    type QualityTier = "low" | "med" | "high";
+
     const hostRef = useRef<HTMLDivElement | null>(null);
     const sceneRef = useRef<SceneState | null>(null);
     const pausedRef = useRef(paused);
     const zoomRef = useRef(0.62);
-    const panRef = useRef<{ x: number; z: number }>({ x: 0, z: 0 });
+    const zoomTargetRef = useRef(0.62);
+    const tiltDegRef = useRef(40);
+    // Default view is centred on the fleet centroid (most sites sit in the northern
+    // hemisphere → negative Z), not the map origin, so the farm sits mid-frame.
+    const panRef = useRef<{ x: number; z: number }>({ x: -4, z: -9 });
+    const autoQualityRef = useRef(true);
+    const [lightingMode, setLightingMode] = useState<LightingMode>("day");
+    const [qualityTier, setQualityTier] = useState<QualityTier>("high");
+    const [autoQuality, setAutoQuality] = useState(true);
+    const [fps, setFps] = useState(60);
+
+    const ZOOM_MIN = 0.4;
+    const ZOOM_MAX = 1.8;
+    const TILT_MIN = 18;
+    const TILT_MAX = 56;
 
     useEffect(() => {
         pausedRef.current = paused;
     }, [paused]);
+
+    useEffect(() => {
+        autoQualityRef.current = autoQuality;
+    }, [autoQuality]);
 
     useEffect(() => {
         const host = hostRef.current;
@@ -127,9 +150,9 @@ export default function WindFarmScene({
         }
 
         const scene = new THREE.Scene();
-        const skyTexture = createSkyTexture();
+        const skyTexture = createSkyTexture(lightingMode);
         scene.background = skyTexture;
-        scene.fog = new THREE.Fog("#0e3a55", 170, 380);
+        scene.fog = new THREE.Fog(lightingMode === "day" ? "#23262d" : "#14161b", 170, 380);
 
         const camera = new THREE.PerspectiveCamera(52, host.clientWidth / host.clientHeight, 0.1, 500);
         camera.position.set(30, 36, 64);
@@ -142,7 +165,7 @@ export default function WindFarmScene({
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.16;
+        renderer.toneMappingExposure = lightingMode === "day" ? 1.16 : 0.96;
         host.innerHTML = "";
         host.appendChild(renderer.domElement);
 
@@ -151,8 +174,8 @@ export default function WindFarmScene({
         scene.environment = envRT.texture;
         pmrem.dispose();
 
-        const ambient = new THREE.AmbientLight(0xaec6ff, 0.42);
-        const sun = new THREE.DirectionalLight(0xd6ecff, 1.18);
+        const ambient = new THREE.AmbientLight(lightingMode === "day" ? 0xe7dcc4 : 0xb8a88e, lightingMode === "day" ? 0.32 : 0.24);
+        const sun = new THREE.DirectionalLight(lightingMode === "day" ? 0xdde3eb : 0x9ea7b4, lightingMode === "day" ? 1.04 : 0.72);
         sun.position.set(34, 52, 18);
         sun.castShadow = true;
         sun.shadow.mapSize.width = 2048;
@@ -165,9 +188,9 @@ export default function WindFarmScene({
         sun.shadow.camera.bottom = -46;
         sun.shadow.bias = -0.0004;
         sun.shadow.normalBias = 0.02;
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.24);
+        const rim = new THREE.DirectionalLight(lightingMode === "day" ? 0x7d8998 : 0x596271, lightingMode === "day" ? 0.2 : 0.16);
         rim.position.set(-24, 18, -24);
-        const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x16324a, 0.38);
+        const hemi = new THREE.HemisphereLight(lightingMode === "day" ? 0xdcc6a1 : 0x8f7f66, 0x191d24, lightingMode === "day" ? 0.34 : 0.26);
         scene.add(ambient, sun, rim, hemi);
 
         const oceanTexture = createOceanTexture();
@@ -197,14 +220,40 @@ export default function WindFarmScene({
         mapPlane.position.y = 0.06;
         scene.add(mapPlane);
 
-        const grid = new THREE.GridHelper(92, 24, 0x2a557f, 0x2a557f);
+        const grid = new THREE.GridHelper(92, 24, 0x4f4655, 0x4f4655);
         grid.scale.z = 46 / 92; // constrain the square grid to the 92 x 46 map footprint
         grid.position.y = 0.02;
         grid.material.transparent = true;
         grid.material.opacity = 0.12;
         scene.add(grid);
 
+        // Fine-grain wind flow particles to reinforce directionality in the scene.
+        const flowCount = qualityTier === "low" ? 320 : qualityTier === "med" ? 700 : 1300;
+        const flowPositions = new Float32Array(flowCount * 3);
+        const flowVel = new Float32Array(flowCount);
+        for (let i = 0; i < flowCount; i += 1) {
+            const i3 = i * 3;
+            flowPositions[i3] = -46 + seededRand(100 + i) * 92;
+            flowPositions[i3 + 1] = 0.42 + seededRand(300 + i) * 2.2;
+            flowPositions[i3 + 2] = -23 + seededRand(500 + i) * 46;
+            flowVel[i] = 0.36 + seededRand(700 + i) * 0.54;
+        }
+        const flowGeo = new THREE.BufferGeometry();
+        flowGeo.setAttribute("position", new THREE.BufferAttribute(flowPositions, 3));
+        const flowMat = new THREE.PointsMaterial({
+            color: "#a4afbb",
+            size: 0.08,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+        });
+        const flowPoints = new THREE.Points(flowGeo, flowMat);
+        flowPoints.position.y = 0.06;
+        scene.add(flowPoints);
+
         const labelSprites: THREE.Sprite[] = [];
+        const siteBeacons: THREE.Mesh[] = [];
         sites.forEach((site, idx) => {
             const marker = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.24, 0.24, 0.9, 14),
@@ -225,6 +274,14 @@ export default function WindFarmScene({
             glow.position.set(projectLonToX(site.lon), 0.07, projectLatToZ(site.lat));
             scene.add(glow);
 
+            const beacon = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.065, 0.065, 3.6, 16, 1, true),
+                new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.23, side: THREE.DoubleSide })
+            );
+            beacon.position.set(projectLonToX(site.lon), 1.85, projectLatToZ(site.lat));
+            scene.add(beacon);
+            siteBeacons.push(beacon);
+
             const labelText = site.name ?? site.country ?? "";
             if (labelText) {
                 const sprite = createLabelSprite(labelText, SITE_COLORS[idx % SITE_COLORS.length]);
@@ -235,7 +292,7 @@ export default function WindFarmScene({
         });
 
         const byId = new Map<string, TurbineRenderRefs>();
-        const pickables: THREE.Mesh[] = [];
+        const pickables: THREE.Object3D[] = [];
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
 
@@ -304,6 +361,20 @@ export default function WindFarmScene({
             }
             group.add(blades);
 
+            // Lightweight wake ribbon behind turbines to communicate wind intensity.
+            const wakeMat = new THREE.MeshBasicMaterial({
+                color: 0xd6bc7f,
+                transparent: true,
+                opacity: 0.08,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+            });
+            const wake = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.62), wakeMat);
+            wake.rotation.x = -Math.PI / 2;
+            wake.rotation.z = (seededRand(t.id.length * 3.7) - 0.5) * 0.35;
+            wake.position.set(-2.1, 0.085, 0);
+            group.add(wake);
+
             const pickMesh = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.7, 0.7, 8.2, 10),
                 new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
@@ -328,6 +399,8 @@ export default function WindFarmScene({
                 ringMat,
                 ring,
                 blades,
+                wakeMat,
+                wake,
                 spin: 0.08 + seededRand(t.id.length + t.powerKw * 0.001) * 0.12,
             });
         });
@@ -351,8 +424,11 @@ export default function WindFarmScene({
             raycaster.setFromCamera(pointer, camera);
             const hits = raycaster.intersectObjects(pickables);
             if (hits.length > 0) {
-                const id = hits[0].object.userData.turbineId as string;
-                onSelect(id);
+                const obj = hits[0].object;
+                const id = obj.userData.turbineId as string;
+                if (id) {
+                    onSelect(id);
+                }
             }
         };
         renderer.domElement.addEventListener("click", onClick);
@@ -370,6 +446,7 @@ export default function WindFarmScene({
         };
         const onPointerMove = (event: PointerEvent) => {
             if (!dragging) {
+                renderer.domElement.style.cursor = "grab";
                 return;
             }
             const dx = event.clientX - lastPointerX;
@@ -395,7 +472,20 @@ export default function WindFarmScene({
 
         const onWheel = (event: WheelEvent) => {
             event.preventDefault();
-            zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + event.deltaY * 0.0009, 0.4, 1.8);
+            // Normalize wheel/trackpad delta so zoom speed stays predictable
+            // across mice, touchpads, and browser delta modes.
+            const raw = event.deltaMode === 1
+                ? event.deltaY * 16
+                : event.deltaMode === 2
+                    ? event.deltaY * 120
+                    : event.deltaY;
+            const norm = Math.sign(raw) * Math.min(140, Math.abs(raw));
+
+            if (event.shiftKey) {
+                tiltDegRef.current = THREE.MathUtils.clamp(tiltDegRef.current + norm * 0.02, TILT_MIN, TILT_MAX);
+                return;
+            }
+            zoomTargetRef.current = THREE.MathUtils.clamp(zoomTargetRef.current + norm * 0.0009, ZOOM_MIN, ZOOM_MAX);
         };
         renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
@@ -410,6 +500,9 @@ export default function WindFarmScene({
         window.addEventListener("resize", onResize);
 
         let tick = 0;
+        let fpsFrames = 0;
+        let fpsSampleStart = performance.now();
+        let lastAutoAdjustAt = performance.now();
         const animate = () => {
             if (!pausedRef.current) {
                 tick += 0.03;
@@ -417,16 +510,69 @@ export default function WindFarmScene({
                     refs.blades.rotation.x += refs.spin;
                 });
             }
+
+            const flowPos = flowGeo.getAttribute("position") as THREE.BufferAttribute;
+            for (let i = 0; i < flowCount; i += 1) {
+                const i3 = i * 3;
+                let x = flowPos.getX(i) + flowVel[i] * 0.02;
+                let y = flowPos.getY(i) + Math.sin((tick + i) * 0.04) * 0.002;
+                if (x > 46) {
+                    x = -46;
+                    y = 0.42 + seededRand(900 + i + tick) * 2.2;
+                    flowPos.setZ(i, -23 + seededRand(1200 + i + tick) * 46);
+                }
+                flowPos.setX(i, x);
+                flowPos.setY(i, y);
+            }
+            flowPos.needsUpdate = true;
+
+            siteBeacons.forEach((b, idx) => {
+                const pulse = 0.84 + (Math.sin(tick * 1.7 + idx * 0.9) + 1) * 0.16;
+                b.scale.y = pulse;
+                const mat = b.material as THREE.MeshBasicMaterial;
+                const base = qualityTier === "low" ? 0.09 : qualityTier === "med" ? 0.12 : 0.15;
+                mat.opacity = base + pulse * 0.16;
+            });
+
             oceanTexture.offset.x = tick * 0.0015;
             oceanTexture.offset.y = Math.sin(tick * 0.05) * 0.01;
+
+            // Damp toward target zoom to avoid jumpy wheel behavior.
+            zoomRef.current = THREE.MathUtils.lerp(zoomRef.current, zoomTargetRef.current, 0.16);
             const z = zoomRef.current;
             const px = panRef.current.x;
             const pz = panRef.current.z;
-            camera.position.x = (26 + Math.sin(tick * 0.17) * 9) * z + px;
-            camera.position.y = 36 * z;
-            camera.position.z = (61 + Math.cos(tick * 0.13) * 5) * z + pz;
+
+            const orbitX = (26 + Math.sin(tick * 0.17) * 9) * z;
+            const orbitZ = (61 + Math.cos(tick * 0.13) * 5) * z;
+            const planarDist = Math.sqrt(orbitX * orbitX + orbitZ * orbitZ);
+            const tiltRad = THREE.MathUtils.degToRad(tiltDegRef.current);
+
+            camera.position.x = orbitX + px;
+            camera.position.y = Math.max(8, Math.tan(tiltRad) * planarDist);
+            camera.position.z = orbitZ + pz;
             camera.lookAt(px, 0, pz);
             renderer.render(scene, camera);
+
+            fpsFrames += 1;
+            const now = performance.now();
+            const sampleElapsed = now - fpsSampleStart;
+            if (sampleElapsed >= 500) {
+                const measuredFps = Math.round((fpsFrames * 1000) / sampleElapsed);
+                setFps(measuredFps);
+                fpsFrames = 0;
+                fpsSampleStart = now;
+
+                if (autoQualityRef.current && now - lastAutoAdjustAt > 4200) {
+                    if (measuredFps < 28) {
+                        setQualityTier((prev) => (prev === "high" ? "med" : "low"));
+                        lastAutoAdjustAt = now;
+                    } else if (measuredFps > 52) {
+                        setQualityTier((prev) => (prev === "low" ? "med" : "high"));
+                        lastAutoAdjustAt = now;
+                    }
+                }
+            }
 
             // Screen-space label de-confliction: nearest label wins; hide any whose
             // projected box overlaps a label already shown this frame so labels never stack.
@@ -464,7 +610,7 @@ export default function WindFarmScene({
             window.removeEventListener("resize", onResize);
             renderer.dispose();
             scene.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
+                if (obj instanceof THREE.Mesh || obj instanceof THREE.Points) {
                     obj.geometry.dispose();
                     const material = Array.isArray(obj.material) ? obj.material : [obj.material];
                     material.forEach((m) => m.dispose());
@@ -489,7 +635,7 @@ export default function WindFarmScene({
             sceneRef.current = null;
             cleanup();
         };
-    }, [onSelect, sites]);
+    }, [onSelect, sites, lightingMode, qualityTier]);
 
     useEffect(() => {
         const ref = sceneRef.current;
@@ -511,17 +657,17 @@ export default function WindFarmScene({
             meshRefs.ringMat.opacity = dimmed ? 0.06 : t.id === selectedId ? 0.98 : 0.56;
             meshRefs.ring.scale.setScalar(t.id === selectedId ? 1.24 : dimmed ? 0.7 : 1);
             meshRefs.spin = dimmed ? 0.003 : 0.055 + Math.min(0.22, t.windMs / 80);
+
+            const wakePower = dimmed ? 0.03 : Math.min(0.34, Math.max(0, (t.windMs - 7) * 0.03));
+            meshRefs.wakeMat.opacity = wakePower;
+            meshRefs.wake.scale.x = 0.86 + Math.min(2.2, t.windMs / 7.2);
+            meshRefs.wake.visible = t.windMs >= 8;
         });
     }, [selectedId, turbines, dimmedIds]);
 
     return (
         <div className="relative h-full w-full">
             <div ref={hostRef} className="h-full w-full" />
-            <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
-                <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.15, 0.4, 1.8); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
-                <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.15, 0.4, 1.8); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button type="button" title="Reset view" onClick={() => { zoomRef.current = 0.62; panRef.current = { x: 0, z: 0 }; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
-            </div>
         </div>
     );
 }

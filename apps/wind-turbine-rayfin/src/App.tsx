@@ -4396,7 +4396,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
             <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[#b8c1cc]/10 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 right-[-5rem] h-80 w-80 rounded-full bg-[#7bc47f]/10 blur-3xl" />
 
-            <header className="header-shell wow-header animate-rise flex flex-wrap items-center gap-3 border-b border-[#2a313b]/70 bg-[#151a20d9] px-3 py-3 backdrop-blur-sm sm:px-5">
+            <header className="header-shell wow-header animate-rise relative z-40 flex flex-wrap items-center gap-3 border-b border-[#2a313b]/70 bg-[#151a20d9] px-3 py-3 backdrop-blur-sm sm:px-5">
                 <div className="header-brand mr-2">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-[#b8c1cc]">Fabric Rayfin App</p>
                     <h1 className="header-title text-xl font-semibold leading-tight">Geo Wind Twin Command Center</h1>
