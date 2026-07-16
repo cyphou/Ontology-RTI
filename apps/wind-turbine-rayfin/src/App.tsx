@@ -3753,10 +3753,10 @@ function App() {
                 </div>
             )}
 
-            {demoScriptStep !== "idle" && !demoPanelOpen && (() => {
+            {demoScriptStep !== "idle" && (() => {
                 const narration = demoNarration(demoScriptStep);
                 return (
-                    <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[120] flex justify-center px-4">
+                    <div className="pointer-events-none fixed inset-x-0 top-[84px] z-[120] flex justify-center px-4">
                         <div role="status" aria-live="polite" className="pointer-events-auto w-full max-w-[640px] rounded-xl border border-cyan-500/40 bg-[#061224f2] px-4 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-md">
                             <div className="flex items-center justify-between gap-2">
                                 <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
