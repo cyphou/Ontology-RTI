@@ -3559,7 +3559,9 @@ function App() {
             return;
         }
         setAutoPlayRunning(true);
+        setDemoIntroOpen(false);
         setDemoScriptStep("story");
+        setDemoStepIndex(0);
         setDemoPanelOpen(true);
         setDemoRunLog([{ step: "story", at: new Date().toISOString(), detail: "Prepared incident story" }]);
         setAutoPlayStatus("Demo script: Step 1/4 - preparing incident story...");
@@ -3569,16 +3571,25 @@ function App() {
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
         try {
             await delay(2000);
+            // Step 2 — make the evidence visible by opening the technician card.
             setDemoScriptStep("evidence");
+            setDemoStepIndex(1);
+            setView("operations");
+            setTechPopupOpen(true);
             setDemoRunLog((log) => [...log, { step: "evidence", at: new Date().toISOString(), detail: "Selected evidence and assignee" }]);
             setAutoPlayStatus("Demo script: Step 2/4 - selecting evidence and assignee...");
             await delay(2000);
+            // Step 3 — dispatch via guided AutoHeal.
             setDemoScriptStep("dispatch");
+            setDemoStepIndex(2);
+            setTechPopupOpen(false);
             setDemoRunLog((log) => [...log, { step: "dispatch", at: new Date().toISOString(), detail: "Running guided dispatch" }]);
             setAutoPlayStatus("Demo script: Step 3/4 - running guided dispatch...");
             const healed = await handleAutoHealNow();
             await delay(2000);
+            // Step 4 — close the loop.
             setDemoScriptStep("heal");
+            setDemoStepIndex(3);
             setDemoRunLog((log) => [...log, { step: "heal", at: new Date().toISOString(), detail: healed ? "AutoHeal complete, order sent" : "AutoHeal ready, operator confirmation pending" }]);
             setAutoPlayStatus(healed ? "Demo script: Step 4/4 - complete, order sent." : "Demo script: Step 4/4 - ready, switch to Operator to complete.");
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
@@ -4409,7 +4420,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setDemoIntroOpen(true)}
+                                        onClick={() => void handleAutoRunDemo()}
                                         disabled={autoPlayRunning}
                                         className="rounded-full bg-cyan-600 px-3 py-0.5 text-[11px] font-semibold text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
