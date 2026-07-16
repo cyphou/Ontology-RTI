@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario, derivePriority, recommendComponent } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, deriveTurbineStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario, derivePriority, recommendComponent, recommendComponentStable, TWIN_COMPONENT_DEVICES, getTwinDeviceLabel, twinDeviceSeeds, mergeTwinDeviceGraph, formatVec, normalizeDraft } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -194,6 +194,68 @@ describe("recommendComponent", () => {
     });
 });
 
+describe("recommendComponentStable", () => {
+    it("matches the raw recommendation when there is no previous value", () => {
+        expect(recommendComponentStable(60, 9, null)).toBe(recommendComponent(60, 9));
+        expect(recommendComponentStable(95, 3, undefined)).toBe(recommendComponent(95, 3));
+    });
+
+    it("keeps the previous component when severities are within the margin (hysteresis)", () => {
+        // Near-equal severities: raw would flip, but the previous choice is retained.
+        expect(recommendComponentStable(75, 6, "Generator")).toBe("Generator");
+        expect(recommendComponentStable(75, 6, "Gearbox")).toBe("Gearbox");
+    });
+
+    it("switches when the other signal leads by more than the margin", () => {
+        expect(recommendComponentStable(60, 12, "Generator")).toBe("Gearbox");
+        expect(recommendComponentStable(120, 3, "Gearbox")).toBe("Generator");
+    });
+});
+
+describe("twin component graph", () => {
+    it("exposes two child devices under each component", () => {
+        expect(TWIN_COMPONENT_DEVICES.rotor).toHaveLength(2);
+        expect(TWIN_COMPONENT_DEVICES.nacelle).toHaveLength(2);
+        expect(TWIN_COMPONENT_DEVICES.drivetrain).toHaveLength(2);
+        expect(TWIN_COMPONENT_DEVICES.base).toHaveLength(2);
+    });
+
+    it("returns stable device labels for the graph layer", () => {
+        expect(getTwinDeviceLabel("rotor", "rotor.pitch-control")).toBe("Pitch control");
+        expect(getTwinDeviceLabel("nacelle", "nacelle.converter")).toBe("Power converter");
+    });
+
+    it("generates backend seed rows for every device", () => {
+        const seeds = twinDeviceSeeds(TWIN_COMPONENT_DEVICES);
+        expect(seeds).toHaveLength(8);
+        expect(seeds[0]).toMatchObject({ deviceKey: "rotor.pitch-control", component: "rotor" });
+    });
+
+    it("merges backend rows over fallback and preserves runtime value/status logic", () => {
+        const seed = twinDeviceSeeds(TWIN_COMPONENT_DEVICES).find((r) => r.deviceKey === "rotor.pitch-control");
+        if (!seed) {
+            throw new Error("missing expected seed");
+        }
+        const merged = mergeTwinDeviceGraph([{ ...seed, label: "Pitch control v2" }], TWIN_COMPONENT_DEVICES);
+        expect(merged.rotor[0].label).toBe("Pitch control v2");
+        const status = merged.rotor[0].status({
+            id: "T1",
+            siteId: "S1",
+            siteName: "S",
+            latitude: 0,
+            longitude: 0,
+            x: 0,
+            z: 0,
+            powerKw: 1000,
+            windMs: 20,
+            nacelleTempC: 60,
+            vibrationMmS: 3,
+            status: "healthy",
+        });
+        expect(["healthy", "warning", "alarm"]).toContain(status);
+    });
+});
+
 describe("simulateScenario", () => {
     it("applies curtailment to projected output", () => {
         const r = simulateScenario({ baselineKw: 1000, curtailmentPct: 25, downtimeTicks: 0, horizonTicks: 10 });
@@ -214,6 +276,44 @@ describe("simulateScenario", () => {
         expect(r.projectedKw).toBe(0);
         expect(r.runningTicks).toBe(0);
         expect(r.energyDeltaKwt).toBe(0);
+    });
+});
+
+describe("twin graph admin helpers", () => {
+    it("formats vectors for editor inputs", () => {
+        expect(formatVec([1, 2.34567, -0.25])).toBe("1, 2.346, -0.25");
+    });
+
+    it("normalizes twin draft values and clamps zoom/sort", () => {
+        const normalized = normalizeDraft(
+            {
+                label: " Generator  ",
+                property: " TempC ",
+                unit: " °C ",
+                note: "   ",
+                zoom: "99",
+                sortOrder: "-4",
+                anchor: "1,2,3",
+                lookAt: "4, 5, 6",
+                offset: "bad value",
+            },
+            {
+                zoom: 0.6,
+                sortOrder: 3,
+                anchor: [0, 0, 0],
+                lookAt: [0, 0, 0],
+                offset: [7, 8, 9],
+            },
+        );
+        expect(normalized.label).toBe("Generator");
+        expect(normalized.property).toBe("TempC");
+        expect(normalized.unit).toBe("°C");
+        expect(normalized.note).toBe("No note provided.");
+        expect(normalized.zoom).toBe(2);
+        expect(normalized.sortOrder).toBe(0);
+        expect(normalized.anchor).toEqual([1, 2, 3]);
+        expect(normalized.lookAt).toEqual([4, 5, 6]);
+        expect(normalized.offset).toEqual([7, 8, 9]);
     });
 });
 

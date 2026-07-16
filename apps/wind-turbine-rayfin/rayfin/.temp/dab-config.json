@@ -60,6 +60,109 @@
         }
       }
     },
+    "TurbineDevice": {
+      "source": "TurbineDevices",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": [
+            "*"
+          ]
+        }
+      ],
+      "x-schema": {
+        "fields": {
+          "id": {
+            "dbType": "UNIQUEIDENTIFIER",
+            "nullable": false
+          },
+          "deviceKey": {
+            "dbType": "NVARCHAR(64)",
+            "nullable": false
+          },
+          "component": {
+            "dbType": "NVARCHAR(24)",
+            "nullable": false
+          },
+          "label": {
+            "dbType": "NVARCHAR(64)",
+            "nullable": false
+          },
+          "property": {
+            "dbType": "NVARCHAR(64)",
+            "nullable": false
+          },
+          "unit": {
+            "dbType": "NVARCHAR(16)",
+            "nullable": false
+          },
+          "note": {
+            "dbType": "NVARCHAR(260)",
+            "nullable": false
+          },
+          "anchorX": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "anchorY": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "anchorZ": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "lookAtX": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "lookAtY": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "lookAtZ": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "offsetX": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "offsetY": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "offsetZ": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "zoom": {
+            "dbType": "DECIMAL(18,2)",
+            "nullable": false
+          },
+          "sortOrder": {
+            "dbType": "INT",
+            "nullable": false
+          }
+        },
+        "constraints": {
+          "primaryKey": {
+            "name": "PK_TurbineDevices",
+            "columns": [
+              "id"
+            ]
+          },
+          "uniqueConstraints": [
+            {
+              "name": "UQ_TurbineDevices_deviceKey",
+              "columns": [
+                "deviceKey"
+              ]
+            }
+          ]
+        }
+      }
+    },
     "SensorThreshold": {
       "source": "SensorThresholds",
       "permissions": [
@@ -167,6 +270,77 @@
         "constraints": {
           "primaryKey": {
             "name": "PK_DispatchNotes",
+            "columns": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    "MaintenanceOrder": {
+      "source": "MaintenanceOrders",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": [
+            "*"
+          ]
+        }
+      ],
+      "x-schema": {
+        "fields": {
+          "id": {
+            "dbType": "UNIQUEIDENTIFIER",
+            "nullable": false
+          },
+          "turbineId": {
+            "dbType": "NVARCHAR(48)",
+            "nullable": false
+          },
+          "siteId": {
+            "dbType": "NVARCHAR(32)",
+            "nullable": false
+          },
+          "component": {
+            "dbType": "NVARCHAR(16)",
+            "nullable": false
+          },
+          "priority": {
+            "dbType": "NVARCHAR(4)",
+            "nullable": false
+          },
+          "status": {
+            "dbType": "NVARCHAR(16)",
+            "nullable": false
+          },
+          "curtailPct": {
+            "dbType": "INT",
+            "nullable": false
+          },
+          "downtimeTicks": {
+            "dbType": "INT",
+            "nullable": false
+          },
+          "projectedDeltaKwt": {
+            "dbType": "INT",
+            "nullable": false
+          },
+          "assignee": {
+            "dbType": "NVARCHAR(120)",
+            "nullable": false
+          },
+          "note": {
+            "dbType": "NVARCHAR(500)",
+            "nullable": false
+          },
+          "createdAt": {
+            "dbType": "DATETIME2",
+            "nullable": false
+          }
+        },
+        "constraints": {
+          "primaryKey": {
+            "name": "PK_MaintenanceOrders",
             "columns": [
               "id"
             ]

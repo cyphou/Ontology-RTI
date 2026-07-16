@@ -22,7 +22,23 @@ export interface DataAgentAnswer {
     queryText: string;
     confidence?: number;
     evidence?: string[];
+    transport?: "legacy" | "mcp";
 }
+
+export interface DataAgentConnectionResult {
+    ok: boolean;
+    configured: boolean;
+    mode: "auto" | "mcp" | "legacy";
+    authScheme: AgentAuthScheme;
+    url?: string;
+    transportTried: AgentTransport[];
+    transportUsed?: AgentTransport;
+    message: string;
+    sampleAnswer?: string;
+}
+
+type AgentTransport = "legacy" | "mcp";
+type AgentAuthScheme = "bearer" | "api-key" | "none";
 
 /** True when a real Data Agent endpoint has been wired up via env. */
 export function isDataAgentConfigured(): boolean {
@@ -78,6 +94,54 @@ export function extractAgentAnswer(payload: unknown): string {
         }
     }
 
+    // MCP tools/call: { result: { content: [{ type: "text", text }] } }.
+    const result = obj.result;
+    if (result && typeof result === "object") {
+        const resultObj = result as Record<string, unknown>;
+        const content = resultObj.content;
+        if (Array.isArray(content)) {
+            for (const item of content) {
+                if (!item || typeof item !== "object") {
+                    continue;
+                }
+                const entry = item as Record<string, unknown>;
+                const text = entry.text;
+                if (typeof text === "string" && text.trim()) {
+                    return text.trim();
+                }
+            }
+        }
+        for (const key of ["answer", "summary", "output", "output_text", "text"]) {
+            const v = resultObj[key];
+            if (typeof v === "string" && v.trim()) {
+                return v.trim();
+            }
+        }
+    }
+
+    // Some response APIs wrap text in output arrays.
+    const output = obj.output;
+    if (Array.isArray(output)) {
+        for (const item of output) {
+            if (!item || typeof item !== "object") {
+                continue;
+            }
+            const entry = item as Record<string, unknown>;
+            const content = entry.content;
+            if (Array.isArray(content)) {
+                for (const c of content) {
+                    if (!c || typeof c !== "object") {
+                        continue;
+                    }
+                    const text = (c as Record<string, unknown>).text;
+                    if (typeof text === "string" && text.trim()) {
+                        return text.trim();
+                    }
+                }
+            }
+        }
+    }
+
     return "";
 }
 
@@ -93,6 +157,15 @@ export function extractAgentConfidence(payload: unknown): number | undefined {
             return Math.max(0, Math.min(1, v > 1 ? v / 100 : v));
         }
     }
+
+    const result = obj.result;
+    if (result && typeof result === "object") {
+        const nested = extractAgentConfidence(result);
+        if (nested != null) {
+            return nested;
+        }
+    }
+
     return undefined;
 }
 
@@ -124,7 +197,136 @@ export function extractAgentEvidence(payload: unknown): string[] {
             }
         }
     }
+
+    const result = obj.result;
+    if (result && typeof result === "object") {
+        const nested = extractAgentEvidence(result);
+        if (nested.length > 0) {
+            return nested;
+        }
+    }
+
     return [];
+}
+
+function shouldUseMcpFirst(url: string, mode: string | undefined): boolean {
+    if (mode === "mcp") {
+        return true;
+    }
+    if (mode === "legacy") {
+        return false;
+    }
+    return /\/mcp\/?$/i.test(url);
+}
+
+export function resolveAgentTransports(url: string, mode: string | undefined): AgentTransport[] {
+    const normalized = mode?.trim().toLowerCase();
+    const mcpFirst = shouldUseMcpFirst(url, normalized);
+    return mcpFirst ? ["mcp", "legacy"] : ["legacy", "mcp"];
+}
+
+function normalizeAuthScheme(value: string | undefined): AgentAuthScheme {
+    const v = value?.trim().toLowerCase();
+    if (v === "api-key") {
+        return "api-key";
+    }
+    if (v === "none") {
+        return "none";
+    }
+    return "bearer";
+}
+
+export function getDataAgentMode(value: string | undefined): "auto" | "mcp" | "legacy" {
+    const normalized = value?.trim().toLowerCase();
+    if (normalized === "mcp") return "mcp";
+    if (normalized === "legacy") return "legacy";
+    return "auto";
+}
+
+export function getDataAgentAuthScheme(value: string | undefined): AgentAuthScheme {
+    return normalizeAuthScheme(value);
+}
+
+type AgentHeaderConfig = {
+    token?: string;
+    authScheme?: string;
+    apiKeyHeader?: string;
+};
+
+export function resolveAgentHeadersFromConfig(config: AgentHeaderConfig): Record<string, string> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = config.token?.trim();
+    if (!token) {
+        return headers;
+    }
+
+    const scheme = normalizeAuthScheme(config.authScheme);
+    if (scheme === "none") {
+        return headers;
+    }
+
+    if (scheme === "api-key") {
+        headers[(config.apiKeyHeader?.trim() || "x-api-key")] = token;
+        return headers;
+    }
+
+    headers.Authorization = `Bearer ${token}`;
+    return headers;
+}
+
+/**
+ * Build request headers for Data Agent runtime calls.
+ *
+ * Defaults match prior behavior (`Authorization: Bearer ...`) while allowing
+ * public runtime endpoints that require a custom API-key header.
+ */
+export function buildAgentHeaders(): Record<string, string> {
+    return resolveAgentHeadersFromConfig({
+        token: import.meta.env.VITE_DATA_AGENT_KEY as string | undefined,
+        authScheme: import.meta.env.VITE_DATA_AGENT_AUTH_SCHEME as string | undefined,
+        apiKeyHeader: import.meta.env.VITE_DATA_AGENT_API_KEY_HEADER as string | undefined,
+    });
+}
+
+function legacyBody(question: string, context: Record<string, unknown>): Record<string, unknown> {
+    return { question, context };
+}
+
+function mcpBody(question: string, context: Record<string, unknown>): Record<string, unknown> {
+    const toolName = import.meta.env.VITE_DATA_AGENT_MCP_TOOL?.trim() || "ask_data_agent";
+    return {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+            name: toolName,
+            arguments: {
+                question,
+                context,
+            },
+        },
+    };
+}
+
+async function postAgent(
+    url: string,
+    headers: Record<string, string>,
+    body: Record<string, unknown>,
+    controller: AbortController,
+): Promise<unknown> {
+    const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+    });
+    if (!res.ok) {
+        if (res.status === 401) {
+            throw new Error("Data Agent responded 401. MCP endpoints require a valid Fabric bearer token in VITE_DATA_AGENT_KEY (scope: https://api.fabric.microsoft.com/.default).");
+        }
+        throw new Error(`Data Agent responded ${res.status}`);
+    }
+    return (await res.json()) as unknown;
 }
 
 /**
@@ -137,35 +339,132 @@ export async function queryDataAgent(question: string, context: Record<string, u
     if (!url) {
         throw new Error("Data Agent endpoint not configured (VITE_DATA_AGENT_URL).");
     }
-    const key = import.meta.env.VITE_DATA_AGENT_KEY;
-
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (key) {
-        headers.Authorization = `Bearer ${key}`;
+    const authScheme = getDataAgentAuthScheme(import.meta.env.VITE_DATA_AGENT_AUTH_SCHEME as string | undefined);
+    const token = (import.meta.env.VITE_DATA_AGENT_KEY as string | undefined)?.trim();
+    if (authScheme === "bearer" && !token) {
+        throw new Error("VITE_DATA_AGENT_KEY is missing. For MCP Data Agent endpoints, set a valid Fabric bearer token.");
     }
+    const headers = buildAgentHeaders();
 
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 20_000);
     try {
-        const res = await fetch(url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ question, context }),
-            signal: controller.signal,
-        });
-        if (!res.ok) {
-            throw new Error(`Data Agent responded ${res.status}`);
+        const transports = resolveAgentTransports(url, import.meta.env.VITE_DATA_AGENT_MODE as string | undefined);
+
+        let lastError: unknown;
+        for (const transport of transports) {
+            try {
+                const payload = await postAgent(
+                    url,
+                    headers,
+                    transport === "mcp" ? mcpBody(question, context) : legacyBody(question, context),
+                    controller,
+                );
+                const payloadObj = payload as Record<string, unknown> | null;
+                const rpcError = payloadObj && typeof payloadObj === "object" ? payloadObj.error : undefined;
+                if (rpcError) {
+                    throw new Error("Data Agent MCP call failed.");
+                }
+
+                const summary = extractAgentAnswer(payload);
+                if (!summary) {
+                    throw new Error("Data Agent returned no parsable answer.");
+                }
+                return {
+                    summary,
+                    queryText:
+                        transport === "mcp"
+                            ? "Fabric Data Agent MCP · live query over Lakehouse/Eventhouse"
+                            : "Fabric Data Agent · live query over Lakehouse/Eventhouse",
+                    confidence: extractAgentConfidence(payload),
+                    evidence: extractAgentEvidence(payload),
+                    transport,
+                };
+            } catch (err) {
+                lastError = err;
+            }
         }
-        const payload = (await res.json()) as unknown;
-        const summary = extractAgentAnswer(payload);
-        if (!summary) {
-            throw new Error("Data Agent returned no parsable answer.");
+
+        throw lastError instanceof Error ? lastError : new Error("Data Agent request failed.");
+    } finally {
+        window.clearTimeout(timeout);
+    }
+}
+
+/**
+ * Best-effort runtime connectivity check for the configured Data Agent endpoint.
+ * Used by the UI "Test connection" control to verify URL/auth/transport wiring.
+ */
+export async function testDataAgentConnection(context: Record<string, unknown>): Promise<DataAgentConnectionResult> {
+    const url = (import.meta.env.VITE_DATA_AGENT_URL as string | undefined)?.trim();
+    const mode = getDataAgentMode(import.meta.env.VITE_DATA_AGENT_MODE as string | undefined);
+    const authScheme = getDataAgentAuthScheme(import.meta.env.VITE_DATA_AGENT_AUTH_SCHEME as string | undefined);
+    if (!url) {
+        return {
+            ok: false,
+            configured: false,
+            mode,
+            authScheme,
+            transportTried: [],
+            message: "VITE_DATA_AGENT_URL is not set.",
+        };
+    }
+
+    const token = (import.meta.env.VITE_DATA_AGENT_KEY as string | undefined)?.trim();
+    if (authScheme === "bearer" && !token) {
+        return {
+            ok: false,
+            configured: true,
+            mode,
+            authScheme,
+            url,
+            transportTried: [],
+            message: "VITE_DATA_AGENT_KEY is missing. Add a valid Fabric bearer token for MCP calls.",
+        };
+    }
+
+    const headers = buildAgentHeaders();
+    const transports = resolveAgentTransports(url, mode);
+    const prompt = (import.meta.env.VITE_DATA_AGENT_HEALTHCHECK_PROMPT as string | undefined)?.trim() || "Return connectivity-ok.";
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
+    let lastError = "No successful response from configured transports.";
+    try {
+        for (const transport of transports) {
+            try {
+                const payload = await postAgent(
+                    url,
+                    headers,
+                    transport === "mcp" ? mcpBody(prompt, context) : legacyBody(prompt, context),
+                    controller,
+                );
+                const summary = extractAgentAnswer(payload);
+                if (!summary) {
+                    throw new Error("Response received but no parseable text answer found.");
+                }
+                return {
+                    ok: true,
+                    configured: true,
+                    mode,
+                    authScheme,
+                    url,
+                    transportTried: transports,
+                    transportUsed: transport,
+                    message: "Data Agent connection is healthy.",
+                    sampleAnswer: summary,
+                };
+            } catch (err) {
+                lastError = err instanceof Error ? err.message : String(err);
+            }
         }
         return {
-            summary,
-            queryText: "Fabric Data Agent · live query over Lakehouse/Eventhouse",
-            confidence: extractAgentConfidence(payload),
-            evidence: extractAgentEvidence(payload),
+            ok: false,
+            configured: true,
+            mode,
+            authScheme,
+            url,
+            transportTried: transports,
+            message: `Connection test failed: ${lastError}`,
         };
     } finally {
         window.clearTimeout(timeout);

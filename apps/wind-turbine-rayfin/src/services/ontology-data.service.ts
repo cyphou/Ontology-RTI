@@ -52,12 +52,35 @@ export interface MaintenanceOrderRecord {
     createdAt: string;
 }
 
+/** Backend-stored second-level device node under a turbine component. */
+export interface TurbineDeviceRecord {
+    id?: string;
+    deviceKey: string;
+    component: string;
+    label: string;
+    property: string;
+    unit: string;
+    note: string;
+    anchorX: number;
+    anchorY: number;
+    anchorZ: number;
+    lookAtX: number;
+    lookAtY: number;
+    lookAtZ: number;
+    offsetX: number;
+    offsetY: number;
+    offsetZ: number;
+    zoom: number;
+    sortOrder: number;
+}
+
 /** Schema map consumed by {@link RayfinClient} for typed GraphQL proxies. */
 export type OntologyDataSchema = {
     WindSite: OntologySiteRecord;
     DispatchNote: DispatchNoteRecord;
     SensorThreshold: SignalThresholdRecord;
     MaintenanceOrder: MaintenanceOrderRecord;
+    TurbineDevice: TurbineDeviceRecord;
 };
 
 /**
@@ -194,6 +217,92 @@ export async function ensureOntologySites(sites: OntologySiteRecord[]): Promise<
             capacityMw: site.capacityMw,
         });
     }
+}
+
+/** List configured turbine child-device graph records. */
+export async function listTurbineDevices(): Promise<TurbineDeviceRecord[]> {
+    const rows = (await getRayfinClient()
+        .data.TurbineDevice.select([
+            "id", "deviceKey", "component", "label", "property", "unit", "note",
+            "anchorX", "anchorY", "anchorZ",
+            "lookAtX", "lookAtY", "lookAtZ",
+            "offsetX", "offsetY", "offsetZ",
+            "zoom", "sortOrder",
+        ])
+        .orderBy({ sortOrder: "asc" })
+        .execute()) as TurbineDeviceRecord[];
+    return rows;
+}
+
+/**
+ * Idempotently seed the component->device graph backing the digital twin view.
+ * Returns the number of rows present after seeding.
+ */
+export async function ensureTurbineDevices(devices: TurbineDeviceRecord[]): Promise<number> {
+    const existing = await listTurbineDevices();
+    if (existing.length > 0) {
+        return existing.length;
+    }
+    for (const d of devices) {
+        await getRayfinClient().data.TurbineDevice.create({
+            deviceKey: d.deviceKey,
+            component: d.component,
+            label: d.label,
+            property: d.property,
+            unit: d.unit,
+            note: d.note,
+            anchorX: d.anchorX,
+            anchorY: d.anchorY,
+            anchorZ: d.anchorZ,
+            lookAtX: d.lookAtX,
+            lookAtY: d.lookAtY,
+            lookAtZ: d.lookAtZ,
+            offsetX: d.offsetX,
+            offsetY: d.offsetY,
+            offsetZ: d.offsetZ,
+            zoom: d.zoom,
+            sortOrder: d.sortOrder,
+        });
+    }
+    return devices.length;
+}
+
+/** Create a turbine child-device record. */
+export async function createTurbineDevice(device: TurbineDeviceRecord): Promise<TurbineDeviceRecord> {
+    return getRayfinClient().data.TurbineDevice.create({
+        deviceKey: device.deviceKey,
+        component: device.component,
+        label: device.label,
+        property: device.property,
+        unit: device.unit,
+        note: device.note,
+        anchorX: device.anchorX,
+        anchorY: device.anchorY,
+        anchorZ: device.anchorZ,
+        lookAtX: device.lookAtX,
+        lookAtY: device.lookAtY,
+        lookAtZ: device.lookAtZ,
+        offsetX: device.offsetX,
+        offsetY: device.offsetY,
+        offsetZ: device.offsetZ,
+        zoom: device.zoom,
+        sortOrder: device.sortOrder,
+    }) as Promise<TurbineDeviceRecord>;
+}
+
+/** Update a turbine child-device record by id (preferred) or deviceKey (fallback). */
+export async function updateTurbineDevice(
+    target: { id?: string; deviceKey: string },
+    patch: Partial<Omit<TurbineDeviceRecord, "id" | "deviceKey">>,
+): Promise<TurbineDeviceRecord> {
+    const where = target.id ? { id: target.id } : { deviceKey: target.deviceKey };
+    return getRayfinClient().data.TurbineDevice.update(where, patch) as Promise<TurbineDeviceRecord>;
+}
+
+/** Delete a turbine child-device record by id (preferred) or deviceKey (fallback). */
+export async function deleteTurbineDevice(target: { id?: string; deviceKey: string }): Promise<TurbineDeviceRecord> {
+    const where = target.id ? { id: target.id } : { deviceKey: target.deviceKey };
+    return getRayfinClient().data.TurbineDevice.delete(where) as Promise<TurbineDeviceRecord>;
 }
 
 export interface OntologyAnswer {

@@ -22,7 +22,10 @@ export interface DataAgentAnswer {
     queryText: string;
     confidence?: number;
     evidence?: string[];
+    transport?: "legacy" | "mcp";
 }
+
+type AgentTransport = "legacy" | "mcp";
 
 /** True when a real Data Agent endpoint has been wired up via env. */
 export function isDataAgentConfigured(): boolean {
@@ -78,6 +81,54 @@ export function extractAgentAnswer(payload: unknown): string {
         }
     }
 
+    // MCP tools/call: { result: { content: [{ type: "text", text }] } }.
+    const result = obj.result;
+    if (result && typeof result === "object") {
+        const resultObj = result as Record<string, unknown>;
+        const content = resultObj.content;
+        if (Array.isArray(content)) {
+            for (const item of content) {
+                if (!item || typeof item !== "object") {
+                    continue;
+                }
+                const entry = item as Record<string, unknown>;
+                const text = entry.text;
+                if (typeof text === "string" && text.trim()) {
+                    return text.trim();
+                }
+            }
+        }
+        for (const key of ["answer", "summary", "output", "output_text", "text"]) {
+            const v = resultObj[key];
+            if (typeof v === "string" && v.trim()) {
+                return v.trim();
+            }
+        }
+    }
+
+    // Some response APIs wrap text in output arrays.
+    const output = obj.output;
+    if (Array.isArray(output)) {
+        for (const item of output) {
+            if (!item || typeof item !== "object") {
+                continue;
+            }
+            const entry = item as Record<string, unknown>;
+            const content = entry.content;
+            if (Array.isArray(content)) {
+                for (const c of content) {
+                    if (!c || typeof c !== "object") {
+                        continue;
+                    }
+                    const text = (c as Record<string, unknown>).text;
+                    if (typeof text === "string" && text.trim()) {
+                        return text.trim();
+                    }
+                }
+            }
+        }
+    }
+
     return "";
 }
 
@@ -93,6 +144,15 @@ export function extractAgentConfidence(payload: unknown): number | undefined {
             return Math.max(0, Math.min(1, v > 1 ? v / 100 : v));
         }
     }
+
+    const result = obj.result;
+    if (result && typeof result === "object") {
+        const nested = extractAgentConfidence(result);
+        if (nested != null) {
+            return nested;
+        }
+    }
+
     return undefined;
 }
 
@@ -124,7 +184,64 @@ export function extractAgentEvidence(payload: unknown): string[] {
             }
         }
     }
+
+    const result = obj.result;
+    if (result && typeof result === "object") {
+        const nested = extractAgentEvidence(result);
+        if (nested.length > 0) {
+            return nested;
+        }
+    }
+
     return [];
+}
+
+function shouldUseMcpFirst(url: string, mode: string | undefined): boolean {
+    if (mode === "mcp") {
+        return true;
+    }
+    if (mode === "legacy") {
+        return false;
+    }
+    return /\/mcp\/?$/i.test(url);
+}
+
+function legacyBody(question: string, context: Record<string, unknown>): Record<string, unknown> {
+    return { question, context };
+}
+
+function mcpBody(question: string, context: Record<string, unknown>): Record<string, unknown> {
+    const toolName = import.meta.env.VITE_DATA_AGENT_MCP_TOOL?.trim() || "ask_data_agent";
+    return {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+            name: toolName,
+            arguments: {
+                question,
+                context,
+            },
+        },
+    };
+}
+
+async function postAgent(
+    url: string,
+    headers: Record<string, string>,
+    body: Record<string, unknown>,
+    controller: AbortController,
+): Promise<unknown> {
+    const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+    });
+    if (!res.ok) {
+        throw new Error(`Data Agent responded ${res.status}`);
+    }
+    return (await res.json()) as unknown;
 }
 
 /**
@@ -147,26 +264,45 @@ export async function queryDataAgent(question: string, context: Record<string, u
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 20_000);
     try {
-        const res = await fetch(url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ question, context }),
-            signal: controller.signal,
-        });
-        if (!res.ok) {
-            throw new Error(`Data Agent responded ${res.status}`);
+        const mode = import.meta.env.VITE_DATA_AGENT_MODE?.trim().toLowerCase();
+        const mcpFirst = shouldUseMcpFirst(url, mode);
+        const transports: AgentTransport[] = mcpFirst ? ["mcp", "legacy"] : ["legacy", "mcp"];
+
+        let lastError: unknown;
+        for (const transport of transports) {
+            try {
+                const payload = await postAgent(
+                    url,
+                    headers,
+                    transport === "mcp" ? mcpBody(question, context) : legacyBody(question, context),
+                    controller,
+                );
+                const payloadObj = payload as Record<string, unknown> | null;
+                const rpcError = payloadObj && typeof payloadObj === "object" ? payloadObj.error : undefined;
+                if (rpcError) {
+                    throw new Error("Data Agent MCP call failed.");
+                }
+
+                const summary = extractAgentAnswer(payload);
+                if (!summary) {
+                    throw new Error("Data Agent returned no parsable answer.");
+                }
+                return {
+                    summary,
+                    queryText:
+                        transport === "mcp"
+                            ? "Fabric Data Agent MCP · live query over Lakehouse/Eventhouse"
+                            : "Fabric Data Agent · live query over Lakehouse/Eventhouse",
+                    confidence: extractAgentConfidence(payload),
+                    evidence: extractAgentEvidence(payload),
+                    transport,
+                };
+            } catch (err) {
+                lastError = err;
+            }
         }
-        const payload = (await res.json()) as unknown;
-        const summary = extractAgentAnswer(payload);
-        if (!summary) {
-            throw new Error("Data Agent returned no parsable answer.");
-        }
-        return {
-            summary,
-            queryText: "Fabric Data Agent · live query over Lakehouse/Eventhouse",
-            confidence: extractAgentConfidence(payload),
-            evidence: extractAgentEvidence(payload),
-        };
+
+        throw lastError instanceof Error ? lastError : new Error("Data Agent request failed.");
     } finally {
         window.clearTimeout(timeout);
     }

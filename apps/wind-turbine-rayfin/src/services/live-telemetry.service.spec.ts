@@ -22,9 +22,13 @@ import {
     pivotReadings,
     escapeDaxString,
     daxPowerHistory,
+    daxAnomalyScores,
     recordsToHistory,
+    recordsToAnomalyScores,
     fetchPowerHistory,
+    fetchAnomalyScores,
     DEFAULT_HISTORY_LIMIT,
+    DEFAULT_ANOMALY_LIMIT,
 } from "@/services/live-telemetry.service";
 
 describe("live-telemetry.service", () => {
@@ -147,5 +151,41 @@ describe("timeseries history", () => {
 
     it("returns null history for an empty turbine id", async () => {
         await expect(fetchPowerHistory("")).resolves.toBeNull();
+    });
+
+    it("builds a bounded anomaly query with temperature and vibration signals", () => {
+        const dax = daxAnomalyScores("WT-001", 8);
+
+        expect(dax).toContain("TOPN(8,");
+        expect(dax).toContain('sensortelemetry[TurbineId] = "WT-001"');
+        expect(dax).toContain('sensortelemetry[SensorType] = "Temperature"');
+        expect(dax).toContain('sensortelemetry[SensorType] = "Accelerometer"');
+        expect(dax).toContain("ORDER BY [Timestamp] ASC");
+    });
+
+    it("defaults anomaly query limit and escapes the turbine id", () => {
+        const dax = daxAnomalyScores('WT-"x"');
+
+        expect(dax).toContain(`TOPN(${DEFAULT_ANOMALY_LIMIT},`);
+        expect(dax).toContain('sensortelemetry[TurbineId] = "WT-""x"""');
+    });
+
+    it("maps anomaly signal records into clamped wind anomaly scores", () => {
+        const scores = recordsToAnomalyScores([
+            { timestamp: "2026-01-01T00:01:00Z", temperature: 75, accelerometer: 5 },
+            { timestamp: "2026-01-01T00:00:00Z", temperature: 60, accelerometer: 4 },
+            { timestamp: "2026-01-01T00:02:00Z", temperature: 100, accelerometer: 20 },
+            { timestamp: "", temperature: 70, accelerometer: 6 },
+        ]);
+
+        expect(scores).toEqual([0, 0.5, 1]);
+    });
+
+    it("returns null anomaly history when live telemetry is not configured", async () => {
+        await expect(fetchAnomalyScores("WT-001")).resolves.toBeNull();
+    });
+
+    it("returns null anomaly history for an empty turbine id", async () => {
+        await expect(fetchAnomalyScores("")).resolves.toBeNull();
     });
 });

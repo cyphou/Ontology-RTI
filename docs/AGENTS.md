@@ -27,6 +27,7 @@ file ownership, and clear boundaries.
 | **@reviewer** | Artifact quality review, preceptorship loop | Quality review modules |
 | **@tester** | Tests, coverage, fixtures, regression | `tests/` |
 | **@fabric-apps** | Rayfin app features, cross-app parity, telemetry UX, scene performance | `apps/*-rayfin/src/**` |
+| **@ui-wow** | Interface quality testing, visual polish, accessibility, and wow-effect UX upgrades | `apps/*-rayfin/src/**`, app UI docs |
 
 ## Architecture Diagram
 

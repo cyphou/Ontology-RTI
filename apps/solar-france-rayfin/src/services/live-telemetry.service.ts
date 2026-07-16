@@ -100,6 +100,8 @@ export const DAX_LATEST_TELEMETRY =
 
 // Default number of historical points to pull for a sparkline / forecast window.
 export const DEFAULT_HISTORY_LIMIT = 40;
+// Default number of anomaly-score points used by the trend forecast watch.
+export const DEFAULT_ANOMALY_LIMIT = 12;
 
 // Escape a value for safe inclusion in a DAX string literal (double any quotes).
 // ArrayIds come from our own data, but this keeps the query well-formed and
@@ -123,6 +125,24 @@ export function daxPowerHistory(arrayId: string, limit: number = DEFAULT_HISTORY
         '"ArrayId", sensortelemetry[ArrayId], ' +
         '"SensorType", sensortelemetry[SensorType]), ' +
         `[ArrayId] = "${id}" && [SensorType] = "AcPower"), ` +
+        '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
+    );
+}
+
+/**
+ * DAX for the last `limit` anomaly signal snapshots of one PV array, ordered
+ * oldest→newest. Each row includes ModuleTemp and InverterLoad values for the
+ * same timestamp so the app can derive the same anomaly score it uses live.
+ */
+export function daxAnomalyScores(arrayId: string, limit: number = DEFAULT_ANOMALY_LIMIT): string {
+    const id = escapeDaxString(arrayId);
+    return (
+        `EVALUATE TOPN(${limit}, ADDCOLUMNS(` +
+        `SUMMARIZE(FILTER(sensortelemetry, sensortelemetry[ArrayId] = "${id}" && ` +
+        '(sensortelemetry[SensorType] = "ModuleTemp" || sensortelemetry[SensorType] = "InverterLoad")), ' +
+        'sensortelemetry[Timestamp]), ' +
+        '"ModuleTemp", CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[SensorType] = "ModuleTemp"), ' +
+        '"InverterLoad", CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[SensorType] = "InverterLoad")), ' +
         '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
     );
 }
@@ -158,6 +178,14 @@ export function tableToRecords(table: QueryTable): Record<string, unknown>[] {
 function toNumber(value: unknown): number {
     const n = typeof value === "number" ? value : Number(value);
     return Number.isFinite(n) ? n : 0;
+}
+
+function toOptionalNumber(value: unknown): number | null {
+    if (value == null || value === "") {
+        return null;
+    }
+    const n = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(n) ? n : null;
 }
 
 function toText(value: unknown): string {
@@ -272,6 +300,28 @@ export function recordsToHistory(records: Record<string, unknown>[]): number[] {
 }
 
 /**
+ * Convert timestamped module-temp/inverter-load signal rows into anomaly scores
+ * (0..1) using the same thresholds as App.anomalyScore for solar.
+ */
+export function recordsToAnomalyScores(records: Record<string, unknown>[]): number[] {
+    return records
+        .map((r) => {
+            const timestamp = toText(r["timestamp"]);
+            const moduleTemp = toOptionalNumber(r["moduletemp"]);
+            const inverterLoad = toOptionalNumber(r["inverterload"]);
+            return { timestamp, moduleTemp, inverterLoad };
+        })
+        .filter((p) => p.timestamp !== "" && (p.moduleTemp != null || p.inverterLoad != null))
+        .sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0))
+        .map((p) => {
+            const tempScore = p.moduleTemp == null ? 0 : (p.moduleTemp - 60) / 20;
+            const loadScore = p.inverterLoad == null ? 0 : (p.inverterLoad - 80) / 18;
+            const score = Math.max(0, tempScore, loadScore);
+            return +Math.min(1, score).toFixed(3);
+        });
+}
+
+/**
  * Fetch persisted power history (kW) for one PV array from the semantic model so
  * sparklines and forecasts reflect real Lakehouse-backed readings instead of a
  * cold in-browser accumulation. Returns null when unconfigured or on any query
@@ -289,4 +339,23 @@ export async function fetchPowerHistory(
         return null;
     }
     return recordsToHistory(records);
+}
+
+/**
+ * Fetch persisted anomaly-score history for one PV array from the semantic
+ * model. Returns null when unconfigured or on any query failure, allowing
+ * callers to keep the existing in-memory rolling-window behavior.
+ */
+export async function fetchAnomalyScores(
+    arrayId: string,
+    limit: number = DEFAULT_ANOMALY_LIMIT,
+): Promise<number[] | null> {
+    if (!isLiveTelemetryConfigured() || arrayId === "") {
+        return null;
+    }
+    const records = await runQuery(daxAnomalyScores(arrayId, limit));
+    if (!records) {
+        return null;
+    }
+    return recordsToAnomalyScores(records);
 }

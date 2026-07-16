@@ -104,6 +104,8 @@ export const DAX_LATEST_TELEMETRY =
 
 // Default number of historical points to pull for a sparkline / forecast window.
 export const DEFAULT_HISTORY_LIMIT = 40;
+// Default number of anomaly-score points used by the trend forecast watch.
+export const DEFAULT_ANOMALY_LIMIT = 12;
 
 // Escape a value for safe inclusion in a DAX string literal (double any quotes).
 // TurbineIds come from our own data, but this keeps the query well-formed and
@@ -128,6 +130,24 @@ export function daxPowerHistory(turbineId: string, limit: number = DEFAULT_HISTO
         '"TurbineId", sensortelemetry[TurbineId], ' +
         '"SensorType", sensortelemetry[SensorType]), ' +
         `[TurbineId] = "${id}" && [SensorType] = "CurrentSensor"), ` +
+        '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
+    );
+}
+
+/**
+ * DAX for the last `limit` anomaly signal snapshots of one turbine, ordered
+ * oldest→newest. Each row includes Temperature and Accelerometer values for the
+ * same timestamp so the app can derive the same anomaly score it uses live.
+ */
+export function daxAnomalyScores(turbineId: string, limit: number = DEFAULT_ANOMALY_LIMIT): string {
+    const id = escapeDaxString(turbineId);
+    return (
+        `EVALUATE TOPN(${limit}, ADDCOLUMNS(` +
+        `SUMMARIZE(FILTER(sensortelemetry, sensortelemetry[TurbineId] = "${id}" && ` +
+        '(sensortelemetry[SensorType] = "Temperature" || sensortelemetry[SensorType] = "Accelerometer")), ' +
+        'sensortelemetry[Timestamp]), ' +
+        '"Temperature", CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[SensorType] = "Temperature"), ' +
+        '"Accelerometer", CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[SensorType] = "Accelerometer")), ' +
         '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
     );
 }
@@ -163,6 +183,14 @@ export function tableToRecords(table: QueryTable): Record<string, unknown>[] {
 function toNumber(value: unknown): number {
     const n = typeof value === "number" ? value : Number(value);
     return Number.isFinite(n) ? n : 0;
+}
+
+function toOptionalNumber(value: unknown): number | null {
+    if (value == null || value === "") {
+        return null;
+    }
+    const n = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(n) ? n : null;
 }
 
 function toText(value: unknown): string {
@@ -279,6 +307,28 @@ export function recordsToHistory(records: Record<string, unknown>[]): number[] {
 }
 
 /**
+ * Convert timestamped temperature/vibration signal rows into anomaly scores
+ * (0..1) using the same thresholds as App.anomalyScore for wind.
+ */
+export function recordsToAnomalyScores(records: Record<string, unknown>[]): number[] {
+    return records
+        .map((r) => {
+            const timestamp = toText(r["timestamp"]);
+            const temp = toOptionalNumber(r["temperature"]);
+            const vibration = toOptionalNumber(r["accelerometer"]);
+            return { timestamp, temp, vibration };
+        })
+        .filter((p) => p.timestamp !== "" && (p.temp != null || p.vibration != null))
+        .sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0))
+        .map((p) => {
+            const tempScore = p.temp == null ? 0 : (p.temp - 60) / 30;
+            const vibrationScore = p.vibration == null ? 0 : (p.vibration - 4) / 4;
+            const score = Math.max(0, tempScore, vibrationScore);
+            return +Math.min(1, score).toFixed(3);
+        });
+}
+
+/**
  * Fetch persisted power history (kW) for one turbine from the semantic model so
  * sparklines and forecasts reflect real Eventhouse-backed readings instead of a
  * cold in-browser accumulation. Returns null when unconfigured or on any query
@@ -296,4 +346,23 @@ export async function fetchPowerHistory(
         return null;
     }
     return recordsToHistory(records);
+}
+
+/**
+ * Fetch persisted anomaly-score history for one turbine from the semantic model.
+ * Returns null when unconfigured or on any query failure, allowing callers to
+ * keep the existing in-memory rolling-window behavior.
+ */
+export async function fetchAnomalyScores(
+    turbineId: string,
+    limit: number = DEFAULT_ANOMALY_LIMIT,
+): Promise<number[] | null> {
+    if (!isLiveTelemetryConfigured() || turbineId === "") {
+        return null;
+    }
+    const records = await runQuery(daxAnomalyScores(turbineId, limit));
+    if (!records) {
+        return null;
+    }
+    return recordsToAnomalyScores(records);
 }

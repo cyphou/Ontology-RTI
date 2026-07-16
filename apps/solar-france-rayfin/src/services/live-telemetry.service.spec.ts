@@ -22,9 +22,13 @@ import {
     pivotReadings,
     escapeDaxString,
     daxPowerHistory,
+    daxAnomalyScores,
     recordsToHistory,
+    recordsToAnomalyScores,
     fetchPowerHistory,
+    fetchAnomalyScores,
     DEFAULT_HISTORY_LIMIT,
+    DEFAULT_ANOMALY_LIMIT,
 } from "@/services/live-telemetry.service";
 
 describe("live-telemetry.service", () => {
@@ -140,5 +144,39 @@ describe("timeseries history", () => {
 
     it("returns null for an empty array id", async () => {
         expect(await fetchPowerHistory("")).toBeNull();
+    });
+
+    it("builds a bounded anomaly query with module temp and inverter load signals", () => {
+        const dax = daxAnomalyScores("CESTAS-PV-01", 8);
+        expect(dax).toContain("TOPN(8,");
+        expect(dax).toContain('sensortelemetry[ArrayId] = "CESTAS-PV-01"');
+        expect(dax).toContain('sensortelemetry[SensorType] = "ModuleTemp"');
+        expect(dax).toContain('sensortelemetry[SensorType] = "InverterLoad"');
+        expect(dax).toContain("ORDER BY [Timestamp] ASC");
+    });
+
+    it("defaults anomaly query limit and escapes the array id", () => {
+        const dax = daxAnomalyScores('A"B');
+        expect(dax).toContain(`TOPN(${DEFAULT_ANOMALY_LIMIT},`);
+        expect(dax).toContain('sensortelemetry[ArrayId] = "A""B"');
+    });
+
+    it("maps anomaly signal records into clamped solar anomaly scores", () => {
+        const scores = recordsToAnomalyScores([
+            { timestamp: "2024-01-01T00:01:00Z", moduletemp: 70, inverterload: 89 },
+            { timestamp: "2024-01-01T00:00:00Z", moduletemp: 60, inverterload: 80 },
+            { timestamp: "2024-01-01T00:02:00Z", moduletemp: 120, inverterload: 120 },
+            { timestamp: "", moduletemp: 70, inverterload: 89 },
+        ]);
+
+        expect(scores).toEqual([0, 0.5, 1]);
+    });
+
+    it("returns null anomaly history when live telemetry is not configured", async () => {
+        expect(await fetchAnomalyScores("CESTAS-PV-01")).toBeNull();
+    });
+
+    it("returns null anomaly history for an empty array id", async () => {
+        expect(await fetchAnomalyScores("")).toBeNull();
     });
 });

@@ -22,9 +22,13 @@ import {
     pivotReadings,
     escapeDaxString,
     daxPowerHistory,
+    daxAnomalyScores,
     recordsToHistory,
+    recordsToAnomalyScores,
     fetchPowerHistory,
+    fetchAnomalyScores,
     DEFAULT_HISTORY_LIMIT,
+    DEFAULT_ANOMALY_LIMIT,
 } from "@/services/live-telemetry.service";
 
 describe("live-telemetry.service", () => {
@@ -140,5 +144,39 @@ describe("timeseries history", () => {
 
     it("returns null for an empty unit id", async () => {
         expect(await fetchPowerHistory("")).toBeNull();
+    });
+
+    it("builds a bounded anomaly query with unit temp and utilization signals", () => {
+        const dax = daxAnomalyScores("PU001", 8);
+        expect(dax).toContain("TOPN(8,");
+        expect(dax).toContain('sensortelemetry[ProcessUnitId] = "PU001"');
+        expect(dax).toContain('sensortelemetry[SensorType] = "UnitTemp"');
+        expect(dax).toContain('sensortelemetry[SensorType] = "Utilization"');
+        expect(dax).toContain("ORDER BY [Timestamp] ASC");
+    });
+
+    it("defaults anomaly query limit and escapes the unit id", () => {
+        const dax = daxAnomalyScores('A"B');
+        expect(dax).toContain(`TOPN(${DEFAULT_ANOMALY_LIMIT},`);
+        expect(dax).toContain('sensortelemetry[ProcessUnitId] = "A""B"');
+    });
+
+    it("maps anomaly signal records into clamped refinery anomaly scores", () => {
+        const scores = recordsToAnomalyScores([
+            { timestamp: "2024-01-01T00:01:00Z", unittemp: 395, utilization: 89 },
+            { timestamp: "2024-01-01T00:00:00Z", unittemp: 360, utilization: 80 },
+            { timestamp: "2024-01-01T00:02:00Z", unittemp: 500, utilization: 120 },
+            { timestamp: "", unittemp: 395, utilization: 89 },
+        ]);
+
+        expect(scores).toEqual([0, 0.5, 1]);
+    });
+
+    it("returns null anomaly history when live telemetry is not configured", async () => {
+        expect(await fetchAnomalyScores("PU001")).toBeNull();
+    });
+
+    it("returns null anomaly history for an empty unit id", async () => {
+        expect(await fetchAnomalyScores("")).toBeNull();
     });
 });

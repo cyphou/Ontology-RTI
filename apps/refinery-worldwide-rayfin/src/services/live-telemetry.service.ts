@@ -101,6 +101,8 @@ export const DAX_LATEST_TELEMETRY =
 
 // Default number of historical points to pull for a sparkline / forecast window.
 export const DEFAULT_HISTORY_LIMIT = 40;
+// Default number of anomaly-score points used by the trend forecast watch.
+export const DEFAULT_ANOMALY_LIMIT = 12;
 
 // Escape a value for safe inclusion in a DAX string literal (double any quotes).
 // ProcessUnitIds come from our own data, but this keeps the query well-formed
@@ -124,6 +126,24 @@ export function daxPowerHistory(unitId: string, limit: number = DEFAULT_HISTORY_
         '"ProcessUnitId", sensortelemetry[ProcessUnitId], ' +
         '"SensorType", sensortelemetry[SensorType]), ' +
         `[ProcessUnitId] = "${id}" && [SensorType] = "Throughput"), ` +
+        '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
+    );
+}
+
+/**
+ * DAX for the last `limit` anomaly signal snapshots of one process unit,
+ * ordered oldest→newest. Each row includes UnitTemp and Utilization values for
+ * the same timestamp so the app can derive the same anomaly score it uses live.
+ */
+export function daxAnomalyScores(unitId: string, limit: number = DEFAULT_ANOMALY_LIMIT): string {
+    const id = escapeDaxString(unitId);
+    return (
+        `EVALUATE TOPN(${limit}, ADDCOLUMNS(` +
+        `SUMMARIZE(FILTER(sensortelemetry, sensortelemetry[ProcessUnitId] = "${id}" && ` +
+        '(sensortelemetry[SensorType] = "UnitTemp" || sensortelemetry[SensorType] = "Utilization")), ' +
+        'sensortelemetry[Timestamp]), ' +
+        '"UnitTemp", CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[SensorType] = "UnitTemp"), ' +
+        '"Utilization", CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[SensorType] = "Utilization")), ' +
         '[Timestamp], DESC) ORDER BY [Timestamp] ASC'
     );
 }
@@ -159,6 +179,14 @@ export function tableToRecords(table: QueryTable): Record<string, unknown>[] {
 function toNumber(value: unknown): number {
     const n = typeof value === "number" ? value : Number(value);
     return Number.isFinite(n) ? n : 0;
+}
+
+function toOptionalNumber(value: unknown): number | null {
+    if (value == null || value === "") {
+        return null;
+    }
+    const n = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(n) ? n : null;
 }
 
 function toText(value: unknown): string {
@@ -274,6 +302,28 @@ export function recordsToHistory(records: Record<string, unknown>[]): number[] {
 }
 
 /**
+ * Convert timestamped unit-temp/utilization signal rows into anomaly scores
+ * (0..1) using the same thresholds as App.anomalyScore for refinery.
+ */
+export function recordsToAnomalyScores(records: Record<string, unknown>[]): number[] {
+    return records
+        .map((r) => {
+            const timestamp = toText(r["timestamp"]);
+            const unitTemp = toOptionalNumber(r["unittemp"]);
+            const utilization = toOptionalNumber(r["utilization"]);
+            return { timestamp, unitTemp, utilization };
+        })
+        .filter((p) => p.timestamp !== "" && (p.unitTemp != null || p.utilization != null))
+        .sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0))
+        .map((p) => {
+            const tempScore = p.unitTemp == null ? 0 : (p.unitTemp - 360) / 70;
+            const loadScore = p.utilization == null ? 0 : (p.utilization - 80) / 18;
+            const score = Math.max(0, tempScore, loadScore);
+            return +Math.min(1, score).toFixed(3);
+        });
+}
+
+/**
  * Fetch persisted throughput history (kbd) for one process unit from the semantic
  * model so sparklines and forecasts reflect real Lakehouse-backed readings instead
  * of a cold in-browser accumulation. Returns null when unconfigured or on any
@@ -291,4 +341,23 @@ export async function fetchPowerHistory(
         return null;
     }
     return recordsToHistory(records);
+}
+
+/**
+ * Fetch persisted anomaly-score history for one process unit from the semantic
+ * model. Returns null when unconfigured or on any query failure, allowing
+ * callers to keep the existing in-memory rolling-window behavior.
+ */
+export async function fetchAnomalyScores(
+    unitId: string,
+    limit: number = DEFAULT_ANOMALY_LIMIT,
+): Promise<number[] | null> {
+    if (!isLiveTelemetryConfigured() || unitId === "") {
+        return null;
+    }
+    const records = await runQuery(daxAnomalyScores(unitId, limit));
+    if (!records) {
+        return null;
+    }
+    return recordsToAnomalyScores(records);
 }

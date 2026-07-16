@@ -29,6 +29,11 @@ describe("extractAgentAnswer", () => {
         expect(extractAgentAnswer(payload)).toBe("assistant reply");
     });
 
+    it("reads an MCP tools/call result content shape", () => {
+        const payload = { result: { content: [{ type: "text", text: "mcp reply" }] } };
+        expect(extractAgentAnswer(payload)).toBe("mcp reply");
+    });
+
     it("returns an empty string when nothing usable is present", () => {
         expect(extractAgentAnswer(null)).toBe("");
         expect(extractAgentAnswer({})).toBe("");
@@ -50,6 +55,10 @@ describe("extractAgentConfidence", () => {
         expect(extractAgentConfidence({})).toBeUndefined();
         expect(extractAgentConfidence({ confidence: "hi" })).toBeUndefined();
     });
+
+    it("reads nested confidence from MCP-like result envelopes", () => {
+        expect(extractAgentConfidence({ result: { confidenceScore: 91 } })).toBeCloseTo(0.91, 6);
+    });
 });
 
 describe("extractAgentEvidence", () => {
@@ -64,5 +73,9 @@ describe("extractAgentEvidence", () => {
     it("returns an empty list when no evidence is present", () => {
         expect(extractAgentEvidence({})).toEqual([]);
         expect(extractAgentEvidence(null)).toEqual([]);
+    });
+
+    it("reads nested evidence from MCP-like result envelopes", () => {
+        expect(extractAgentEvidence({ result: { citations: [{ text: "row 1" }] } })).toEqual(["row 1"]);
     });
 });

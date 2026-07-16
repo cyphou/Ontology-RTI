@@ -287,7 +287,7 @@ OntologyAccelerator/
 |       +-- (same structure per domain)
 |
 |-- apps/                                    <-- Browser digital-twin front-ends (Fabric Rayfin)
-|   |-- wind-turbine-rayfin/                 <-- Geo Wind Twin (WindTurbine model)
+|   |-- wind-turbine-rayfin/                 <-- Geo Wind Twin (WindTurbine model, backend-persisted twin graph)
 |   |-- solar-france-rayfin/                 <-- Geo Solar Twin, France (SolarFarm model)
 |   +-- refinery-worldwide-rayfin/           <-- Geo Refinery Twin (OilGasRefinery model)
 |
