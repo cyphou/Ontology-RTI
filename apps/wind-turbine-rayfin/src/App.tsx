@@ -4371,7 +4371,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                         {demoPanelOpen && (
                             <>
                                 <button type="button" aria-label="Close demo panel" onClick={() => setDemoPanelOpen(false)} className="fixed inset-0 z-[190] cursor-default" />
-                                <div role="dialog" aria-modal="true" aria-label="Guided demo script" className="fixed left-3 top-[74px] z-[200] flex items-center gap-2 rounded-full border border-cyan-500/50 bg-[#0a1526] px-2 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
+                                <div role="dialog" aria-modal="true" aria-label="Guided demo script" className="absolute right-0 top-[calc(100%+0.5rem)] z-[200] flex max-w-[92vw] flex-wrap items-center gap-2 rounded-2xl border border-cyan-500/50 bg-[#0a1526] px-2 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.7)]">
                                     <span className="pl-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-300">Demo</span>
                                     <button
                                         type="button"
