@@ -5131,108 +5131,122 @@ function App() {
             )}
 
             {techPopupOpen && techPopupResponder && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" onClick={() => setTechPopupOpen(false)}>
-                    <div className="w-[min(92vw,860px)] max-h-[86vh] overflow-y-auto rounded-xl border border-cyan-700/50 bg-[#07142a] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.65)]" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                                <img src={techPopupResponder.photo} alt={`${techPopupResponder.name} portrait`} className="h-16 w-16 rounded-lg border border-[#3a4657] object-cover" />
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onClick={() => setTechPopupOpen(false)}>
+                    <div className="flex w-[min(94vw,940px)] max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-cyan-500/40 bg-[#07142a] shadow-[0_30px_90px_rgba(0,0,0,0.72)]" onClick={(e) => e.stopPropagation()}>
+                        {/* Hero header */}
+                        <div className="relative shrink-0 overflow-hidden">
+                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_-30%,rgba(6,182,212,0.38),transparent_58%),radial-gradient(circle_at_92%_130%,rgba(16,185,129,0.28),transparent_52%)]" />
+                            <button type="button" onClick={() => setTechPopupOpen(false)} className="absolute right-3 top-3 z-10 rounded-full bg-black/30 p-1.5 text-slate-300 hover:bg-black/50 hover:text-white" aria-label="Close">✕</button>
+                            <div className="relative flex flex-col items-center gap-5 p-6 text-center sm:flex-row sm:items-center sm:text-left">
+                                <div className="relative shrink-0">
+                                    <div className="rounded-3xl bg-gradient-to-br from-cyan-400/70 via-cyan-300/30 to-emerald-400/50 p-[3px] shadow-[0_16px_40px_rgba(6,182,212,0.35)]">
+                                        <img src={techPopupResponder.photo} alt={`${techPopupResponder.name} portrait`} className="h-36 w-36 rounded-3xl object-cover sm:h-40 sm:w-40" />
+                                    </div>
+                                    <span className={`absolute -bottom-1 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow ${techPopupResponder.onCall ? "bg-emerald-500 text-emerald-950" : "bg-slate-600 text-slate-100"}`}>
+                                        <span className="h-1.5 w-1.5 rounded-full bg-current" />{techPopupResponder.onCall ? "On-call" : "Standby"}
+                                    </span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Technician Profile</p>
+                                    <h3 className="mt-0.5 text-3xl font-bold leading-tight text-white">{techPopupResponder.name}</h3>
+                                    <p className="mt-1 text-sm text-slate-300">{techPopupResponder.role}</p>
+                                    <p className="text-xs text-slate-400">ETA {techPopupResponder.etaMin} min · {techPopupResponder.shift} shift · {techPopupResponder.currentLoad} active tasks</p>
+                                    <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:justify-start">
+                                        <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-medium text-amber-200 ring-1 ring-amber-500/30">{techPopupFocusComponent} focus</span>
+                                        {techPopupResponder.skills.map((skill) => (
+                                            <span key={`${techPopupResponder.id}-${skill}`} className="rounded-full bg-slate-700/60 px-2.5 py-0.5 text-[11px] text-slate-200 ring-1 ring-slate-600/50">{skill}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="shrink-0 rounded-2xl border border-cyan-500/30 bg-[#0a1830]/85 px-6 py-4 text-center">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Match</p>
+                                    <p className="text-4xl font-bold text-transparent [background:linear-gradient(90deg,#22d3ee,#34d399)] [background-clip:text] [-webkit-background-clip:text]">{Math.round(techPopupResponder.score)}%</p>
+                                    <p className="text-[10px] text-slate-500">AI-ranked</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6 pt-2">
+                            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-sm text-slate-200">{incidentStory}</div>
+
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                <div className="rounded-xl bg-[#0a1830] px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">ETA</p><p className="text-lg font-semibold text-slate-100">{techPopupResponder.etaMin}<span className="text-xs text-slate-400"> min</span></p></div>
+                                <div className="rounded-xl bg-[#0a1830] px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Shift</p><p className="text-lg font-semibold capitalize text-slate-100">{techPopupResponder.shift}</p></div>
+                                <div className="rounded-xl bg-[#0a1830] px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Active load</p><p className="text-lg font-semibold text-slate-100">{techPopupResponder.currentLoad}</p></div>
+                                <div className="rounded-xl bg-[#0a1830] px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Coverage</p><p className="text-lg font-semibold text-slate-100">{techPopupResponder.siteCoverage.length}<span className="text-xs text-slate-400"> sites</span></p></div>
+                            </div>
+
+                            <div>
+                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Skill confidence</p>
+                                <div className="space-y-2">
+                                    {(Object.entries(techPopupResponder.confidenceBySkill) as [string, number][]).map(([skill, conf]) => {
+                                        const pct = Math.round(conf * 100);
+                                        return (
+                                            <div key={skill}>
+                                                <div className="flex items-center justify-between text-xs text-slate-300"><span>{skill}</span><span className="font-semibold text-slate-100">{pct}%</span></div>
+                                                <div className="mt-1 h-2 rounded-full bg-slate-800"><div className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400" style={{ width: `${pct}%` }} /></div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <p className="text-[11px] uppercase tracking-wide text-cyan-300">Technician Profile</p>
-                                    <h3 className="text-lg font-semibold text-slate-100">{techPopupResponder.name}</h3>
-                                    <p className="text-xs text-slate-400">{techPopupResponder.role} · ETA {techPopupResponder.etaMin} min · shift {techPopupResponder.shift}</p>
-                                    <p className="mt-1 text-xs text-slate-300">{incidentStory}</p>
+                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Site coverage</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {techPopupResponder.siteCoverage.map((s) => (
+                                            <span key={s} className="rounded-full bg-slate-700/60 px-2.5 py-0.5 text-[11px] text-slate-200 ring-1 ring-slate-600/50">{s}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Why matched</p>
+                                    <p className="text-xs leading-5 text-slate-300">{techPopupResponder.reason}</p>
                                 </div>
                             </div>
-                            <button type="button" onClick={() => setTechPopupOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100">✕</button>
-                        </div>
 
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Match score</span><div className="font-semibold text-cyan-200">{Math.round(techPopupResponder.score)}%</div></div>
-                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">On-call</span><div className="font-semibold text-slate-100">{techPopupResponder.onCall ? "Yes" : "No"}</div></div>
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap gap-1">
-                            <span className="rounded bg-cyan-900/40 px-2 py-0.5 text-[11px] text-cyan-200">{techPopupResponder.shift} shift</span>
-                            <span className={`rounded px-2 py-0.5 text-[11px] ${techPopupResponder.onCall ? "bg-emerald-900/40 text-emerald-200" : "bg-slate-700/70 text-slate-300"}`}>{techPopupResponder.onCall ? "On-call" : "Standby"}</span>
-                            <span className="rounded bg-amber-900/40 px-2 py-0.5 text-[11px] text-amber-200">{techPopupFocusComponent} focus</span>
-                            {techPopupResponder.skills.map((skill) => (
-                                <span key={`${techPopupResponder.id}-${skill}`} className="rounded bg-slate-700/70 px-2 py-0.5 text-[11px] text-slate-200">{skill}</span>
-                            ))}
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
-                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">ETA</span><div className="font-semibold text-slate-100">{techPopupResponder.etaMin} min</div></div>
-                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Shift</span><div className="font-semibold capitalize text-slate-100">{techPopupResponder.shift}</div></div>
-                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Active load</span><div className="font-semibold text-slate-100">{techPopupResponder.currentLoad}</div></div>
-                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">On-call</span><div className="font-semibold text-slate-100">{techPopupResponder.onCall ? "Yes" : "No"}</div></div>
-                        </div>
-
-                        <div className="mt-3">
-                            <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Skill confidence</p>
-                            <div className="space-y-1.5">
-                                {(Object.entries(techPopupResponder.confidenceBySkill) as [string, number][]).map(([skill, conf]) => {
-                                    const pct = Math.round(conf * 100);
-                                    return (
-                                        <div key={skill}>
-                                            <div className="flex items-center justify-between text-[11px] text-slate-300"><span>{skill}</span><span className="font-medium text-slate-100">{pct}%</span></div>
-                                            <div className="mt-0.5 h-1.5 rounded bg-slate-800"><div className="h-1.5 rounded bg-gradient-to-r from-cyan-500 to-emerald-400" style={{ width: `${pct}%` }} /></div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                                <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Site coverage</p>
-                                <div className="flex flex-wrap gap-1">
-                                    {techPopupResponder.siteCoverage.map((s) => (
-                                        <span key={s} className="rounded bg-slate-700/70 px-2 py-0.5 text-[11px] text-slate-200">{s}</span>
-                                    ))}
+                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Field evidence</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {matchingEvidence.map((ev) => {
+                                        const active = techPopupEvidence?.id === ev.id || selectedEvidence?.id === ev.id;
+                                        return (
+                                            <button
+                                                key={ev.id}
+                                                type="button"
+                                                onClick={() => setSelectedEvidenceId(ev.id)}
+                                                className={`overflow-hidden rounded-xl border text-left transition-all duration-200 ${active ? "border-cyan-500 ring-2 ring-cyan-500/40" : "border-slate-700 hover:border-slate-500"}`}
+                                            >
+                                                <img src={ev.image} alt={ev.label} className="h-24 w-full object-cover" />
+                                                <div className="px-2.5 py-1.5">
+                                                    <p className="truncate text-xs font-medium text-slate-200" title={ev.label}>{ev.label}</p>
+                                                    <p className="text-[10px] uppercase tracking-wide text-slate-500">{ev.component} asset</p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                            <div>
-                                <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Why matched</p>
-                                <p className="text-[11px] text-slate-300">{techPopupResponder.reason}</p>
-                            </div>
                         </div>
 
-                        <div className="mt-3">
-                            <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Evidence</p>
-                            <div className="grid grid-cols-2 gap-2">
-                                {matchingEvidence.map((ev) => {
-                                    const active = techPopupEvidence?.id === ev.id || selectedEvidence?.id === ev.id;
-                                    return (
-                                        <button
-                                            key={ev.id}
-                                            type="button"
-                                            onClick={() => setSelectedEvidenceId(ev.id)}
-                                            className={`rounded border p-1 text-left ${active ? "border-cyan-500 bg-cyan-500/10" : "border-slate-700 hover:border-slate-500"}`}
-                                        >
-                                            <img src={ev.image} alt={ev.label} className="h-16 w-full rounded object-cover" />
-                                            <p className="mt-0.5 truncate text-[10px] text-slate-300" title={ev.label}>{ev.label}</p>
-                                            <p className="text-[9px] uppercase tracking-wide text-slate-500">{ev.component} asset</p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 flex gap-2">
+                        {/* Sticky actions */}
+                        <div className="flex shrink-0 gap-3 border-t border-slate-800 bg-[#06101f] p-4">
                             <button type="button" onClick={() => {
                                 setView("operations");
                                 setTechPopupOpen(false);
                                 setSelectedId(selected.id);
                                 void handleDispatchResponder(techPopupResponder);
-                            }} className="flex-1 rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500">
-                                Dispatch now
+                            }} className="flex-1 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(6,182,212,0.4)] transition-all duration-200 hover:-translate-y-[1px] hover:from-cyan-400 hover:to-cyan-500">
+                                🚀 Dispatch now
                             </button>
                             <button type="button" onClick={() => {
                                 setView("operations");
                                 setTechPopupOpen(false);
                                 void handleCloseLoop();
-                            }} className="flex-1 rounded border border-emerald-700/70 bg-emerald-900/20 px-3 py-2 text-sm font-medium text-emerald-200 hover:bg-emerald-900/35">
-                                Close the loop
+                            }} className="flex-1 rounded-xl border border-emerald-600/60 bg-emerald-900/20 px-4 py-3 text-sm font-semibold text-emerald-200 transition-all duration-200 hover:bg-emerald-900/35">
+                                ✓ Close the loop
                             </button>
                         </div>
                     </div>
