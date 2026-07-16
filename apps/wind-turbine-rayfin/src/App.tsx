@@ -1843,47 +1843,97 @@ function svgAvatar(name: string, seed: number, role: string, shift: "day" | "swi
     const profile = role.toLowerCase();
     const isField = /field|maintainer|reliability/.test(profile);
     const isOps = /operations|lead/.test(profile);
-    const isSpecialist = /specialist|engineer/.test(profile);
-    // Simpsons-style flat cartoon palette: yellow skin, bold hair, role-based headwear.
-    const skin = "#ffd21e";
-    const skinShade = "#e9b400";
-    const hair = ["#3a2a1a", "#5b3a29", "#1f2937", "#7a4a25", "#111111"][seed % 5];
-    const jacket = isField ? "#0f766e" : isOps ? "#1d4ed8" : isSpecialist ? "#7c3aed" : ["#9a3412", "#0f172a"][seed % 2];
-    const accent = onCall ? "#34d399" : ["#60a5fa", "#f59e0b", "#f472b6", "#a3e635"][seed % 4];
-    const bg = shift === "night" ? "#0b1120" : shift === "swing" ? "#101827" : "#132238";
-    // Hair styles vary by seed (spiky, side-part, bun, buzz, curly).
-    const hairStyles = [
-        `<path d='M50 46c2-14 14-24 30-24s28 10 30 24c-6-6-12-4-14 2-3-7-9-7-12-1-3-7-10-7-13 0-3-7-9-6-11 0-2-5-8-7-10-1Z' fill='${hair}'/>`,
-        `<path d='M48 50c0-17 14-30 32-30s32 12 32 29c-8-8-16-9-24-9H62c-6 0-11 3-14 10Z' fill='${hair}'/>`,
-        `<path d='M50 48c0-16 13-28 30-28s30 12 30 28c-6-6-13-8-20-8H70c-8 0-15 2-20 8Z' fill='${hair}'/><circle cx='80' cy='24' r='9' fill='${hair}'/>`,
-        `<path d='M52 50c1-15 12-27 28-27s27 12 28 27c-7-5-14-7-28-7s-21 2-28 7Z' fill='${hair}'/>`,
-        `<path d='M49 52c1-18 13-31 31-31s30 13 31 31c-7-7-9-2-13-9-4 7-9 2-13 9-4-7-9-2-13-9-4 7-6 2-23 9Z' fill='${hair}'/>`,
+    // Semi-realistic 2D portrait: shaded skin, layered hair, detailed eyes,
+    // role-based headwear (hard hat / ops headset) and a hi-vis collar.
+    const skins = [
+        { base: "#f2c9a0", shade: "#d9a877", blush: "#e19a83" },
+        { base: "#e2ac7e", shade: "#c2894f", blush: "#d1876a" },
+        { base: "#c68a5c", shade: "#a3673c", blush: "#b56a4a" },
+        { base: "#8d5a3c", shade: "#6d4026", blush: "#7c4632" },
+        { base: "#f7d9bd", shade: "#e0b78d", blush: "#eaa98f" },
     ];
-    const headwear = isField
-        ? `<path d='M46 44c2-14 16-22 34-22s32 8 34 22H46Z' fill='#f6b73c'/><rect x='60' y='38' width='40' height='9' rx='3' fill='#e08a1e'/><rect x='44' y='44' width='72' height='6' rx='3' fill='#e08a1e'/>`
+    const skin = skins[seed % skins.length];
+    const hair = ["#241812", "#432a19", "#6b4423", "#8a6a3a", "#12100f", "#8a8f98"][seed % 6];
+    const eyeColor = ["#5b3a29", "#3b2a1a", "#2e5d5a", "#3f5f86", "#3a3a3a"][seed % 5];
+    const jacket = isField ? "#0f766e" : isOps ? "#1d4ed8" : ["#7c3aed", "#9a3412", "#0f172a"][seed % 3];
+    const accent = onCall ? "#34d399" : ["#60a5fa", "#f59e0b", "#f472b6", "#a3e635"][seed % 4];
+    const bg = shift === "night" ? "#0b1120" : shift === "swing" ? "#14203a" : "#16273f";
+    const bg2 = shift === "night" ? "#060a14" : shift === "swing" ? "#0b1424" : "#0d1a2c";
+    // Front hairline variants (fringe / side-part / short / center-part / bun-back).
+    const hairFront = [
+        `<path d='M52 66c-1-22 12-38 28-38s29 15 28 37c-4-10-9-14-15-15-2 8-4 12-9 14-3-8-4-12-7-15-6 3-11 8-16 17-4-4-8-3-9 0Z' fill='url(#hair${seed})'/>`,
+        `<path d='M52 64c0-23 13-37 30-37 12 0 22 7 26 19-9-9-19-11-30-8-8 2-19 9-26 26Z' fill='url(#hair${seed})'/>`,
+        `<path d='M53 62c1-21 12-34 27-34s26 12 27 33c-5-8-12-12-27-12s-22 4-27 13Z' fill='url(#hair${seed})'/>`,
+        `<path d='M52 66c0-23 13-38 28-38s28 15 28 38c-5-9-11-12-14-9-4-6-9-6-14 0-5-6-11-3-14 3-5-3-11-1-14 6Z' fill='url(#hair${seed})'/>`,
+        `<path d='M53 60c1-20 12-33 27-33s27 12 28 33c-6-6-13-9-28-9s-21 3-27 9Z' fill='url(#hair${seed})'/><circle cx='80' cy='24' r='8' fill='${hair}'/>`,
+    ];
+    const helmet = isField
+        ? `<path d='M46 50c1-19 15-30 34-30s33 11 34 30c-6-4-14-6-24-7l-2-9c-8-2-16-2-24 0l-1 9c-8 1-13 3-17 7Z' fill='#f6b73c'/><path d='M46 50c1-19 15-30 34-30 5 0 10 1 14 3-20 1-33 12-38 29-5-1-8-2-10-2Z' fill='#ffce6b'/><rect x='42' y='49' width='76' height='7' rx='3.5' fill='#e08a1e'/><rect x='63' y='31' width='34' height='7' rx='3' fill='#e08a1e' opacity='0.9'/>`
         : isOps
-        ? `<path d='M50 40c4-13 16-18 30-18s26 5 30 18c-8-3-52-3-60 0Z' fill='#dbeafe'/><rect x='66' y='30' width='28' height='7' rx='3' fill='#93c5fd'/>`
+        ? `<path d='M50 66c0-18 13-30 30-30s30 12 30 30' fill='none' stroke='#0f172a' stroke-width='6' stroke-linecap='round'/><rect x='44' y='64' width='12' height='20' rx='6' fill='#111827'/><rect x='104' y='64' width='12' height='20' rx='6' fill='#111827'/><path d='M56 92c-6-2-9-8-9-14' stroke='#111827' stroke-width='4' fill='none' stroke-linecap='round'/><circle cx='58' cy='96' r='3.5' fill='#111827'/>`
         : "";
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'>
 <defs>
-    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+    <linearGradient id='bgv${seed}' x1='0' y1='0' x2='0' y2='1'>
         <stop offset='0%' stop-color='${bg}'/>
-        <stop offset='100%' stop-color='${accent}' stop-opacity='0.22'/>
+        <stop offset='100%' stop-color='${bg2}'/>
     </linearGradient>
+    <radialGradient id='glow${seed}' cx='0.35' cy='0.28' r='0.7'>
+        <stop offset='0%' stop-color='${accent}' stop-opacity='0.28'/>
+        <stop offset='100%' stop-color='${accent}' stop-opacity='0'/>
+    </radialGradient>
+    <linearGradient id='skin${seed}' x1='0.2' y1='0' x2='0.85' y2='1'>
+        <stop offset='0%' stop-color='${skin.base}'/>
+        <stop offset='100%' stop-color='${skin.shade}'/>
+    </linearGradient>
+    <linearGradient id='hair${seed}' x1='0' y1='0' x2='0.6' y2='1'>
+        <stop offset='0%' stop-color='${hair}'/>
+        <stop offset='100%' stop-color='#000000' stop-opacity='0.35'/>
+    </linearGradient>
+    <radialGradient id='vig${seed}' cx='0.5' cy='0.45' r='0.75'>
+        <stop offset='60%' stop-color='#000000' stop-opacity='0'/>
+        <stop offset='100%' stop-color='#000000' stop-opacity='0.35'/>
+    </radialGradient>
 </defs>
-<rect width='160' height='160' rx='18' fill='url(#bg)'/>
-<path d='M40 150c2-22 18-34 40-34s38 12 40 34Z' fill='${jacket}'/>
-<path d='M64 118c4 8 28 8 32 0l-2 18H66Z' fill='${skin}'/>
-<ellipse cx='80' cy='74' rx='30' ry='33' fill='${skin}'/>
-<path d='M110 74c0 18-13 33-30 33 8 2 20-2 26-14 5-9 5-15 4-19Z' fill='${skinShade}' opacity='0.35'/>
-${hairStyles[seed % hairStyles.length]}
-<circle cx='70' cy='72' r='11' fill='#ffffff'/><circle cx='92' cy='72' r='11' fill='#ffffff'/>
-<circle cx='72' cy='73' r='3.4' fill='#1a1a1a'/><circle cx='90' cy='73' r='3.4' fill='#1a1a1a'/>
-<path d='M84 78c4 2 8 6 8 12' stroke='${skinShade}' stroke-width='3' fill='none' stroke-linecap='round'/>
-<path d='M66 96c8 7 20 7 28 0' stroke='#7a4a12' stroke-width='3' fill='none' stroke-linecap='round'/>
-<path d='M64 60c4-4 10-4 13-1M83 59c3-3 9-3 13 1' stroke='${hair}' stroke-width='3' fill='none' stroke-linecap='round'/>
-${headwear}
-<circle cx='122' cy='36' r='9' fill='${onCall ? "#34d399" : "rgba(255,255,255,0.18)"}'/>
+<rect width='160' height='160' rx='18' fill='url(#bgv${seed})'/>
+<rect width='160' height='160' rx='18' fill='url(#glow${seed})'/>
+<!-- shoulders / jacket + hi-vis collar -->
+<path d='M34 152c3-24 20-38 46-38s43 14 46 38Z' fill='${jacket}'/>
+<path d='M60 120c5 12 35 12 40 0l6 10-8 8H62l-8-8Z' fill='#f5c542'/>
+<path d='M64 124c4 9 28 9 32 0l-2 6H66Z' fill='#e2e8f0' opacity='0.55'/>
+<!-- neck -->
+<path d='M68 108h24v14c0 7-24 7-24 0Z' fill='${skin.shade}'/>
+<path d='M68 108h24v6c-6 5-18 5-24 0Z' fill='#000000' opacity='0.18'/>
+<!-- back hair -->
+<path d='M48 78c0-24 14-42 32-42s32 18 32 42c0 12-3 22-7 30 2-14 1-30-6-38-6 8-32 8-38 0-7 8-8 24-6 38-4-8-7-18-7-30Z' fill='${hair}'/>
+<!-- ears -->
+<ellipse cx='49' cy='84' rx='7' ry='10' fill='url(#skin${seed})'/><ellipse cx='111' cy='84' rx='7' ry='10' fill='url(#skin${seed})'/>
+<path d='M47 80c3 1 4 5 3 9' stroke='${skin.shade}' stroke-width='2' fill='none' stroke-linecap='round'/>
+<path d='M113 80c-3 1-4 5-3 9' stroke='${skin.shade}' stroke-width='2' fill='none' stroke-linecap='round'/>
+<!-- face -->
+<ellipse cx='80' cy='80' rx='31' ry='35' fill='url(#skin${seed})'/>
+<path d='M108 74c2 16-6 33-24 38 12 0 24-9 27-23 2-8 0-13-3-15Z' fill='${skin.shade}' opacity='0.5'/>
+<ellipse cx='66' cy='92' rx='6' ry='4' fill='${skin.blush}' opacity='0.45'/>
+<ellipse cx='94' cy='92' rx='6' ry='4' fill='${skin.blush}' opacity='0.45'/>
+<!-- brows -->
+<path d='M62 70c5-4 12-4 16-1' stroke='${hair}' stroke-width='3' fill='none' stroke-linecap='round'/>
+<path d='M82 69c4-3 11-3 16 1' stroke='${hair}' stroke-width='3' fill='none' stroke-linecap='round'/>
+<!-- eyes -->
+<ellipse cx='70' cy='79' rx='8.5' ry='5.5' fill='#ffffff'/>
+<ellipse cx='90' cy='79' rx='8.5' ry='5.5' fill='#ffffff'/>
+<circle cx='71' cy='79' r='3.6' fill='${eyeColor}'/><circle cx='71' cy='79' r='1.7' fill='#111'/><circle cx='72.4' cy='77.6' r='1' fill='#fff'/>
+<circle cx='89' cy='79' r='3.6' fill='${eyeColor}'/><circle cx='89' cy='79' r='1.7' fill='#111'/><circle cx='90.4' cy='77.6' r='1' fill='#fff'/>
+<path d='M61 76c4-3 12-3 16 0' stroke='${skin.shade}' stroke-width='1.6' fill='none' stroke-linecap='round'/>
+<path d='M83 76c4-3 12-3 16 0' stroke='${skin.shade}' stroke-width='1.6' fill='none' stroke-linecap='round'/>
+<!-- nose -->
+<path d='M80 80c-1 6-3 10-5 12 2 2 6 2 9 0' fill='none' stroke='${skin.shade}' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/>
+<!-- mouth -->
+<path d='M70 100c6 5 14 5 20 0' stroke='#8a4a3a' stroke-width='3' fill='none' stroke-linecap='round'/>
+<path d='M72 101c5 3 11 3 16 0' stroke='${skin.blush}' stroke-width='2' fill='none' stroke-linecap='round' opacity='0.6'/>
+${hairFront[seed % hairFront.length]}
+${helmet}
+<rect width='160' height='160' rx='18' fill='url(#vig${seed})'/>
+<circle cx='128' cy='30' r='7' fill='${onCall ? "#34d399" : "rgba(255,255,255,0.22)"}' stroke='#0b1120' stroke-width='2'/>
 </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
