@@ -301,7 +301,7 @@ export function createBladeGeometry() {
         bevelEnabled: true,
         bevelThickness: 0.02,
         bevelSize: 0.02,
-        bevelSegments: 1,
+        bevelSegments: 2,
         steps: 1,
     });
     geo.translate(0, 0, -0.04);
@@ -903,18 +903,18 @@ export function createOceanTexture() {
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, w, h);
 
-    const glint = ctx.createRadialGradient(w * 0.66, h * 0.32, 20, w * 0.66, h * 0.32, w * 0.52);
-    glint.addColorStop(0, "rgba(220, 179, 104, 0.18)");
-    glint.addColorStop(0.4, "rgba(186, 148, 84, 0.09)");
+    const glint = ctx.createRadialGradient(w * 0.64, h * 0.34, 24, w * 0.64, h * 0.34, w * 0.6);
+    glint.addColorStop(0, "rgba(224, 186, 116, 0.15)");
+    glint.addColorStop(0.45, "rgba(190, 152, 90, 0.07)");
     glint.addColorStop(1, "rgba(186, 148, 84, 0)");
     ctx.fillStyle = glint;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = "rgba(196, 170, 127, 0.04)";
+    ctx.strokeStyle = "rgba(200, 176, 134, 0.035)";
     ctx.lineWidth = 2;
-    for (let i = 0; i < 130; i += 1) {
+    for (let i = 0; i < 110; i += 1) {
         const y = seededRand(i + 1) * h;
-        const amp = 6 + seededRand(i + 2) * 14;
+        const amp = 5 + seededRand(i + 2) * 12;
         ctx.beginPath();
         for (let x = 0; x <= w; x += 32) {
             const yy = y + Math.sin((x / w) * Math.PI * 6 + i) * amp;

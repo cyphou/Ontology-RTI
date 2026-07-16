@@ -51,15 +51,29 @@ function createLabelSprite(text: string, color: string): THREE.Sprite {
         const rh = 68;
         ctx.beginPath();
         if (typeof (ctx as unknown as { roundRect?: unknown }).roundRect === "function") {
-            (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(rx, ry, rw, rh, 16);
+            (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(rx, ry, rw, rh, 18);
         } else {
             ctx.rect(rx, ry, rw, rh);
         }
-        ctx.fillStyle = "rgba(23, 27, 33, 0.82)";
+        // Soft drop shadow lifts the pill off the scene; a thin accent border and
+        // a faint top sheen give it a cleaner, glassier read than a heavy outline.
+        ctx.save();
+        ctx.shadowColor = "rgba(0, 0, 0, 0.55)";
+        ctx.shadowBlur = 16;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = "rgba(18, 22, 28, 0.86)";
         ctx.fill();
-        ctx.lineWidth = 3;
+        ctx.restore();
+        const sheen = ctx.createLinearGradient(0, ry, 0, ry + rh);
+        sheen.addColorStop(0, "rgba(255, 255, 255, 0.08)");
+        sheen.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = sheen;
+        ctx.fill();
+        ctx.lineWidth = 2;
         ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.85;
         ctx.stroke();
+        ctx.globalAlpha = 1;
         ctx.fillStyle = "#f3e7ce";
         ctx.fillText(text, canvas.width / 2, ry + rh / 2 + 1);
         map.colorSpace = THREE.SRGBColorSpace;
@@ -118,10 +132,10 @@ export default function WindFarmScene({
     // hemisphere → negative Z), not the map origin, so the farm sits mid-frame.
     const panRef = useRef<{ x: number; z: number }>({ x: -4, z: -9 });
     const autoQualityRef = useRef(true);
-    const [lightingMode, setLightingMode] = useState<LightingMode>("day");
+    const lightingMode: LightingMode = "day";
     const [qualityTier, setQualityTier] = useState<QualityTier>("high");
-    const [autoQuality, setAutoQuality] = useState(true);
-    const [fps, setFps] = useState(60);
+    const autoQuality = true;
+    const [, setFps] = useState(60);
 
     const ZOOM_MIN = 0.4;
     const ZOOM_MAX = 1.8;
@@ -152,7 +166,9 @@ export default function WindFarmScene({
         const scene = new THREE.Scene();
         const skyTexture = createSkyTexture(lightingMode);
         scene.background = skyTexture;
-        scene.fog = new THREE.Fog(lightingMode === "day" ? "#23262d" : "#14161b", 170, 380);
+        // Softer, closer atmospheric fade so distant water melts into the horizon
+        // haze without ever swallowing the (much nearer) turbines.
+        scene.fog = new THREE.Fog(lightingMode === "day" ? "#2b2822" : "#14161b", 150, 360);
 
         const camera = new THREE.PerspectiveCamera(52, host.clientWidth / host.clientHeight, 0.1, 500);
         camera.position.set(30, 36, 64);
@@ -165,7 +181,7 @@ export default function WindFarmScene({
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = lightingMode === "day" ? 1.16 : 0.96;
+        renderer.toneMappingExposure = lightingMode === "day" ? 1.2 : 0.96;
         host.innerHTML = "";
         host.appendChild(renderer.domElement);
 
@@ -174,8 +190,11 @@ export default function WindFarmScene({
         scene.environment = envRT.texture;
         pmrem.dispose();
 
-        const ambient = new THREE.AmbientLight(lightingMode === "day" ? 0xe7dcc4 : 0xb8a88e, lightingMode === "day" ? 0.32 : 0.24);
-        const sun = new THREE.DirectionalLight(lightingMode === "day" ? 0xdde3eb : 0x9ea7b4, lightingMode === "day" ? 1.04 : 0.72);
+        // Balanced three-point rig: a clean warm key, a cool cyan rim for edge
+        // separation (echoes the app's dark-cyan theme), and a sky/ground hemi
+        // fill for a richer gradient across the towers.
+        const ambient = new THREE.AmbientLight(lightingMode === "day" ? 0xeadfca : 0xb8a88e, lightingMode === "day" ? 0.3 : 0.24);
+        const sun = new THREE.DirectionalLight(lightingMode === "day" ? 0xf4ede0 : 0x9ea7b4, lightingMode === "day" ? 1.24 : 0.72);
         sun.position.set(34, 52, 18);
         sun.castShadow = true;
         sun.shadow.mapSize.width = 2048;
@@ -188,15 +207,17 @@ export default function WindFarmScene({
         sun.shadow.camera.bottom = -46;
         sun.shadow.bias = -0.0004;
         sun.shadow.normalBias = 0.02;
-        const rim = new THREE.DirectionalLight(lightingMode === "day" ? 0x7d8998 : 0x596271, lightingMode === "day" ? 0.2 : 0.16);
+        const rim = new THREE.DirectionalLight(lightingMode === "day" ? 0x8fbdd6 : 0x596271, lightingMode === "day" ? 0.36 : 0.16);
         rim.position.set(-24, 18, -24);
-        const hemi = new THREE.HemisphereLight(lightingMode === "day" ? 0xdcc6a1 : 0x8f7f66, 0x191d24, lightingMode === "day" ? 0.34 : 0.26);
+        const hemi = new THREE.HemisphereLight(lightingMode === "day" ? 0xdfcaa4 : 0x8f7f66, 0x121620, lightingMode === "day" ? 0.4 : 0.26);
         scene.add(ambient, sun, rim, hemi);
 
         const oceanTexture = createOceanTexture();
         const terrain = new THREE.Mesh(
             new THREE.PlaneGeometry(200, 120, 60, 36),
-            new THREE.MeshStandardMaterial({ map: oceanTexture, roughness: 0.72, metalness: 0.12 })
+            // Lower roughness + a touch of metalness lets the PMREM sky glaze the
+            // water for a softer, richer shimmer instead of a flat matte plane.
+            new THREE.MeshStandardMaterial({ map: oceanTexture, roughness: 0.56, metalness: 0.24, envMapIntensity: 0.7 })
         );
         terrain.rotation.x = -Math.PI / 2;
         terrain.position.y = -0.15;
@@ -211,7 +232,7 @@ export default function WindFarmScene({
         terrain.geometry.computeVertexNormals();
         scene.add(terrain);
 
-        const mapTexture = createMapTexture(sites as any);
+        const mapTexture = createMapTexture(sites);
         const mapPlane = new THREE.Mesh(
             new THREE.PlaneGeometry(92, 46, 1, 1),
             new THREE.MeshBasicMaterial({ map: mapTexture, transparent: true, depthWrite: false })
@@ -260,25 +281,36 @@ export default function WindFarmScene({
                 new THREE.MeshStandardMaterial({
                     color: SITE_COLORS[idx % SITE_COLORS.length],
                     emissive: SITE_COLORS[idx % SITE_COLORS.length],
-                    emissiveIntensity: 0.32,
+                    emissiveIntensity: 0.42,
+                    roughness: 0.4,
+                    metalness: 0.3,
+                    envMapIntensity: 1.1,
                 })
             );
             marker.position.set(projectLonToX(site.lon), 0.45, projectLatToZ(site.lat));
             scene.add(marker);
 
+            // Single clean additive halo (no stacked rings) keeps the marker
+            // legible without adding visual noise across dense clusters.
             const glow = new THREE.Mesh(
-                new THREE.RingGeometry(0.5, 0.95, 24),
-                new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.55 })
+                new THREE.RingGeometry(0.52, 0.98, 32),
+                new THREE.MeshBasicMaterial({
+                    color: SITE_COLORS[idx % SITE_COLORS.length],
+                    transparent: true,
+                    opacity: 0.4,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending,
+                })
             );
             glow.rotation.x = -Math.PI / 2;
             glow.position.set(projectLonToX(site.lon), 0.07, projectLatToZ(site.lat));
             scene.add(glow);
 
             const beacon = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.065, 0.065, 3.6, 16, 1, true),
-                new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.23, side: THREE.DoubleSide })
+                new THREE.CylinderGeometry(0.055, 0.055, 3.8, 16, 1, true),
+                new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending })
             );
-            beacon.position.set(projectLonToX(site.lon), 1.85, projectLatToZ(site.lat));
+            beacon.position.set(projectLonToX(site.lon), 1.95, projectLatToZ(site.lat));
             scene.add(beacon);
             siteBeacons.push(beacon);
 
@@ -303,11 +335,11 @@ export default function WindFarmScene({
         const nacelleGeo = new THREE.BoxGeometry(1.7, 0.55, 0.6);
         const spinnerGeo = new THREE.ConeGeometry(0.26, 0.6, 16);
 
-        const towerMat = new THREE.MeshStandardMaterial({ color: "#dde4ec", roughness: 0.32, metalness: 0.55 });
-        const bladeMat = new THREE.MeshStandardMaterial({ color: "#f6f8fc", roughness: 0.35, metalness: 0.18 });
-        const baseMat = new THREE.MeshStandardMaterial({ color: "#7f8b9a", roughness: 0.68, metalness: 0.22 });
-        const nacelleHousingMat = new THREE.MeshStandardMaterial({ color: "#e8edf3", roughness: 0.4, metalness: 0.5 });
-        const hubMat = new THREE.MeshStandardMaterial({ color: "#cdd6e0", roughness: 0.35, metalness: 0.55 });
+        const towerMat = new THREE.MeshStandardMaterial({ color: "#e0e7ef", roughness: 0.28, metalness: 0.6, envMapIntensity: 1.25 });
+        const bladeMat = new THREE.MeshStandardMaterial({ color: "#f7f9fd", roughness: 0.3, metalness: 0.14, envMapIntensity: 1.1 });
+        const baseMat = new THREE.MeshStandardMaterial({ color: "#7f8b9a", roughness: 0.66, metalness: 0.24, envMapIntensity: 0.9 });
+        const nacelleHousingMat = new THREE.MeshStandardMaterial({ color: "#e9eef4", roughness: 0.36, metalness: 0.54, envMapIntensity: 1.2 });
+        const hubMat = new THREE.MeshStandardMaterial({ color: "#cfd8e2", roughness: 0.32, metalness: 0.58, envMapIntensity: 1.2 });
 
         turbines.forEach((t) => {
             const group = new THREE.Group();
@@ -513,7 +545,6 @@ export default function WindFarmScene({
 
             const flowPos = flowGeo.getAttribute("position") as THREE.BufferAttribute;
             for (let i = 0; i < flowCount; i += 1) {
-                const i3 = i * 3;
                 let x = flowPos.getX(i) + flowVel[i] * 0.02;
                 let y = flowPos.getY(i) + Math.sin((tick + i) * 0.04) * 0.002;
                 if (x > 46) {
