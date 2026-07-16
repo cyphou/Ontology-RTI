@@ -2837,49 +2837,69 @@ function App() {
         }
     }, [canWriteback, handleEscalateManager, loadOrders, selectedOpenOrder, simCurtail, simDowntime]);
 
+    const handleCallFieldSupport = useCallback(async () => {
+        setWoMessage(`Field support contacted — on-site crew dispatched to ${selected.id} (${selected.siteName}).`);
+        return handleCloseLoop();
+    }, [handleCloseLoop, selected.id, selected.siteName]);
+
     const handleAutoRunDemo = useCallback(async () => {
         if (autoPlayRunning) {
             return;
         }
         setAutoPlayRunning(true);
         setDemoIntroOpen(false);
-        setDemoScriptStep("story");
-        setDemoStepIndex(0);
         setDemoPanelOpen(true);
-        setDemoRunLog([{ step: "story", at: new Date().toISOString(), detail: "Prepared incident story" }]);
-        setView("operations");
-        handlePrimeDemoStory();
-
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+        const logStep = (step: string, detail: string) =>
+            setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
         try {
-            await delay(2000);
-            // Step 2 — make the evidence visible by opening the technician card.
-            setDemoScriptStep("evidence");
+            // 1 — Frame the incident on the fleet map.
+            setDemoScriptStep("story");
+            setDemoStepIndex(0);
+            setDemoRunLog([{ step: "story", at: new Date().toISOString(), detail: "Framed the incident" }]);
+            setView("map");
+            handlePrimeDemoStory();
+            await delay(1800);
+            // 2 — Locate the affected turbine on the map.
+            setDemoScriptStep("locate");
             setDemoStepIndex(1);
-            setView("operations");
-            setTechPopupOpen(true);
-            setDemoRunLog((log) => [...log, { step: "evidence", at: new Date().toISOString(), detail: "Selected evidence and assignee" }]);
-            await delay(2000);
-            // Step 3 — dispatch via guided AutoHeal.
-            setDemoScriptStep("dispatch");
+            setView("map");
+            setWoMessage(`Fleet map focused on ${selected.id} (${selected.siteName}).`);
+            logStep("locate", `Focused fleet map on ${selected.id}`);
+            await delay(1800);
+            // 3 — Inspect the digital twin.
+            setDemoScriptStep("twin");
             setDemoStepIndex(2);
-            setTechPopupOpen(false);
-            setDemoRunLog((log) => [...log, { step: "dispatch", at: new Date().toISOString(), detail: "Running guided dispatch" }]);
-            await handleAutoHealNow();
-            await delay(2000);
-            // Step 4 — close the loop by confirming resolution of the raised order.
-            setDemoScriptStep("heal");
+            setView("twin");
+            logStep("twin", "Inspected the digital twin");
+            await delay(1800);
+            // 4 — Analyze the ontology graph.
+            setDemoScriptStep("graph");
             setDemoStepIndex(3);
-            const closed = await handleCloseLoop();
-            setDemoRunLog((log) => [...log, { step: "heal", at: new Date().toISOString(), detail: closed ? "Loop closed — order resolved" : "Loop close attempted — escalated for review" }]);
+            setView("graph");
+            logStep("graph", "Analyzed the ontology graph");
+            await delay(1800);
+            // 5 — Take action: guided dispatch.
+            setDemoScriptStep("dispatch");
+            setDemoStepIndex(4);
+            setView("operations");
+            await handleAutoHealNow();
+            logStep("dispatch", "Ran guided dispatch");
+            await delay(1800);
+            // 6 — Call field support and close the loop.
+            setDemoScriptStep("support");
+            setDemoStepIndex(5);
+            setView("operations");
+            const closed = await handleCallFieldSupport();
+            logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
         } finally {
-            await delay(2000);
+            await delay(1800);
             setAutoPlayRunning(false);
             setDemoScriptStep("idle");
         }
-    }, [autoPlayRunning, handleAutoHealNow, handleCloseLoop, handlePrimeDemoStory]);
+    }, [autoPlayRunning, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, selected.id, selected.siteName]);
 
     const handleRunDispatchQualityCheck = useCallback(() => {
         const missing = dispatchQuality.checks.filter((c) => !c.ok).map((c) => c.label);
@@ -2894,54 +2914,68 @@ function App() {
     const demoScriptSteps = useMemo<DemoScriptStep[]>(() => [
         {
             id: "story",
-            label: "1. Prepare story",
+            label: "1. Frame incident",
             detail: "Prime the incident narrative and choose the lead technician.",
             action: () => {
                 setDemoScriptStep("story");
-                setView("operations");
+                setView("map");
                 handlePrimeDemoStory();
             },
         },
         {
-            id: "evidence",
-            label: "2. Show evidence",
-            detail: "Open the technician card and focus the matching asset image.",
+            id: "locate",
+            label: "2. Locate on map",
+            detail: "Focus the fleet map on the affected turbine and site.",
             action: () => {
-                setDemoScriptStep("evidence");
-                setView("operations");
-                setTechPopupOpen(true);
-                if (techPopupEvidence) {
-                    setSelectedEvidenceId(techPopupEvidence.id);
-                }
+                setDemoScriptStep("locate");
+                setView("map");
+                setWoMessage(`Fleet map focused on ${selected.id} (${selected.siteName}).`);
+            },
+        },
+        {
+            id: "twin",
+            label: "3. Digital twin",
+            detail: "Open the 3D digital twin for component-level analysis.",
+            action: () => {
+                setDemoScriptStep("twin");
+                setView("twin");
+            },
+        },
+        {
+            id: "graph",
+            label: "4. Ontology graph",
+            detail: "Trace asset relationships in the ontology graph.",
+            action: () => {
+                setDemoScriptStep("graph");
+                setView("graph");
             },
         },
         {
             id: "dispatch",
-            label: "3. Dispatch lead",
+            label: "5. Dispatch lead",
             detail: "Send the selected responder and show the order response.",
             action: async () => {
                 setDemoScriptStep("dispatch");
-                if (!demoScriptLead) {
-                    setWoMessage("Demo script: no lead technician available yet.");
-                    return;
-                }
                 setView("operations");
                 setTechPopupOpen(false);
+                if (!demoScriptLead) {
+                    await handleAutoHealNow();
+                    return;
+                }
                 await handleDispatchResponder(demoScriptLead);
             },
         },
         {
-            id: "heal",
-            label: "4. Close the loop",
-            detail: "Confirm resolution of the raised order (auto-escalates if none).",
+            id: "support",
+            label: "6. Field support",
+            detail: "Call on-site field support and close the loop.",
             action: async () => {
-                setDemoScriptStep("heal");
+                setDemoScriptStep("support");
                 setView("operations");
-                setTechPopupOpen(false);
-                await handleCloseLoop();
+                await handleCallFieldSupport();
             },
         },
-    ], [demoScriptLead, handleCloseLoop, handleDispatchResponder, handlePrimeDemoStory, techPopupEvidence]);
+    ], [demoScriptLead, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, selected.id, selected.siteName]);
 
     const handleStartDemoFromIntro = useCallback(() => {
         setDemoIntroOpen(false);
