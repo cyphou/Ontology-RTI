@@ -2842,6 +2842,8 @@ function App() {
         return handleCloseLoop();
     }, [handleCloseLoop, selected.id, selected.siteName]);
 
+    const runAskRef = useRef<(override?: string) => Promise<void>>(async () => {});
+
     const handleAutoRunDemo = useCallback(async () => {
         if (autoPlayRunning) {
             return;
@@ -2889,21 +2891,33 @@ function App() {
             setView("graph");
             logStep("graph", `Analyzed the ontology graph (filter: ${selected.status})`);
             await delay(dwellMs);
-            // 5 — Take action: guided dispatch.
+            // 5 — Take action: open the dispatch popup, then raise the work order.
             setDemoScriptStep("dispatch");
             setDemoStepIndex(4);
             setView("operations");
+            setTechPopupOpen(true);
             await handleAutoHealNow();
             logStep("dispatch", "Ran guided dispatch");
             await delay(dwellMs);
             // 6 — Call field support, close the loop, and reset filters.
             setDemoScriptStep("support");
             setDemoStepIndex(5);
+            setTechPopupOpen(false);
             setView("operations");
             const closed = await handleCallFieldSupport();
             setSiteFilter("all");
             setGraphFilter("all");
             logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
+            await delay(dwellMs);
+            // 7 — Ask Fabric IQ a prioritization question.
+            setDemoScriptStep("ask");
+            setDemoStepIndex(6);
+            setTechPopupOpen(false);
+            setView("ask");
+            const askPrompt = `Which turbines are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
+            setQuestion(askPrompt);
+            logStep("ask", "Asked Fabric IQ for prioritization");
+            await runAskRef.current(askPrompt);
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
         } finally {
@@ -2967,11 +2981,11 @@ function App() {
         {
             id: "dispatch",
             label: "5. Dispatch lead",
-            detail: "Send the selected responder and show the order response.",
+            detail: "Open the dispatch popup and send the selected responder.",
             action: async () => {
                 setDemoScriptStep("dispatch");
                 setView("operations");
-                setTechPopupOpen(false);
+                setTechPopupOpen(true);
                 if (!demoScriptLead) {
                     await handleAutoHealNow();
                     return;
@@ -2986,10 +3000,24 @@ function App() {
             action: async () => {
                 setDemoScriptStep("support");
                 setView("operations");
+                setTechPopupOpen(false);
                 await handleCallFieldSupport();
             },
         },
-    ], [demoScriptLead, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, selected.id, selected.siteName]);
+        {
+            id: "ask",
+            label: "7. Ask Fabric IQ",
+            detail: "Open Fabric IQ and ask a prioritization question.",
+            action: async () => {
+                setDemoScriptStep("ask");
+                setTechPopupOpen(false);
+                setView("ask");
+                const prompt = `Which turbines are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
+                setQuestion(prompt);
+                await runAskRef.current(prompt);
+            },
+        },
+    ], [demoScriptLead, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, selected.siteName]);
 
     const handleStartDemoFromIntro = useCallback(() => {
         setDemoIntroOpen(false);
@@ -3091,6 +3119,12 @@ function App() {
             setAskLoading(false);
         }
     }, [question, selected.id, selected.siteName, turbines]);
+
+    // Keep a stable ref to the latest runAsk so the guided demo (declared earlier)
+    // can trigger a Fabric IQ query without a forward reference.
+    useEffect(() => {
+        runAskRef.current = runAsk;
+    }, [runAsk]);
 
     const runAgentConnectionCheck = useCallback(async () => {
         setAgentCheckLoading(true);

@@ -10,7 +10,7 @@
 // and scripted narration). These are intentionally free of React and Wind-specific
 // state so Solar and Refinery can reuse them without copy/paste.
 
-export type DemoScriptStepId = "story" | "locate" | "twin" | "graph" | "dispatch" | "support";
+export type DemoScriptStepId = "story" | "locate" | "twin" | "graph" | "dispatch" | "support" | "ask";
 
 export type EscalationStage = "none" | "manager" | "regional";
 
@@ -296,7 +296,7 @@ export interface DomainDemoManifest {
     steps: Record<DemoScriptStepId, DemoManifestStep>;
 }
 
-export const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "graph", "dispatch", "support"];
+export const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "graph", "dispatch", "support", "ask"];
 
 export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
     domainId: "wind-turbine",
@@ -312,6 +312,7 @@ export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause." },
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected energy impact from the what-if plan." },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold." },
+        ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions." },
     },
 };
 
@@ -341,6 +342,7 @@ export const SOLAR_DEMO_MANIFEST: DomainDemoManifest = {
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause." },
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected yield impact from the what-if plan." },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold." },
+        ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions." },
     },
 };
 
@@ -358,6 +360,7 @@ export const REFINERY_DEMO_MANIFEST: DomainDemoManifest = {
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause." },
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected throughput impact from the what-if plan." },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold." },
+        ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions." },
     },
 };
 

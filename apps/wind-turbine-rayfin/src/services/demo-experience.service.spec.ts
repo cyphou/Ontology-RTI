@@ -131,18 +131,19 @@ describe("slaUrgency", () => {
 });
 
 describe("demoNarration", () => {
-    it("orders the six scripted steps 1..6 of 6", () => {
+    it("orders the seven scripted steps 1..7 of 7", () => {
         expect(demoNarration("story").index).toBe(1);
         expect(demoNarration("locate").index).toBe(2);
         expect(demoNarration("twin").index).toBe(3);
         expect(demoNarration("graph").index).toBe(4);
         expect(demoNarration("dispatch").index).toBe(5);
         expect(demoNarration("support").index).toBe(6);
-        expect(demoNarration("story").total).toBe(6);
+        expect(demoNarration("ask").index).toBe(7);
+        expect(demoNarration("story").total).toBe(7);
     });
 
     it("provides a non-empty title and caption for every step", () => {
-        for (const step of ["story", "locate", "twin", "graph", "dispatch", "support"] as const) {
+        for (const step of ["story", "locate", "twin", "graph", "dispatch", "support", "ask"] as const) {
             const n = demoNarration(step);
             expect(n.title.length).toBeGreaterThan(0);
             expect(n.caption.length).toBeGreaterThan(0);
@@ -163,8 +164,8 @@ describe("domain demo manifest", () => {
 
     it("orders narration steps from the manifest step order", () => {
         expect(narrateStep(WIND_DEMO_MANIFEST, "story").index).toBe(1);
-        expect(narrateStep(WIND_DEMO_MANIFEST, "support").index).toBe(DEMO_STEP_ORDER.length);
-        expect(narrateStep(WIND_DEMO_MANIFEST, "dispatch").total).toBe(6);
+        expect(narrateStep(WIND_DEMO_MANIFEST, "ask").index).toBe(DEMO_STEP_ORDER.length);
+        expect(narrateStep(WIND_DEMO_MANIFEST, "dispatch").total).toBe(7);
     });
 
     it("drives narration from an arbitrary domain manifest", () => {
@@ -182,6 +183,7 @@ describe("domain demo manifest", () => {
                 graph: { title: "Solar graph", caption: "Graph relationships traced." },
                 dispatch: { title: "Solar dispatch", caption: "PV tech dispatched." },
                 support: { title: "Solar support", caption: "Field support called." },
+                ask: { title: "Solar ask", caption: "Fabric IQ queried." },
             },
         };
         expect(narrateStep(solar, "story").title).toBe("Solar story");
