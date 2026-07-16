@@ -3637,6 +3637,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
             detail: "Prime the incident narrative and choose the lead technician.",
             action: () => {
                 setDemoScriptStep("story");
+                setView("operations");
                 handlePrimeDemoStory();
             },
         },

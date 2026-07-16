@@ -89,6 +89,23 @@ This approach is reusable beyond the wind scenario. Rayfin apps can connect to:
 - Semantic Models for live telemetry aggregation and KPI queries
 - Ontology-backed entities for writeback workflows (notes, dispatch, configuration)
 
+### 🎥 How the Demo Script Works
+The guided demo replays a realistic operator incident workflow in four ordered steps. It drives the same real actions as normal usage (not a canned animation), so judges see the full triage-to-resolution loop.
+
+Steps (`story → evidence → dispatch → heal`):
+1. Story — the ontology surfaces the probable component, priority, and a lead technician for the affected turbine.
+2. Evidence — the technician card opens and the matching asset image is focused to justify the decision.
+3. Dispatch — a tracked maintenance work order is raised and assigned, with projected energy impact.
+4. AutoHeal — the guided recovery path runs and closes the loop, auto-escalating if match confidence is below threshold.
+
+Two run modes:
+- Run all (auto-play): the four steps chain automatically with on-screen narration (`Step X of N`).
+- Step by step: navigate with ◀ / ▶ (or arrow keys) and trigger each step with Run step (or Enter).
+
+Evidence and reuse:
+- Each step is timestamped into a run log that feeds an exportable Mission Report (JSON).
+- Narration is data-driven per domain, so Solar and Refinery reuse the same engine with their own wording.
+
 ## 🏗️ 5) Solution Architecture
 
 ```mermaid
