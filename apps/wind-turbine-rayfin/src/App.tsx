@@ -1174,506 +1174,6 @@ export function sourceLabel(source: AskResult["source"]): string {
 const LazyWindFarmScene = lazy(() => import("@/scenes/WindFarmScene"));
 const LazyTurbineTwinScene = lazy(() => import("@/scenes/TurbineTwinScene"));
 
-function WindFarmScene({
-    turbines,
-    sites,
-    selectedId,
-    dimmedIds,
-    paused,
-    onSelect,
-}: {
-    turbines: TurbineTelemetry[];
-    sites: WindSite[];
-    selectedId: string;
-    dimmedIds: Set<string>;
-    paused: boolean;
-    onSelect: (id: string) => void;
-}) {
-    const hostRef = useRef<HTMLDivElement | null>(null);
-    const sceneRef = useRef<SceneState | null>(null);
-    const pausedRef = useRef(paused);
-    const zoomRef = useRef(0.62);
-    const [cameraMode, setCameraMode] = useState<"cinematic" | "manual">("cinematic");
-    const cameraModeRef = useRef<"cinematic" | "manual">("cinematic");
-    const orbitYawRef = useRef(0.58);
-    const orbitPitchRef = useRef(0.44);
-    const panRef = useRef({ x: 0, z: 0 });
-    const dragRef = useRef({ active: false, moved: false, button: 0, lastX: 0, lastY: 0 });
-
-    useEffect(() => {
-        pausedRef.current = paused;
-    }, [paused]);
-
-    useEffect(() => {
-        cameraModeRef.current = cameraMode;
-    }, [cameraMode]);
-
-    useEffect(() => {
-        const host = hostRef.current;
-        if (!host) {
-            return;
-        }
-
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
-        const scene = new THREE.Scene();
-        const skyTexture = createSkyTexture();
-        scene.background = skyTexture;
-        scene.fog = new THREE.Fog("#0e3a55", 170, 380);
-
-        const camera = new THREE.PerspectiveCamera(52, host.clientWidth / host.clientHeight, 0.1, 500);
-        camera.position.set(30, 36, 64);
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.16;
-        host.innerHTML = "";
-        host.appendChild(renderer.domElement);
-
-        // Image-based lighting from the sky gradient so towers, nacelles and
-        // blades pick up soft, realistic reflections.
-        const pmrem = new THREE.PMREMGenerator(renderer);
-        const envRT = pmrem.fromEquirectangular(skyTexture);
-        scene.environment = envRT.texture;
-        pmrem.dispose();
-
-        const ambient = new THREE.AmbientLight(0xaec6ff, 0.42);
-        const sun = new THREE.DirectionalLight(0xd6ecff, 1.18);
-        sun.position.set(34, 52, 18);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048;
-        sun.shadow.mapSize.height = 2048;
-        sun.shadow.camera.near = 1;
-        sun.shadow.camera.far = 220;
-        sun.shadow.camera.left = -70;
-        sun.shadow.camera.right = 70;
-        sun.shadow.camera.top = 46;
-        sun.shadow.camera.bottom = -46;
-        sun.shadow.bias = -0.0004;
-        sun.shadow.normalBias = 0.02;
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.24);
-        rim.position.set(-24, 18, -24);
-        const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x16324a, 0.38);
-        scene.add(ambient, sun, rim, hemi);
-
-        // Single unified lit ocean plane (large enough to fill the horizon).
-        const oceanTexture = createOceanTexture();
-        const terrain = new THREE.Mesh(
-            new THREE.PlaneGeometry(200, 120, 60, 36),
-            new THREE.MeshStandardMaterial({ map: oceanTexture, roughness: 0.72, metalness: 0.12 })
-        );
-        terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -0.15;
-        terrain.receiveShadow = true;
-        const pos = terrain.geometry.attributes.position;
-        for (let i = 0; i < pos.count; i += 1) {
-            const x = pos.getX(i);
-            const y = pos.getY(i);
-            const wave = Math.sin(x * 0.12) * 0.08 + Math.cos(y * 0.17) * 0.06;
-            pos.setZ(i, wave);
-        }
-        terrain.geometry.computeVertexNormals();
-        scene.add(terrain);
-
-        // Map plane spans exactly 92 x 46 world units (true 2:1 equirectangular) so
-        // lon/lat -> X/Z matches projectLonToX / projectLatToZ, pinning every turbine
-        // to its real location without vertical distortion.
-        // Transparent + depthWrite:false so the ocean shows through and turbines stay on top.
-        const mapTexture = createMapTexture(sites);
-        const mapPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(92, 46, 1, 1),
-            new THREE.MeshBasicMaterial({ map: mapTexture, transparent: true, depthWrite: false })
-        );
-        mapPlane.rotation.x = -Math.PI / 2;
-        mapPlane.position.y = 0.06;
-        scene.add(mapPlane);
-
-        const grid = new THREE.GridHelper(92, 24, 0x2a557f, 0x2a557f);
-        grid.scale.z = 46 / 92; // constrain the square grid to the 92 x 46 map footprint
-        grid.position.y = 0.02;
-        grid.material.transparent = true;
-        grid.material.opacity = 0.12;
-        scene.add(grid);
-
-        const byId = new Map<string, TurbineRenderRefs>();
-        const siteRefs = new Map<string, SiteRenderRefs>();
-        const pickables: THREE.Mesh[] = [];
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-
-        sites.forEach((site, idx) => {
-            const markerMat = new THREE.MeshStandardMaterial({
-                color: SITE_COLORS[idx % SITE_COLORS.length],
-                emissive: SITE_COLORS[idx % SITE_COLORS.length],
-                emissiveIntensity: 0.32,
-            });
-            const marker = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.24, 0.24, 0.9, 14),
-                markerMat
-            );
-            marker.position.set(projectLonToX(site.lon), 0.45, projectLatToZ(site.lat));
-            scene.add(marker);
-
-            const glowMat = new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.55 });
-            const glow = new THREE.Mesh(
-                new THREE.RingGeometry(0.5, 0.95, 24),
-                glowMat
-            );
-            glow.rotation.x = -Math.PI / 2;
-            glow.position.set(projectLonToX(site.lon), 0.07, projectLatToZ(site.lat));
-            scene.add(glow);
-
-            siteRefs.set(site.id, {
-                marker,
-                markerMat,
-                glow,
-                glowMat,
-                baseY: 0.45,
-            });
-        });
-
-        const hubY = 7.4;
-        const towerGeo = new THREE.CylinderGeometry(0.12, 0.4, 7.2, 24);
-        const bladeGeo = createBladeGeometry();
-        const baseGeo = new THREE.CylinderGeometry(0.62, 0.78, 0.3, 24);
-        const nacelleGeo = new THREE.BoxGeometry(1.7, 0.55, 0.6);
-        const spinnerGeo = new THREE.ConeGeometry(0.26, 0.6, 16);
-
-        const towerMat = new THREE.MeshStandardMaterial({ color: "#dde4ec", roughness: 0.32, metalness: 0.55 });
-        const bladeMat = new THREE.MeshStandardMaterial({ color: "#f6f8fc", roughness: 0.35, metalness: 0.18 });
-        const baseMat = new THREE.MeshStandardMaterial({ color: "#7f8b9a", roughness: 0.68, metalness: 0.22 });
-        const nacelleHousingMat = new THREE.MeshStandardMaterial({ color: "#e8edf3", roughness: 0.4, metalness: 0.5 });
-        const hubMat = new THREE.MeshStandardMaterial({ color: "#cdd6e0", roughness: 0.35, metalness: 0.55 });
-
-        turbines.forEach((t) => {
-            const group = new THREE.Group();
-            group.position.set(t.x, 0, t.z);
-            scene.add(group);
-
-            const pedestal = new THREE.Mesh(baseGeo, baseMat);
-            pedestal.position.y = 0.14;
-            pedestal.castShadow = true;
-            pedestal.receiveShadow = true;
-            group.add(pedestal);
-
-            const tower = new THREE.Mesh(towerGeo, towerMat);
-            tower.position.y = 3.7;
-            tower.castShadow = true;
-            tower.receiveShadow = true;
-            group.add(tower);
-
-            const nacelle = new THREE.Mesh(nacelleGeo, nacelleHousingMat);
-            nacelle.position.set(-0.15, hubY, 0);
-            nacelle.castShadow = true;
-            group.add(nacelle);
-
-            const spinner = new THREE.Mesh(spinnerGeo, hubMat);
-            spinner.rotation.z = -Math.PI / 2;
-            spinner.position.set(0.95, hubY, 0);
-            spinner.castShadow = true;
-            group.add(spinner);
-
-            // Status beacon on the nacelle (color driven by live telemetry).
-            const nacelleMat = new THREE.MeshStandardMaterial({
-                color: STATUS_COLORS[t.status],
-                emissive: STATUS_COLORS[t.status],
-                emissiveIntensity: 0.55,
-                roughness: 0.3,
-                metalness: 0.2,
-            });
-            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), nacelleMat);
-            beacon.position.set(-0.78, hubY + 0.42, 0);
-            group.add(beacon);
-
-            const blades = new THREE.Group();
-            blades.position.set(0.95, hubY, 0);
-            for (let i = 0; i < 3; i += 1) {
-                const holder = new THREE.Group();
-                holder.rotation.x = (i * (Math.PI * 2)) / 3;
-                const blade = new THREE.Mesh(bladeGeo, bladeMat);
-                blade.rotation.y = 0.22;
-                blade.castShadow = true;
-                holder.add(blade);
-                blades.add(holder);
-            }
-            group.add(blades);
-
-            const pickMesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.7, 0.7, 8.2, 10),
-                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
-            );
-            pickMesh.position.y = 4;
-            pickMesh.userData.turbineId = t.id;
-            pickables.push(pickMesh);
-            group.add(pickMesh);
-
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: STATUS_COLORS[t.status],
-                transparent: true,
-                opacity: t.id === selectedId ? 0.9 : 0.55,
-            });
-            const ring = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.15, 32), ringMat);
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = 0.03;
-            group.add(ring);
-
-            byId.set(t.id, {
-                nacelleMat,
-                ringMat,
-                ring,
-                blades,
-                spin: 0.08 + seededRand(t.id.length + t.powerKw * 0.001) * 0.12,
-            });
-        });
-
-        const onClick = (event: MouseEvent) => {
-            if (dragRef.current.moved) {
-                dragRef.current.moved = false;
-                return;
-            }
-            const rect = renderer.domElement.getBoundingClientRect();
-            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointer, camera);
-            const hits = raycaster.intersectObjects(pickables);
-            if (hits.length > 0) {
-                const id = hits[0].object.userData.turbineId as string;
-                onSelect(id);
-            }
-        };
-        renderer.domElement.addEventListener("click", onClick);
-
-        const onMouseDown = (event: MouseEvent) => {
-            if (event.button !== 0 && event.button !== 2) {
-                return;
-            }
-            dragRef.current.active = true;
-            dragRef.current.moved = false;
-            dragRef.current.button = event.button;
-            dragRef.current.lastX = event.clientX;
-            dragRef.current.lastY = event.clientY;
-        };
-
-        const onMouseMove = (event: MouseEvent) => {
-            if (!dragRef.current.active) {
-                return;
-            }
-            const dx = event.clientX - dragRef.current.lastX;
-            const dy = event.clientY - dragRef.current.lastY;
-            dragRef.current.lastX = event.clientX;
-            dragRef.current.lastY = event.clientY;
-            if (Math.abs(dx) + Math.abs(dy) < 1) {
-                return;
-            }
-            dragRef.current.moved = true;
-
-            const panScale = 0.055 * zoomRef.current;
-            const shouldPan = dragRef.current.button === 2 || event.shiftKey;
-            if (cameraModeRef.current === "manual" && !shouldPan) {
-                orbitYawRef.current -= dx * 0.005;
-                orbitPitchRef.current = THREE.MathUtils.clamp(orbitPitchRef.current + dy * 0.0035, 0.2, 1.25);
-                return;
-            }
-
-            panRef.current.x -= dx * panScale;
-            panRef.current.z += dy * panScale;
-        };
-
-        const onMouseUp = () => {
-            dragRef.current.active = false;
-        };
-
-        const onContextMenu = (event: MouseEvent) => {
-            event.preventDefault();
-        };
-
-        renderer.domElement.addEventListener("mousedown", onMouseDown);
-        renderer.domElement.addEventListener("mousemove", onMouseMove);
-        renderer.domElement.addEventListener("mouseup", onMouseUp);
-        renderer.domElement.addEventListener("mouseleave", onMouseUp);
-        renderer.domElement.addEventListener("contextmenu", onContextMenu);
-
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + event.deltaY * 0.0009, 0.4, 1.8);
-        };
-        renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
-
-        const onResize = () => {
-            if (host.clientWidth === 0 || host.clientHeight === 0) {
-                return;
-            }
-            camera.aspect = host.clientWidth / host.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(host.clientWidth, host.clientHeight);
-        };
-        window.addEventListener("resize", onResize);
-
-        let tick = 0;
-        const animate = () => {
-            if (!pausedRef.current) {
-                tick += 0.03;
-                byId.forEach((refs) => {
-                    refs.blades.rotation.x += refs.spin;
-                });
-            }
-            oceanTexture.offset.x = tick * 0.0015;
-            oceanTexture.offset.y = Math.sin(tick * 0.05) * 0.01;
-            const z = zoomRef.current;
-            const panX = panRef.current.x;
-            const panZ = panRef.current.z;
-            if (cameraModeRef.current === "manual") {
-                const distance = 78 * z;
-                const yaw = orbitYawRef.current;
-                const pitch = orbitPitchRef.current;
-                const planar = Math.cos(pitch) * distance;
-                camera.position.x = panX + Math.cos(yaw) * planar;
-                camera.position.y = Math.sin(pitch) * distance;
-                camera.position.z = panZ + Math.sin(yaw) * planar;
-                camera.lookAt(panX, 0, panZ);
-            } else {
-                camera.position.x = panX + (26 + Math.sin(tick * 0.17) * 9) * z;
-                camera.position.y = 36 * z;
-                camera.position.z = panZ + (61 + Math.cos(tick * 0.13) * 5) * z;
-                camera.lookAt(panX, 0, panZ);
-            }
-            renderer.render(scene, camera);
-        };
-        renderer.setAnimationLoop(animate);
-
-        const cleanup = () => {
-            renderer.setAnimationLoop(null);
-            renderer.domElement.removeEventListener("click", onClick);
-            renderer.domElement.removeEventListener("mousedown", onMouseDown);
-            renderer.domElement.removeEventListener("mousemove", onMouseMove);
-            renderer.domElement.removeEventListener("mouseup", onMouseUp);
-            renderer.domElement.removeEventListener("mouseleave", onMouseUp);
-            renderer.domElement.removeEventListener("contextmenu", onContextMenu);
-            renderer.domElement.removeEventListener("wheel", onWheel);
-            window.removeEventListener("resize", onResize);
-            renderer.dispose();
-            scene.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
-                    obj.geometry.dispose();
-                    const material = Array.isArray(obj.material) ? obj.material : [obj.material];
-                    material.forEach((m) => m.dispose());
-                }
-            });
-            mapTexture.dispose();
-            oceanTexture.dispose();
-            skyTexture.dispose();
-            envRT.dispose();
-        };
-
-        sceneRef.current = {
-            byId,
-            siteRefs,
-            cleanup,
-        };
-
-        return () => {
-            sceneRef.current = null;
-            cleanup();
-        };
-    }, [onSelect, sites]);
-
-    useEffect(() => {
-        const ref = sceneRef.current;
-        if (!ref) {
-            return;
-        }
-
-        ref.byId.forEach((meshRefs, id) => {
-            const t = turbines.find((row) => row.id === id);
-            if (!t) {
-                return;
-            }
-
-            const dimmed = dimmedIds.has(id);
-            meshRefs.nacelleMat.color.set(STATUS_COLORS[t.status]);
-            meshRefs.nacelleMat.emissive.set(STATUS_COLORS[t.status]);
-            meshRefs.nacelleMat.emissiveIntensity = dimmed ? 0.02 : 0.16;
-            meshRefs.ringMat.color.set(STATUS_COLORS[t.status]);
-            meshRefs.ringMat.opacity = dimmed ? 0.06 : t.id === selectedId ? 0.98 : 0.56;
-            meshRefs.ring.scale.setScalar(t.id === selectedId ? 1.24 : dimmed ? 0.7 : 1);
-            meshRefs.spin = dimmed ? 0.003 : 0.055 + Math.min(0.22, t.windMs / 80);
-        });
-
-        const selectedSiteId = turbines.find((t) => t.id === selectedId)?.siteId;
-        const bySite = new Map<string, { warnings: number; alarms: number }>();
-        turbines.forEach((t) => {
-            const cur = bySite.get(t.siteId) ?? { warnings: 0, alarms: 0 };
-            if (t.status === "alarm") cur.alarms += 1;
-            if (t.status === "warning") cur.warnings += 1;
-            bySite.set(t.siteId, cur);
-        });
-
-        ref.siteRefs.forEach((sref, siteId) => {
-            const site = bySite.get(siteId) ?? { warnings: 0, alarms: 0 };
-            const severity = THREE.MathUtils.clamp(site.alarms * 0.42 + site.warnings * 0.18, 0, 1);
-            const isSelectedSite = selectedSiteId === siteId;
-            const beaconHeight = 0.9 + severity * 1.45;
-            sref.marker.scale.set(1, beaconHeight, 1);
-            sref.marker.position.y = sref.baseY + (beaconHeight - 1) * 0.42;
-            sref.markerMat.emissiveIntensity = (isSelectedSite ? 0.48 : 0.22) + severity * 0.9;
-            sref.markerMat.roughness = 0.36 - severity * 0.12;
-            sref.markerMat.metalness = 0.18 + severity * 0.18;
-
-            const glowScale = (isSelectedSite ? 1.15 : 1) + severity * 1.35;
-            sref.glow.scale.set(glowScale, glowScale, glowScale);
-            sref.glowMat.opacity = (isSelectedSite ? 0.52 : 0.34) + severity * 0.45;
-        });
-    }, [selectedId, turbines, dimmedIds]);
-
-    return (
-        <div className="relative h-full w-full">
-            <div ref={hostRef} className="h-full w-full" />
-            <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
-                <button
-                    type="button"
-                    title="Toggle camera mode"
-                    onClick={() => setCameraMode((m) => (m === "cinematic" ? "manual" : "cinematic"))}
-                    className="px-2.5 py-1.5 text-[11px] hover:bg-slate-700/60"
-                >
-                    {cameraMode === "cinematic" ? "AUTO" : "MANUAL"}
-                </button>
-                <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.15, 0.4, 1.8); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
-                <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.15, 0.4, 1.8); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button
-                    type="button"
-                    title="Reset camera"
-                    onClick={() => {
-                        zoomRef.current = 0.62;
-                        orbitYawRef.current = 0.58;
-                        orbitPitchRef.current = 0.44;
-                        panRef.current = { x: 0, z: 0 };
-                    }}
-                    className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60"
-                >
-                    ⟳
-                </button>
-            </div>
-
-            <div className="pointer-events-none absolute bottom-3 right-16 hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] px-2.5 py-1.5 text-[10px] text-slate-300 backdrop-blur sm:block">
-                <div className="font-medium text-slate-200">Site beacons + camera</div>
-                <div>height/ring = warning + alarm severity</div>
-                <div>drag = orbit (manual) · shift/right-drag = pan</div>
-            </div>
-        </div>
-    );
-}
-
 type StatusFilter = TurbineStatus | "all";
 
 function Sparkline({ values, color = "#6ee7ff", forecast }: { values: number[]; color?: string; forecast?: { value: number; lo: number; hi: number } }) {
@@ -5323,6 +4823,13 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                                     <p className="font-semibold text-slate-100">{primaryResponder.name}</p>
                                                     <p className="text-slate-400">{primaryResponder.role} · ETA {primaryResponder.etaMin} min · shift {primaryResponder.shift}</p>
                                                     <p className="mt-0.5 text-slate-300">{incidentStory}</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setTechPopupResponderId(primaryResponder.id); setTechPopupOpen(true); }}
+                                                        className="mt-1 rounded border border-cyan-700/60 bg-cyan-900/20 px-2 py-0.5 text-[10px] font-medium text-cyan-200 hover:bg-cyan-900/40"
+                                                    >
+                                                        View full profile
+                                                    </button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -5801,6 +5308,43 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                             {techPopupResponder.skills.map((skill) => (
                                 <span key={`${techPopupResponder.id}-${skill}`} className="rounded bg-slate-700/70 px-2 py-0.5 text-[11px] text-slate-200">{skill}</span>
                             ))}
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">ETA</span><div className="font-semibold text-slate-100">{techPopupResponder.etaMin} min</div></div>
+                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Shift</span><div className="font-semibold capitalize text-slate-100">{techPopupResponder.shift}</div></div>
+                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Active load</span><div className="font-semibold text-slate-100">{techPopupResponder.currentLoad}</div></div>
+                            <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">On-call</span><div className="font-semibold text-slate-100">{techPopupResponder.onCall ? "Yes" : "No"}</div></div>
+                        </div>
+
+                        <div className="mt-3">
+                            <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Skill confidence</p>
+                            <div className="space-y-1.5">
+                                {(Object.entries(techPopupResponder.confidenceBySkill) as [string, number][]).map(([skill, conf]) => {
+                                    const pct = Math.round(conf * 100);
+                                    return (
+                                        <div key={skill}>
+                                            <div className="flex items-center justify-between text-[11px] text-slate-300"><span>{skill}</span><span className="font-medium text-slate-100">{pct}%</span></div>
+                                            <div className="mt-0.5 h-1.5 rounded bg-slate-800"><div className="h-1.5 rounded bg-gradient-to-r from-cyan-500 to-emerald-400" style={{ width: `${pct}%` }} /></div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Site coverage</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {techPopupResponder.siteCoverage.map((s) => (
+                                        <span key={s} className="rounded bg-slate-700/70 px-2 py-0.5 text-[11px] text-slate-200">{s}</span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">Why matched</p>
+                                <p className="text-[11px] text-slate-300">{techPopupResponder.reason}</p>
+                            </div>
                         </div>
 
                         <div className="mt-3">
