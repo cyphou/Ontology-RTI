@@ -2922,10 +2922,12 @@ function App() {
             setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
             // Visibly click across a few graph nodes, then restore the incident turbine.
             await cycleGraphSelection(dwellMs - preActionMs);
-            // 5 — Take action: open the dispatch popup, then raise the work order.
+            // 5 — Take action: show operations first, then launch the dispatch popup.
             setDemoScriptStep("dispatch");
             setDemoStepIndex(4);
             setView("operations");
+            setTechPopupOpen(false);
+            await delay(preActionMs);
             setTechPopupOpen(true);
             const dispatched = await handleAutoHealNow();
             if (!dispatched) {
@@ -2933,8 +2935,8 @@ function App() {
                 // the "Raise work order" button uses so an order lands in maintenanceOrders.
                 await handleRaiseWorkOrder();
             }
-            logStep("dispatch", "Ran guided dispatch");
-            await delay(dwellMs);
+            logStep("dispatch", "Opened dispatch popup and raised the work order");
+            await delay(dwellMs - preActionMs);
             // 6 — Call field support, close the loop, and reset filters.
             setDemoScriptStep("support");
             setDemoStepIndex(5);
