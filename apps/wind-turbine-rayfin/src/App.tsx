@@ -2879,6 +2879,7 @@ function App() {
         setDemoIntroOpen(false);
         setDemoPanelOpen(true);
         const dwellMs = 20000;
+        const preActionMs = 7000;
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
         const logStep = (step: string, detail: string) =>
             setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
@@ -2896,29 +2897,31 @@ function App() {
             // view-to-view journey (map → twin → graph) stays fully visible.
             setTechPopupOpen(false);
             await delay(dwellMs);
-            // 2 — Locate: filter the fleet map down to the affected site (field).
+            // 2 — Locate: show the map first, then filter down to the affected site.
             setDemoScriptStep("locate");
             setDemoStepIndex(1);
             setView("map");
             setTechPopupOpen(false);
+            await delay(preActionMs);
             setSiteFilter(selected.siteId);
             setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
             logStep("locate", `Filtered map to site ${selected.siteName} and focused ${selected.id}`);
-            await delay(dwellMs);
+            await delay(dwellMs - preActionMs);
             // 3 — Inspect the digital twin for the selected turbine.
             setDemoScriptStep("twin");
             setDemoStepIndex(2);
             setView("twin");
             logStep("twin", "Inspected the digital twin");
             await delay(dwellMs);
-            // 4 — Analyze the ontology graph, filtered to the turbine's severity.
+            // 4 — Analyze the ontology graph: show it first, then filter/traverse.
             setDemoScriptStep("graph");
             setDemoStepIndex(3);
-            setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
             setView("graph");
             logStep("graph", `Analyzed the ontology graph (filter: ${selected.status})`);
+            await delay(preActionMs);
+            setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
             // Visibly click across a few graph nodes, then restore the incident turbine.
-            await cycleGraphSelection(dwellMs);
+            await cycleGraphSelection(dwellMs - preActionMs);
             // 5 — Take action: open the dispatch popup, then raise the work order.
             setDemoScriptStep("dispatch");
             setDemoStepIndex(4);
