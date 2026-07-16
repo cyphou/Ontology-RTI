@@ -639,3 +639,103 @@ body,
 .wow-disclosure-body {
   padding: 0 0.55rem 0.55rem;
 }
+
+/* Operations "Work Order Command" planning console */
+.ops-section {
+  animation: opsReveal 460ms ease both;
+}
+
+.ops-section:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.ops-section:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.ops-section:nth-child(4) {
+  animation-delay: 210ms;
+}
+
+@keyframes opsReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ops-hero {
+  position: relative;
+}
+
+.ops-hero::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0), rgba(34, 211, 238, 0.55), rgba(52, 211, 153, 0.25), rgba(34, 211, 238, 0));
+}
+
+.ops-kpi {
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 220ms ease;
+}
+
+.ops-kpi:hover {
+  transform: translateY(-1px);
+  border-color: rgba(103, 232, 249, 0.35);
+  box-shadow: 0 12px 26px rgba(1, 8, 20, 0.5);
+}
+
+.ops-plan {
+  position: relative;
+  overflow: hidden;
+}
+
+.ops-plan::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(34, 211, 238, 0.5), rgba(16, 185, 129, 0.18), rgba(34, 211, 238, 0.06));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.ops-order-card {
+  transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.ops-order-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(1, 8, 20, 0.5);
+}
+
+.ops-raise-btn {
+  transition: transform 180ms ease, box-shadow 200ms ease, filter 200ms ease;
+}
+
+.ops-raise-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(6, 182, 212, 0.42);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-section {
+    animation: none;
+  }
+
+  .ops-kpi:hover,
+  .ops-order-card:hover,
+  .ops-raise-btn:hover {
+    transform: none;
+  }
+}
