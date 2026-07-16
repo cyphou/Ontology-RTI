@@ -2857,8 +2857,15 @@ function App() {
         const peers = (sameSite.length >= 2 ? sameSite : others).slice(0, 2);
         const cycleIds = [originalId, ...peers.map((t) => t.id), originalId];
         const stepMs = Math.max(1200, Math.floor(dwellMs / cycleIds.length));
-        for (const id of cycleIds) {
+        for (let i = 0; i < cycleIds.length; i += 1) {
+            const id = cycleIds[i];
             setSelectedId(id);
+            const t = turbines.find((x) => x.id === id);
+            if (t) {
+                setWoMessage(i === 0
+                    ? `Graph: incident node ${id} (${t.status}).`
+                    : `Graph: tracing related node ${id} — same site ${t.siteName}.`);
+            }
             await delay(stepMs);
         }
         setSelectedId(originalId);
@@ -5010,18 +5017,34 @@ function App() {
                                         </div>
                                     )}
                                     {(runHistory.length > 0 || demoRunLog.length > 0) && (
-                                        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 transition-all duration-200 hover:border-cyan-400/60">
+                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 transition-all duration-200 hover:border-cyan-400/60">
                                             <div className="min-w-0">
-                                                <p className="text-[11px] font-medium text-cyan-200">Fabric IQ · suggested next step</p>
-                                                <p className="truncate text-xs text-slate-400">Compile this guided mission into an exportable report.</p>
+                                                <p className="text-[11px] font-medium text-cyan-200">Fabric IQ · suggested next steps</p>
+                                                <p className="truncate text-xs text-slate-400">Compile this guided mission or jump back to the fleet.</p>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleDownloadMissionReport}
-                                                className="shrink-0 rounded bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
-                                            >
-                                                Open mission report
-                                            </button>
+                                            <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDownloadMissionReport}
+                                                    className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
+                                                >
+                                                    Open mission report
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setView("map")}
+                                                    className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500/60 hover:text-white"
+                                                >
+                                                    Back to fleet map
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setView("operations")}
+                                                    className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500/60 hover:text-white"
+                                                >
+                                                    Open operations
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                     {askHistory.length > 0 && (
