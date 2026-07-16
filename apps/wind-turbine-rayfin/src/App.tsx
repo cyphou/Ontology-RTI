@@ -3595,7 +3595,13 @@ function App() {
                     <KpiPill label="Capacity" value={`${capacityFactor.toFixed(0)}%`} color="#7bc47f" />
                     <div className="metric-wow tile-uniform kpi-tile rounded-lg border border-[#2a313b]/80 bg-[#1a1f26d6] px-3 py-2">
                         <p className="tile-label text-[10px] uppercase tracking-wide text-slate-400">Health Mix</p>
-                        <p className="tile-value text-base font-semibold leading-tight text-slate-200">H {healthy} · W {warnings} · T {visibleTurbines.length}/{turbines.length}</p>
+                        <p className="tile-value text-base font-semibold leading-tight">
+                            <span style={{ color: STATUS_COLORS.healthy }}>H {healthy}</span>
+                            <span className="text-slate-500"> · </span>
+                            <span style={{ color: STATUS_COLORS.warning }}>W {warnings}</span>
+                            <span className="text-slate-500"> · </span>
+                            <span className="text-slate-200">T {visibleTurbines.length}/{turbines.length}</span>
+                        </p>
                     </div>
                 </div>
 
