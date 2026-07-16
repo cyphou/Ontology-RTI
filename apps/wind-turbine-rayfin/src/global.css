@@ -269,8 +269,8 @@ body,
 }
 
 .kpi-tile {
-  min-width: 128px;
-  min-height: 62px;
+  min-width: 136px;
+  min-height: 68px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -297,6 +297,7 @@ body,
 
 .tile-value {
   line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
 .tile-sub {
@@ -424,7 +425,7 @@ body,
 
 @media (max-width: 1536px) {
   .kpi-tile {
-    min-width: 116px;
+    min-width: 124px;
   }
 
   .view-spotlight {

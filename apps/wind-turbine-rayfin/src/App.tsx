@@ -1702,7 +1702,7 @@ function KpiPill({ label, value, color }: { label: string; value: string; color?
     return (
         <div className="metric-wow tile-uniform kpi-tile rounded-lg border border-[#2a313b]/80 bg-[#1a1f26d6] px-3 py-2">
             <p className="tile-label text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
-            <p className="tile-value text-sm font-semibold" style={color ? { color } : undefined}>{value}</p>
+            <p className="tile-value text-lg font-semibold leading-tight" style={color ? { color } : undefined}>{value}</p>
         </div>
     );
 }
@@ -3595,7 +3595,7 @@ function App() {
                     <KpiPill label="Capacity" value={`${capacityFactor.toFixed(0)}%`} color="#7bc47f" />
                     <div className="metric-wow tile-uniform kpi-tile rounded-lg border border-[#2a313b]/80 bg-[#1a1f26d6] px-3 py-2">
                         <p className="tile-label text-[10px] uppercase tracking-wide text-slate-400">Health Mix</p>
-                        <p className="tile-value text-sm font-semibold text-slate-200">H {healthy} · W {warnings} · T {visibleTurbines.length}/{turbines.length}</p>
+                        <p className="tile-value text-base font-semibold leading-tight text-slate-200">H {healthy} · W {warnings} · T {visibleTurbines.length}/{turbines.length}</p>
                     </div>
                 </div>
 
