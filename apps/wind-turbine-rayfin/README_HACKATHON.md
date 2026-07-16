@@ -46,20 +46,17 @@ A Rayfin + Microsoft Fabric demo app for wind-farm operations that combines a li
 - [10) Submission Metadata](#10-submission-metadata)
 - [Submission Checklist](#submission-checklist)
 
-## 1) Problem Statement
-### 🎯 Problem Statement
+## 🎯 1) Problem Statement
 Wind-farm operations teams often monitor telemetry, alarms, and maintenance context across disconnected tools. This causes slower triage, delayed dispatch decisions, and inconsistent operator handoffs.
 
 This project addresses that gap with one operational command center that unifies live status, diagnostics, and action workflows in a single experience.
 
-## 2) Target User
-### 👥 Target User
+## 👥 2) Target User
 - Primary user: Wind operations controller (NOC / dispatch operator)
 - Secondary users: Site technicians, reliability engineers, and demo/field solution architects
 - Stakeholders: Energy customers evaluating Fabric Apps and Rayfin reusable templates
 
-## 3) Use-Case Strength and Impact
-### ⚡ Use-Case Strength and Impact
+## ⚡ 3) Use-Case Strength and Impact
 ### Core use-case
 When incidents spike, an operator needs to quickly identify the highest-risk turbine, understand probable cause, and dispatch the right response.
 
@@ -74,8 +71,7 @@ When incidents spike, an operator needs to quickly identify the highest-risk tur
 - More consistent first-response decisions
 - Better cross-team communication through exportable run reports
 
-## 4) What We Built
-### 🛠️ What We Built
+## 🛠️ 4) What We Built
 - 3D multi-site wind fleet map with turbine-level selection
 - Digital twin scene with component and device hierarchy
 - Persisted twin-device metadata in Fabric backend (`TurbineDevice`)
@@ -93,8 +89,7 @@ This approach is reusable beyond the wind scenario. Rayfin apps can connect to:
 - Semantic Models for live telemetry aggregation and KPI queries
 - Ontology-backed entities for writeback workflows (notes, dispatch, configuration)
 
-## 5) Solution Architecture
-### 🏗️ Solution Architecture
+## 🏗️ 5) Solution Architecture
 
 ```mermaid
 flowchart LR
@@ -146,8 +141,7 @@ flowchart LR
 - Live mode: connected to Fabric semantic model + agent
 - Simulation mode: synthetic telemetry generator with same UX surfaces
 
-## 6) Reusability and Quality
-### ♻️ Reusability and Quality
+## ♻️ 6) Reusability and Quality
 ### Reusability
 - Designed as a reusable industry template pattern for Rayfin
 - Config-driven runtime wiring through environment variables
@@ -159,15 +153,13 @@ flowchart LR
 - Clear fallback behavior to prevent demo breakage
 - Operator-focused UX with explicit source labeling for trust
 
-## 7) Uniqueness
-### 💎 Uniqueness
+## 💎 7) Uniqueness
 - Combines geospatial fleet awareness and turbine-level twin diagnostics in one app
 - Adds mission-style guided storytelling for operational incident scenarios
 - Includes exportable, structured run evidence (mission report) for reproducible demos
 - Uses a persistent device graph model to bridge visual twin and operational metadata
 
-## 8) Product Feedback Quality
-### 🧠 Product Feedback Quality
+## 🧠 8) Product Feedback Quality
 ### What worked well
 - Fast iteration cycle with Rayfin app structure
 - Good separation between host integration and local dev
@@ -183,8 +175,7 @@ flowchart LR
 - Add standardized telemetry-source health badges/components
 - Provide packaged incident response template blocks (panel, scoring, reporting)
 
-## 9) Demo and Run Instructions
-### 🎬 Demo and Run Instructions
+## 🎬 9) Demo and Run Instructions
 ```mermaid
 flowchart TD
       A[npm install] --> B[npm run dev]
@@ -205,14 +196,12 @@ flowchart TD
 4. Open Mission Panel and run guided demo flow
 5. Export Mission Report JSON as judging artifact
 
-## 10) Submission Metadata
-### 📌 Submission Metadata
+## 📌 10) Submission Metadata
 - Repository: https://github.com/cyphou/Ontology-RTI
 - App folder: `apps/wind-turbine-rayfin`
 - Final branch for submission: `main`
 
-## Submission Checklist
-### ✅ Submission Checklist
+## ✅ Submission Checklist
 - [x] Public repository link provided
 - [x] Final app available on `main`
 - [x] Problem statement documented
