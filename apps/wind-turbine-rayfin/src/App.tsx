@@ -4672,13 +4672,15 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                         </div>
 
                                         <div className="mission-action-grid grid grid-cols-2 gap-2">
-                                            <button type="button" onClick={() => setDemoIntroOpen(true)} className="mission-action-btn mission-action-sky col-span-2 rounded px-2 py-1.5 text-xs font-medium">Run Demo Script</button>
                                             <button type="button" onClick={() => void handleAutoHealNow()} className="mission-action-btn mission-action-success rounded px-2 py-1.5 text-xs font-medium">Dispatch Lead</button>
                                             <button type="button" onClick={() => void handleEscalateManager()} className="mission-action-btn mission-action-danger rounded px-2 py-1.5 text-xs font-medium">Escalate L1</button>
                                             <button type="button" onClick={() => setView("operations")} className="mission-action-btn mission-action-primary rounded px-2 py-1.5 text-xs font-medium">Operations</button>
                                             <button type="button" onClick={() => setView("ask")} className="mission-action-btn mission-action-outline rounded px-2 py-1.5 text-xs font-medium">Ask Fabric IQ</button>
-                                            <button type="button" onClick={() => void handleCopyJurySnapshot()} className="mission-action-btn mission-action-sky rounded px-2 py-1.5 text-xs font-medium">Copy Snapshot</button>
-                                            <button type="button" onClick={handleDownloadMissionReport} className="mission-action-btn mission-action-indigo rounded px-2 py-1.5 text-xs font-medium">Export Report</button>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button type="button" onClick={() => void handleCopyJurySnapshot()} className="rounded border border-slate-700/70 bg-[#0a1830] px-2 py-1.5 text-[11px] text-slate-300 hover:border-cyan-500/60 hover:text-slate-100">Copy Snapshot</button>
+                                            <button type="button" onClick={handleDownloadMissionReport} className="rounded border border-slate-700/70 bg-[#0a1830] px-2 py-1.5 text-[11px] text-slate-300 hover:border-cyan-500/60 hover:text-slate-100">Export Report</button>
                                         </div>
 
                                         {runHistory.length > 0 && (
