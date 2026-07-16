@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { STATUS_COLORS, TWIN_PARTS, createSkyTexture, signalColor } from "../App";
+import { STATUS_COLORS, TWIN_PARTS, signalColor } from "../App";
 
 type PlantStatus = "healthy" | "warning" | "alarm";
 type PlantTelemetry = {

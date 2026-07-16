@@ -21,6 +21,7 @@ import {
 import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
 import {
     fetchLiveTelemetry,
+    fetchAnomalyScores,
     fetchPowerHistory,
     isLiveTelemetryConfigured,
     type LiveTelemetrySnapshot,
@@ -65,23 +66,23 @@ type AskResult = {
     queryText?: string;
     confidence?: number;
     evidence?: string[];
+    transport?: "legacy" | "mcp";
+    fallbackReason?: string;
     cacheHit?: boolean;
 };
 
+type AskHistoryEntry = {
+    at: string;
+    question: string;
+    source: AskResult["source"];
+    transport?: AskResult["transport"];
+    latencyMs: number;
+    cacheHit: boolean;
+    fallbackReason?: string;
+};
+
 const ASK_CACHE_TTL_MS = 30_000;
-
-type PanelRenderRefs = {
-    blades: THREE.Group;
-    nacelleMat: THREE.MeshStandardMaterial;
-    ringMat: THREE.MeshBasicMaterial;
-    ring: THREE.Mesh;
-    spin: number;
-};
-
-type SceneState = {
-    byId: Map<string, PanelRenderRefs>;
-    cleanup: () => void;
-};
+const ASK_HISTORY_MAX = 8;
 
 export const STATUS_COLORS: Record<PlantStatus, string> = {
     healthy: "#58d68d",
@@ -648,6 +649,7 @@ function useLiveTelemetry(): { turbines: PlantTelemetry[]; sites: SolarPlantSite
 async function askFabricIQ(question: string, context: Record<string, unknown>): Promise<AskResult> {
     const telemetry = (context.telemetry as PlantTelemetry[] | undefined) ?? [];
     const intent = classifyAskIntent(question);
+    let dataAgentFailed = false;
 
     // Fast operational intents are answered deterministically to minimize latency,
     // avoid unnecessary remote calls, and keep triage behavior stable.
@@ -658,6 +660,7 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
             generatedAt: new Date().toISOString(),
             queryText: "Deterministic local rule engine",
             confidence: 0.98,
+            fallbackReason: "ops-fastpath",
             evidence: [`telemetry rows: ${telemetry.length}`, "routing: ops-fastpath"],
         };
     }
@@ -673,9 +676,10 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
                 queryText: agent.queryText,
                 confidence: agent.confidence,
                 evidence: agent.evidence,
+                transport: agent.transport,
             };
         } catch {
-            /* fall through to ontology-grounded reasoning */
+            dataAgentFailed = true;
         }
     }
 
@@ -687,7 +691,8 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
             generatedAt: new Date().toISOString(),
             queryText,
             confidence: 0.85,
-            evidence: ["routing: ontology-grounded"],
+            fallbackReason: dataAgentFailed ? "data-agent-failed" : undefined,
+            evidence: dataAgentFailed ? ["routing: ontology-grounded", "fallback: data-agent failed"] : ["routing: ontology-grounded"],
         };
     } catch {
         return {
@@ -696,7 +701,10 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
             generatedAt: new Date().toISOString(),
             queryText: "Deterministic local fallback",
             confidence: 0.72,
-            evidence: ["ontology backend unreachable", "routing: local fallback"],
+            fallbackReason: dataAgentFailed ? "data-agent-and-ontology-failed" : "ontology-backend-unreachable",
+            evidence: dataAgentFailed
+                ? ["data-agent failed", "ontology backend unreachable", "routing: local fallback"]
+                : ["ontology backend unreachable", "routing: local fallback"],
         };
     }
 }
@@ -715,338 +723,6 @@ export function sourceLabel(source: AskResult["source"]): string {
 
 const LazySolarFleetScene = lazy(() => import("@/scenes/SolarFleetScene"));
 const LazyPlantTwinScene = lazy(() => import("@/scenes/PlantTwinScene"));
-
-function SolarFleetScene({
-    turbines,
-    sites,
-    selectedId,
-    dimmedIds,
-    paused,
-    onSelect,
-}: {
-    turbines: PlantTelemetry[];
-    sites: SolarPlantSite[];
-    selectedId: string;
-    dimmedIds: Set<string>;
-    paused: boolean;
-    onSelect: (id: string) => void;
-}) {
-    const hostRef = useRef<HTMLDivElement | null>(null);
-    const sceneRef = useRef<SceneState | null>(null);
-    const pausedRef = useRef(paused);
-    const zoomRef = useRef(0.62);
-
-    useEffect(() => {
-        pausedRef.current = paused;
-    }, [paused]);
-
-    useEffect(() => {
-        const host = hostRef.current;
-        if (!host) {
-            return;
-        }
-
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
-        const scene = new THREE.Scene();
-        const skyTexture = createSkyTexture();
-        scene.background = skyTexture;
-        scene.fog = new THREE.Fog("#0e3a55", 170, 380);
-
-        const camera = new THREE.PerspectiveCamera(52, host.clientWidth / host.clientHeight, 0.1, 500);
-        camera.position.set(30, 36, 64);
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        host.innerHTML = "";
-        host.appendChild(renderer.domElement);
-
-        const ambient = new THREE.AmbientLight(0xaec6ff, 0.47);
-        const sun = new THREE.DirectionalLight(0xd6ecff, 1.08);
-        sun.position.set(34, 52, 18);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 1024;
-        sun.shadow.mapSize.height = 1024;
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.22);
-        rim.position.set(-24, 18, -24);
-        scene.add(ambient, sun, rim);
-
-        // Single unified lit ocean plane (large enough to fill the horizon).
-        const oceanTexture = createOceanTexture();
-        const terrain = new THREE.Mesh(
-            new THREE.PlaneGeometry(200, 120, 60, 36),
-            new THREE.MeshStandardMaterial({ map: oceanTexture, roughness: 0.72, metalness: 0.12 })
-        );
-        terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -0.15;
-        terrain.receiveShadow = true;
-        const pos = terrain.geometry.attributes.position;
-        for (let i = 0; i < pos.count; i += 1) {
-            const x = pos.getX(i);
-            const y = pos.getY(i);
-            const wave = Math.sin(x * 0.12) * 0.08 + Math.cos(y * 0.17) * 0.06;
-            pos.setZ(i, wave);
-        }
-        terrain.geometry.computeVertexNormals();
-        scene.add(terrain);
-
-        // Map plane spans exactly 92 x 52 world units so lon/lat -> X/Z matches
-        // projectLonToX / projectLatToZ, pinning every turbine to its real location.
-        // Transparent + depthWrite:false so the ocean shows through and turbines stay on top.
-        const mapTexture = createMapTexture(sites);
-        const mapPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(92, 52, 1, 1),
-            new THREE.MeshBasicMaterial({ map: mapTexture, transparent: true, depthWrite: false })
-        );
-        mapPlane.rotation.x = -Math.PI / 2;
-        mapPlane.position.y = 0.06;
-        scene.add(mapPlane);
-
-        const grid = new THREE.GridHelper(92, 24, 0x2a557f, 0x2a557f);
-        grid.position.y = 0.02;
-        grid.material.transparent = true;
-        grid.material.opacity = 0.12;
-        scene.add(grid);
-
-        sites.forEach((site, idx) => {
-            const marker = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.24, 0.24, 0.9, 14),
-                new THREE.MeshStandardMaterial({
-                    color: SITE_COLORS[idx % SITE_COLORS.length],
-                    emissive: SITE_COLORS[idx % SITE_COLORS.length],
-                    emissiveIntensity: 0.32,
-                })
-            );
-            marker.position.set(projectLonToX(site.lon), 0.45, projectLatToZ(site.lat));
-            scene.add(marker);
-
-            const glow = new THREE.Mesh(
-                new THREE.RingGeometry(0.5, 0.95, 24),
-                new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.55 })
-            );
-            glow.rotation.x = -Math.PI / 2;
-            glow.position.set(projectLonToX(site.lon), 0.07, projectLatToZ(site.lat));
-            scene.add(glow);
-        });
-
-        const byId = new Map<string, PanelRenderRefs>();
-        const pickables: THREE.Mesh[] = [];
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-
-        const moduleGeo = new THREE.BoxGeometry(0.48, 0.04, 0.46);
-        const tubeGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.7, 8);
-        const baseGeo = new THREE.BoxGeometry(1.9, 0.12, 1.25);
-        const postGeo = new THREE.CylinderGeometry(0.07, 0.07, 1.2, 10);
-
-        // Silicon-blue PV module material with a faint self-glow so arrays stay
-        // legible against the dark scene even at fleet zoom.
-        const panelMat = new THREE.MeshStandardMaterial({ color: "#1850a8", roughness: 0.3, metalness: 0.4, emissive: "#1f63c4", emissiveIntensity: 0.42 });
-        const tubeMat = new THREE.MeshStandardMaterial({ color: "#9aa6b4", roughness: 0.5, metalness: 0.55 });
-        const baseMat = new THREE.MeshStandardMaterial({ color: "#5a6675", roughness: 0.7, metalness: 0.2 });
-        const postMat = new THREE.MeshStandardMaterial({ color: "#cfd7e2", roughness: 0.5, metalness: 0.45 });
-
-        // A tilt-table of PV modules (3 columns x 2 rows) carried on a torque tube.
-        const buildPanelTable = () => {
-            const table = new THREE.Group();
-            const tube = new THREE.Mesh(tubeGeo, tubeMat);
-            tube.rotation.z = Math.PI / 2;
-            table.add(tube);
-            for (let c = 0; c < 3; c += 1) {
-                for (let r = 0; r < 2; r += 1) {
-                    const mod = new THREE.Mesh(moduleGeo, panelMat);
-                    mod.position.set((c - 1) * 0.52, 0.06, (r - 0.5) * 0.5);
-                    mod.castShadow = true;
-                    table.add(mod);
-                }
-            }
-            return table;
-        };
-
-        turbines.forEach((t) => {
-            const group = new THREE.Group();
-            group.position.set(t.x, 0, t.z);
-            scene.add(group);
-
-            // Concrete pad.
-            const pad = new THREE.Mesh(baseGeo, baseMat);
-            pad.position.y = 0.09;
-            pad.receiveShadow = true;
-            group.add(pad);
-
-            // Support posts.
-            ([[-0.7, 0.4], [0.7, 0.4], [-0.7, -0.4], [0.7, -0.4]] as [number, number][]).forEach(([px, pz]) => {
-                const post = new THREE.Mesh(postGeo, postMat);
-                post.position.set(px, 0.7, pz);
-                group.add(post);
-            });
-
-            // South-tilted PV panel table, animated as a sun tracker.
-            const panelTable = buildPanelTable();
-            panelTable.rotation.x = 0.5;
-            panelTable.position.y = 1.2;
-            group.add(panelTable);
-
-            // Status beacon on the array (color driven by live telemetry).
-            const nacelleMat = new THREE.MeshStandardMaterial({
-                color: STATUS_COLORS[t.status],
-                emissive: STATUS_COLORS[t.status],
-                emissiveIntensity: 0.6,
-                roughness: 0.3,
-                metalness: 0.2,
-            });
-            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), nacelleMat);
-            beacon.position.set(0.95, 1.0, 0.55);
-            group.add(beacon);
-
-            const pickMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(2.2, 2.2, 1.6),
-                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
-            );
-            pickMesh.position.y = 1.0;
-            pickMesh.userData.turbineId = t.id;
-            pickables.push(pickMesh);
-            group.add(pickMesh);
-
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: STATUS_COLORS[t.status],
-                transparent: true,
-                opacity: t.id === selectedId ? 0.9 : 0.55,
-            });
-            const ring = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.25, 32), ringMat);
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = 0.03;
-            group.add(ring);
-
-            byId.set(t.id, {
-                nacelleMat,
-                ringMat,
-                ring,
-                blades: panelTable,
-                spin: 0.08 + seededRand(t.id.length + t.powerKw * 0.001) * 0.12,
-            });
-        });
-
-        const onClick = (event: MouseEvent) => {
-            const rect = renderer.domElement.getBoundingClientRect();
-            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointer, camera);
-            const hits = raycaster.intersectObjects(pickables);
-            if (hits.length > 0) {
-                const id = hits[0].object.userData.turbineId as string;
-                onSelect(id);
-            }
-        };
-        renderer.domElement.addEventListener("click", onClick);
-
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + event.deltaY * 0.0009, 0.4, 1.8);
-        };
-        renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
-
-        const onResize = () => {
-            if (host.clientWidth === 0 || host.clientHeight === 0) {
-                return;
-            }
-            camera.aspect = host.clientWidth / host.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(host.clientWidth, host.clientHeight);
-        };
-        window.addEventListener("resize", onResize);
-
-        let tick = 0;
-        const animate = () => {
-            if (!pausedRef.current) {
-                tick += 0.03;
-                byId.forEach((refs) => {
-                    refs.blades.rotation.x = 0.5 + Math.sin(tick * 0.4 + refs.spin * 18) * 0.14;
-                });
-            }
-            oceanTexture.offset.x = tick * 0.0015;
-            oceanTexture.offset.y = Math.sin(tick * 0.05) * 0.01;
-            const z = zoomRef.current;
-            camera.position.x = (26 + Math.sin(tick * 0.17) * 9) * z;
-            camera.position.y = 36 * z;
-            camera.position.z = (61 + Math.cos(tick * 0.13) * 5) * z;
-            camera.lookAt(0, 0, 0);
-            renderer.render(scene, camera);
-        };
-        renderer.setAnimationLoop(animate);
-
-        const cleanup = () => {
-            renderer.setAnimationLoop(null);
-            renderer.domElement.removeEventListener("click", onClick);
-            renderer.domElement.removeEventListener("wheel", onWheel);
-            window.removeEventListener("resize", onResize);
-            renderer.dispose();
-            scene.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
-                    obj.geometry.dispose();
-                    const material = Array.isArray(obj.material) ? obj.material : [obj.material];
-                    material.forEach((m) => m.dispose());
-                }
-            });
-            mapTexture.dispose();
-            oceanTexture.dispose();
-            skyTexture.dispose();
-        };
-
-        sceneRef.current = {
-            byId,
-            cleanup,
-        };
-
-        return () => {
-            sceneRef.current = null;
-            cleanup();
-        };
-    }, [onSelect, sites]);
-
-    useEffect(() => {
-        const ref = sceneRef.current;
-        if (!ref) {
-            return;
-        }
-
-        ref.byId.forEach((meshRefs, id) => {
-            const t = turbines.find((row) => row.id === id);
-            if (!t) {
-                return;
-            }
-
-            const dimmed = dimmedIds.has(id);
-            meshRefs.nacelleMat.color.set(STATUS_COLORS[t.status]);
-            meshRefs.nacelleMat.emissive.set(STATUS_COLORS[t.status]);
-            meshRefs.nacelleMat.emissiveIntensity = dimmed ? 0.02 : 0.16;
-            meshRefs.ringMat.color.set(STATUS_COLORS[t.status]);
-            meshRefs.ringMat.opacity = dimmed ? 0.06 : t.id === selectedId ? 0.98 : 0.56;
-            meshRefs.ring.scale.setScalar(t.id === selectedId ? 1.24 : dimmed ? 0.7 : 1);
-            meshRefs.spin = dimmed ? 0.003 : 0.055 + Math.min(0.22, t.irradianceWm2 / 80);
-        });
-    }, [selectedId, turbines, dimmedIds]);
-
-    return (
-        <div className="relative h-full w-full">
-            <div ref={hostRef} className="h-full w-full" />
-            <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
-                <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.15, 0.4, 1.8); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
-                <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.15, 0.4, 1.8); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button type="button" title="Reset zoom" onClick={() => { zoomRef.current = 0.62; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
-            </div>
-        </div>
-    );
-}
 
 type StatusFilter = PlantStatus | "all";
 
@@ -1220,6 +896,95 @@ const SUGGESTED = [
     "How many PV arrays total?",
 ];
 
+type SolarRepairSkill = "Inverter" | "PV Module" | "String Combiner" | "Tracker Motor";
+type SolarRepairPriority = "P1" | "P2" | "P3";
+
+type MockSolarTechnician = {
+    id: string;
+    name: string;
+    role: string;
+    skills: SolarRepairSkill[];
+    certifications: string[];
+    siteCoverage: string[];
+    availability: "available" | "busy" | "off";
+    etaMin: number;
+    photo: string;
+};
+
+function svgTechAvatar(name: string, seed: number): string {
+    const initials = name
+        .split(" ")
+        .map((chunk) => chunk[0] ?? "")
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+    const hueA = 204 + (seed * 17) % 24;
+    const hueB = 214 + (seed * 13) % 28;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'>
+<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='hsl(${hueA} 36% 42%)'/><stop offset='100%' stop-color='hsl(${hueB} 28% 24%)'/></linearGradient></defs>
+<rect width='80' height='80' rx='14' fill='url(#g)'/>
+<circle cx='40' cy='32' r='15' fill='rgba(255,255,255,0.2)'/>
+<path d='M14 74c3-14 12-21 26-21s23 7 26 21' fill='rgba(255,255,255,0.16)'/>
+<text x='40' y='50' text-anchor='middle' font-size='22' font-weight='700' fill='#e7edf5' font-family='Segoe UI, sans-serif'>${initials}</text>
+</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function svgMockEvidenceImage(label: string, seed: number): string {
+    const hueA = 198 + (seed * 21) % 36;
+    const hueB = 218 + (seed * 11) % 40;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 132'>
+<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='hsl(${hueA} 34% 38%)'/><stop offset='100%' stop-color='hsl(${hueB} 30% 20%)'/></linearGradient></defs>
+<rect width='220' height='132' rx='14' fill='url(#g)'/>
+<rect x='14' y='12' width='192' height='80' rx='8' fill='rgba(255,255,255,0.08)'/>
+<path d='M28 88l28-26 24 18 34-30 38 38' stroke='rgba(255,255,255,0.25)' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/>
+<circle cx='168' cy='42' r='9' fill='rgba(255,255,255,0.3)'/>
+<text x='14' y='116' font-size='12' fill='#dbe7f3' font-family='Segoe UI, sans-serif'>${label}</text>
+<text x='204' y='116' text-anchor='end' font-size='10' fill='rgba(219,231,243,0.75)' font-family='Segoe UI, sans-serif'>mock image</text>
+</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const MOCK_SOLAR_TECHNICIANS: MockSolarTechnician[] = [
+    { id: "st-001", name: "Luc Martin", role: "Senior Field Technician", skills: ["Inverter", "String Combiner"], certifications: ["HV", "Arc-Flash"], siteCoverage: ["CESTAS", "TOUL"], availability: "available", etaMin: 25, photo: svgTechAvatar("Luc Martin", 1) },
+    { id: "st-002", name: "Nina Dupont", role: "PV Module Specialist", skills: ["PV Module", "Tracker Motor"], certifications: ["IR Thermography", "PV O&M"], siteCoverage: ["MARVILLE", "MASSANGIS"], availability: "available", etaMin: 32, photo: svgTechAvatar("Nina Dupont", 2) },
+    { id: "st-003", name: "Hugo Bernard", role: "Inverter Engineer", skills: ["Inverter"], certifications: ["SCADA", "Grid Code"], siteCoverage: ["CESTAS", "GABARDAN", "MEES"], availability: "busy", etaMin: 46, photo: svgTechAvatar("Hugo Bernard", 3) },
+    { id: "st-004", name: "Emma Leroy", role: "Electro-Mechanical Technician", skills: ["Tracker Motor", "String Combiner"], certifications: ["Electrical Safety", "Motor Diagnostics"], siteCoverage: ["MEES", "TOUL", "MASSANGIS"], availability: "available", etaMin: 22, photo: svgTechAvatar("Emma Leroy", 4) },
+    { id: "st-005", name: "Yanis Moreau", role: "Regional Backup", skills: ["PV Module", "Inverter", "String Combiner"], certifications: ["PV O&M"], siteCoverage: ["CESTAS", "MARVILLE", "TOUL", "MEES", "GABARDAN", "MASSANGIS"], availability: "off", etaMin: 60, photo: svgTechAvatar("Yanis Moreau", 5) },
+];
+
+const MOCK_REPAIR_EVIDENCE = [
+    { id: "ev-hotspot", label: "Thermal hotspot - module", image: svgMockEvidenceImage("Thermal hotspot - module", 1) },
+    { id: "ev-inverter", label: "Inverter cabinet alarm", image: svgMockEvidenceImage("Inverter cabinet alarm", 2) },
+    { id: "ev-combiner", label: "String combiner inspection", image: svgMockEvidenceImage("String combiner inspection", 3) },
+    { id: "ev-tracker", label: "Tracker motor mechanical issue", image: svgMockEvidenceImage("Tracker motor mechanical issue", 4) },
+];
+
+function rankSolarTechnicians(
+    technicians: MockSolarTechnician[],
+    siteId: string,
+    skill: SolarRepairSkill,
+    priority: SolarRepairPriority,
+) {
+    const priorityBoost = priority === "P1" ? 20 : priority === "P2" ? 10 : 0;
+    return technicians
+        .map((tech) => {
+            const hasSkill = tech.skills.includes(skill);
+            const siteMatch = tech.siteCoverage.includes(siteId);
+            const availabilityScore = tech.availability === "available" ? 24 : tech.availability === "busy" ? 10 : -8;
+            const speedScore = Math.max(0, 35 - tech.etaMin);
+            const score = (hasSkill ? 34 : 12) + (siteMatch ? 20 : 8) + availabilityScore + speedScore + priorityBoost;
+            const reason = [
+                hasSkill ? `${skill} certified` : `cross-skilled for ${skill}`,
+                siteMatch ? "site familiar" : "regional support",
+                tech.availability,
+                `ETA ${tech.etaMin} min`,
+            ].join(" · ");
+            return { ...tech, score, reason };
+        })
+        .sort((a, b) => b.score - a.score);
+}
+
 function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: ViewKey) => void; badges?: Partial<Record<ViewKey, number>> }) {
     return (
         <nav aria-label="Primary views" className="flex w-full flex-row gap-1 overflow-x-auto border-b border-slate-800/60 bg-[#06101fcc] px-2 py-2 md:w-44 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:px-0 md:py-3">
@@ -1237,7 +1002,7 @@ function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: View
                         <span aria-hidden="true" className="text-lg leading-none">{n.icon}</span>
                         <span className="hidden md:inline">{n.label}</span>
                         {badge > 0 && (
-                            <span aria-hidden="true" className="ml-auto rounded-full bg-rose-600 px-1.5 text-[10px] font-semibold leading-4 text-white">{badge}</span>
+                            <span aria-hidden="true" className="ml-auto rounded-full bg-red-600 px-1.5 text-[10px] font-semibold leading-4 text-white">{badge}</span>
                         )}
                     </button>
                 );
@@ -1470,259 +1235,6 @@ function Meter({ label, value, unit, max, warn, alarm, property }: { label: stri
     );
 }
 
-// Dedicated, scaled-up single-turbine digital-twin scene with orbit + wheel zoom.
-function PlantTwinScene({ turbine, paused }: { turbine: PlantTelemetry; paused: boolean }) {
-    const hostRef = useRef<HTMLDivElement | null>(null);
-    const pausedRef = useRef(paused);
-    const turbineRef = useRef(turbine);
-    const zoomRef = useRef(1);
-    const colorApiRef = useRef<((c: string) => void) | null>(null);
-    const labelRefs = useRef<Array<HTMLDivElement | null>>([]);
-
-    useEffect(() => { pausedRef.current = paused; }, [paused]);
-    useEffect(() => { turbineRef.current = turbine; }, [turbine]);
-
-    useEffect(() => {
-        const host = hostRef.current;
-        if (!host) {
-            return;
-        }
-
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color("#081a2e");
-        scene.fog = new THREE.Fog("#081a2e", 42, 130);
-
-        const camera = new THREE.PerspectiveCamera(46, host.clientWidth / host.clientHeight, 0.1, 400);
-        camera.position.set(12, 10, 24);
-        camera.lookAt(0, 6.5, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        host.innerHTML = "";
-        host.appendChild(renderer.domElement);
-
-        const ambient = new THREE.AmbientLight(0xbcd4ff, 0.55);
-        const sun = new THREE.DirectionalLight(0xffffff, 1.15);
-        sun.position.set(12, 24, 10);
-        sun.castShadow = true;
-        sun.shadow.mapSize.set(1024, 1024);
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.35);
-        rim.position.set(-14, 10, -12);
-        scene.add(ambient, sun, rim);
-
-        const pad = new THREE.Mesh(
-            new THREE.CircleGeometry(9, 48),
-            new THREE.MeshStandardMaterial({ color: "#123247", roughness: 0.9, metalness: 0.05 })
-        );
-        pad.rotation.x = -Math.PI / 2;
-        pad.receiveShadow = true;
-        scene.add(pad);
-
-        const padRing = new THREE.Mesh(
-            new THREE.RingGeometry(8.6, 9, 48),
-            new THREE.MeshBasicMaterial({ color: "#2a557f", transparent: true, opacity: 0.6 })
-        );
-        padRing.rotation.x = -Math.PI / 2;
-        padRing.position.y = 0.02;
-        scene.add(padRing);
-
-        const grid = new THREE.GridHelper(20, 20, 0x2a557f, 0x1c3a59);
-        grid.position.y = 0.01;
-        (grid.material as THREE.Material).transparent = true;
-        (grid.material as THREE.Material).opacity = 0.22;
-        scene.add(grid);
-
-        const group = new THREE.Group();
-        scene.add(group);
-
-        const baseMat = new THREE.MeshStandardMaterial({ color: "#5a6675", roughness: 0.68, metalness: 0.22 });
-        const frameMat = new THREE.MeshStandardMaterial({ color: "#cfd7e2", roughness: 0.45, metalness: 0.5 });
-        const panelMat = new THREE.MeshStandardMaterial({ color: "#10325c", roughness: 0.25, metalness: 0.55, emissive: "#0a1c3a", emissiveIntensity: 0.3 });
-        const cellMat = new THREE.MeshBasicMaterial({ color: "#1d4a86" });
-        const statusMat = new THREE.MeshStandardMaterial({
-            color: STATUS_COLORS[turbineRef.current.status],
-            emissive: STATUS_COLORS[turbineRef.current.status],
-            emissiveIntensity: 0.7,
-            roughness: 0.3,
-            metalness: 0.2,
-        });
-        const ringMat = new THREE.MeshBasicMaterial({ color: STATUS_COLORS[turbineRef.current.status], transparent: true, opacity: 0.85 });
-
-        // Foundation pad block.
-        const pedestal = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.4, 4.5), baseMat);
-        pedestal.position.y = 0.2;
-        pedestal.receiveShadow = true;
-        group.add(pedestal);
-
-        // Tracker post + drive motor under the table.
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 3.0, 20), frameMat);
-        post.position.set(0, 1.7, 0);
-        post.castShadow = true;
-        group.add(post);
-
-        const motor = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.7), frameMat);
-        motor.position.set(2.8, 0.9, 1.4);
-        motor.castShadow = true;
-        group.add(motor);
-
-        // Inverter / transformer cabinet beside the array.
-        const inverter = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.0, 1.0), frameMat);
-        inverter.position.set(-3.6, 1.2, 0);
-        inverter.castShadow = true;
-        group.add(inverter);
-
-        // Tilting PV panel table: a glass surface split into a grid of cells.
-        const blades = new THREE.Group();
-        blades.position.set(0, 3.2, 0);
-        const panelW = 6.0;
-        const panelD = 3.2;
-        const table = new THREE.Mesh(new THREE.BoxGeometry(panelW, 0.12, panelD), panelMat);
-        table.castShadow = true;
-        blades.add(table);
-        for (let c = -2; c <= 2; c += 1) {
-            const vbar = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, panelD), cellMat);
-            vbar.position.set((c * panelW) / 5, 0, 0);
-            blades.add(vbar);
-        }
-        for (let r = -1; r <= 1; r += 1) {
-            const hbar = new THREE.Mesh(new THREE.BoxGeometry(panelW, 0.14, 0.05), cellMat);
-            hbar.position.set(0, 0, (r * panelD) / 3);
-            blades.add(hbar);
-        }
-        blades.rotation.x = -0.6;
-        group.add(blades);
-
-        // Status beacon above the array.
-        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), statusMat);
-        beacon.position.set(0, 4.0, -1.4);
-        group.add(beacon);
-
-        const ring = new THREE.Mesh(new THREE.RingGeometry(3.6, 4.2, 48), ringMat);
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.y = 0.05;
-        group.add(ring);
-
-        colorApiRef.current = (c: string) => {
-            statusMat.color.set(c);
-            statusMat.emissive.set(c);
-            ringMat.color.set(c);
-        };
-
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + event.deltaY * 0.0009, 0.16, 2.0);
-        };
-        renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
-
-        const onResize = () => {
-            if (host.clientWidth === 0 || host.clientHeight === 0) {
-                return;
-            }
-            camera.aspect = host.clientWidth / host.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(host.clientWidth, host.clientHeight);
-        };
-        window.addEventListener("resize", onResize);
-
-        let tick = 0;
-        const partAnchors = TWIN_PARTS.map((p) => new THREE.Vector3(p.pos[0], p.pos[1], p.pos[2]));
-        const projected = new THREE.Vector3();
-        const animate = () => {
-            if (!pausedRef.current) {
-                tick += 0.02;
-                // Gentle sun-tracking sweep, amplitude scaled by live irradiance.
-                blades.rotation.x = -0.6 + Math.sin(tick * 0.6) * 0.22 * Math.min(1, turbineRef.current.irradianceWm2 / 1000);
-            }
-            const z = zoomRef.current;
-            camera.position.x = Math.sin(tick * 0.25) * 14 * z;
-            camera.position.z = Math.cos(tick * 0.25) * 20 * z;
-            camera.position.y = 7 * z + 2.5;
-            // As you zoom in (smaller z), lower the focus toward the panel table so the
-            // array's working parts fill the frame.
-            const focus = THREE.MathUtils.clamp((z - 0.16) / (1 - 0.16), 0, 1);
-            const focusY = THREE.MathUtils.lerp(5.0, 2.4, focus);
-            camera.lookAt(0, focusY, 0);
-            renderer.render(scene, camera);
-
-            // Project each part anchor to screen space and move its HTML callout.
-            const w = host.clientWidth;
-            const h = host.clientHeight;
-            for (let i = 0; i < partAnchors.length; i += 1) {
-                const el = labelRefs.current[i];
-                if (!el) {
-                    continue;
-                }
-                projected.copy(partAnchors[i]).project(camera);
-                const behind = projected.z > 1;
-                const sx = (projected.x * 0.5 + 0.5) * w;
-                const sy = (-projected.y * 0.5 + 0.5) * h;
-                el.style.transform = `translate(-50%, -50%) translate(${sx}px, ${sy}px)`;
-                el.style.opacity = behind ? "0" : "1";
-            }
-        };
-        renderer.setAnimationLoop(animate);
-
-        return () => {
-            renderer.setAnimationLoop(null);
-            renderer.domElement.removeEventListener("wheel", onWheel);
-            window.removeEventListener("resize", onResize);
-            colorApiRef.current = null;
-            renderer.dispose();
-            scene.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
-                    obj.geometry.dispose();
-                    const material = Array.isArray(obj.material) ? obj.material : [obj.material];
-                    material.forEach((m) => m.dispose());
-                }
-            });
-        };
-    }, []);
-
-    useEffect(() => {
-        colorApiRef.current?.(STATUS_COLORS[turbine.status]);
-    }, [turbine.status]);
-
-    return (
-        <div className="relative h-full w-full">
-            <div ref={hostRef} className="h-full w-full" />
-            {(() => {
-                const readouts = [
-                    { text: `${turbine.irradianceWm2} W/m²`, color: signalColor("irradiance", turbine.irradianceWm2) },
-                    { text: `${turbine.moduleTempC}°C`, color: signalColor("moduleTemp", turbine.moduleTempC) },
-                    { text: `${turbine.inverterLoadPct}%`, color: signalColor("inverterLoad", turbine.inverterLoadPct) },
-                    { text: `${turbine.powerKw.toLocaleString()} kW`, color: "#6ee7ff" },
-                ];
-                return TWIN_PARTS.map((p, i) => (
-                    <div
-                        key={p.key}
-                        ref={(el) => { labelRefs.current[i] = el; }}
-                        className="pointer-events-none absolute left-0 top-0 z-10 flex items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-600/60 bg-[#06101fe6] px-2 py-1 text-[11px] shadow-[0_4px_14px_rgba(0,0,0,0.5)] backdrop-blur transition-opacity"
-                    >
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: readouts[i].color }} />
-                        <span className="text-slate-400">{p.caption}</span>
-                        <span className="font-semibold" style={{ color: readouts[i].color }}>{readouts[i].text}</span>
-                    </div>
-                ));
-            })()}
-            <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
-                <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.12, 0.16, 2.0); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
-                <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.12, 0.16, 2.0); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button type="button" title="Reset zoom" onClick={() => { zoomRef.current = 1; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
-            </div>
-        </div>
-    );
-}
-
 const SIGNAL_DEFS: SignalMetadata[] = SIGNAL_ORDER.map((k) => SIGNAL_METADATA[k]);
 
 function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect }: {
@@ -1893,6 +1405,7 @@ function App() {
     const [askLoading, setAskLoading] = useState(false);
     const [askError, setAskError] = useState<string | null>(null);
     const [askResult, setAskResult] = useState<AskResult | null>(null);
+    const [askHistory, setAskHistory] = useState<AskHistoryEntry[]>([]);
     const [writebackMessage, setWritebackMessage] = useState<string | null>(null);
     const [ackLog, setAckLog] = useState<Record<string, { at: string; by: string }>>(() => JSON.parse(localStorage.getItem("solar-ack-log") ?? "{}"));
     const [ackMessage, setAckMessage] = useState<string | null>(null);
@@ -1923,6 +1436,12 @@ function App() {
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
     const [wbNote, setWbNote] = useState("");
+    const [repairPriority, setRepairPriority] = useState<SolarRepairPriority>("P2");
+    const [repairSkill, setRepairSkill] = useState<SolarRepairSkill>("Inverter");
+    const [selectedTechnicianId, setSelectedTechnicianId] = useState(MOCK_SOLAR_TECHNICIANS[0]?.id ?? "");
+    const [repairSummary, setRepairSummary] = useState("");
+    const [repairEvidenceId, setRepairEvidenceId] = useState(MOCK_REPAIR_EVIDENCE[0]?.id ?? "");
+    const [repairOrderMessage, setRepairOrderMessage] = useState<string | null>(null);
     const canWriteback = canManageDispatch(operatorRole);
     const historyLimit = historyPointLimit(historyWindow);
 
@@ -2034,6 +1553,42 @@ function App() {
             }
         }
     }, [turbines]);
+
+    // Hydrate anomaly-score history from persisted telemetry when live mode is on
+    // so trend direction/ETA starts from recent context instead of a cold window.
+    useEffect(() => {
+        if (!isLiveTelemetryConfigured()) {
+            return;
+        }
+        let cancelled = false;
+        const idsToHydrate = turbines
+            .map((t) => t.id)
+            .filter((id) => (anomalyHistRef.current.get(id)?.length ?? 0) < 3);
+        if (idsToHydrate.length === 0) {
+            return;
+        }
+        void (async () => {
+            const seeded = await Promise.all(
+                idsToHydrate.map(async (id) => ({ id, scores: await fetchAnomalyScores(id, 12) })),
+            );
+            if (cancelled) {
+                return;
+            }
+            seeded.forEach(({ id, scores }) => {
+                if (!scores || scores.length === 0) {
+                    return;
+                }
+                const current = anomalyHistRef.current.get(id) ?? [];
+                if (current.length < 3) {
+                    anomalyHistRef.current.set(id, scores.slice(-12));
+                }
+            });
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [turbines]);
+
     const unackedAlerts = useMemo(() => activeAlerts.filter((t) => !ackLog[t.id]), [activeAlerts, ackLog]);
 
     const fc = useMemo(
@@ -2239,6 +1794,7 @@ function App() {
             if (!trimmed) {
                 throw new Error("Please enter a question.");
             }
+            const started = performance.now();
 
             const alarmsNow = turbines.filter((t) => t.status === "alarm").length;
             const warningsNow = turbines.filter((t) => t.status === "warning").length;
@@ -2248,7 +1804,17 @@ function App() {
             const now = Date.now();
             const cached = askCacheRef.current.get(cacheKey);
             if (cached && now - cached.at <= ASK_CACHE_TTL_MS) {
-                setAskResult({ ...cached.result, cacheHit: true });
+                const cachedResult = { ...cached.result, cacheHit: true };
+                setAskResult(cachedResult);
+                setAskHistory((prev) => [{
+                    at: new Date().toISOString(),
+                    question: trimmed,
+                    source: cachedResult.source,
+                    transport: cachedResult.transport,
+                    latencyMs: Math.max(0, Math.round(performance.now() - started)),
+                    cacheHit: true,
+                    fallbackReason: cachedResult.fallbackReason,
+                }, ...prev].slice(0, ASK_HISTORY_MAX));
                 return;
             }
 
@@ -2300,6 +1866,15 @@ function App() {
                 }
             }
             setAskResult(storable);
+            setAskHistory((prev) => [{
+                at: new Date().toISOString(),
+                question: trimmed,
+                source: storable.source,
+                transport: storable.transport,
+                latencyMs: Math.max(0, Math.round(performance.now() - started)),
+                cacheHit: false,
+                fallbackReason: storable.fallbackReason,
+            }, ...prev].slice(0, ASK_HISTORY_MAX));
         } catch (err) {
             setAskError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -2389,6 +1964,85 @@ function App() {
     const selectedSite = sites.find((s) => s.id === selected.siteId);
     const relatedNotes = notes.filter((n) => n.turbineId === selected.id);
 
+    const rankedTechnicians = useMemo(
+        () => rankSolarTechnicians(MOCK_SOLAR_TECHNICIANS, selected.siteId, repairSkill, repairPriority),
+        [repairPriority, repairSkill, selected.siteId],
+    );
+
+    useEffect(() => {
+        if (rankedTechnicians.length === 0) {
+            return;
+        }
+        if (!rankedTechnicians.some((tech) => tech.id === selectedTechnicianId)) {
+            setSelectedTechnicianId(rankedTechnicians[0].id);
+        }
+    }, [rankedTechnicians, selectedTechnicianId]);
+
+    useEffect(() => {
+        const suggested = selected.status === "alarm" ? "P1" : selected.status === "warning" ? "P2" : "P3";
+        setRepairPriority(suggested);
+    }, [selected.status]);
+
+    const selectedTechnician = useMemo(
+        () => rankedTechnicians.find((tech) => tech.id === selectedTechnicianId) ?? rankedTechnicians[0],
+        [rankedTechnicians, selectedTechnicianId],
+    );
+
+    const selectedEvidence = useMemo(
+        () => MOCK_REPAIR_EVIDENCE.find((ev) => ev.id === repairEvidenceId) ?? MOCK_REPAIR_EVIDENCE[0],
+        [repairEvidenceId],
+    );
+
+    const handleSendRepairOrder = useCallback(async () => {
+        setRepairOrderMessage(null);
+        if (!canWriteback) {
+            setRepairOrderMessage("Viewer mode — switch to Operator to send repair orders.");
+            return;
+        }
+        if (!selectedTechnician) {
+            setRepairOrderMessage("No technician available for this skill.");
+            return;
+        }
+        const summary = repairSummary.trim() || `Repair required on ${selected.id}`;
+        const note = [
+            `[RepairOrder ${repairPriority}]`,
+            `skill=${repairSkill}`,
+            `technician=${selectedTechnician.name} (${selectedTechnician.role})`,
+            `eta=${selectedTechnician.etaMin}min`,
+            `skills=${selectedTechnician.skills.join("/")}`,
+            `certs=${selectedTechnician.certifications.join("/")}`,
+            `evidence=${selectedEvidence.label}`,
+            `evidenceUrl=${selectedEvidence.image}`,
+            `summary=${summary}`,
+        ].join(" | ").slice(0, 5000);
+        try {
+            await saveDispatchNote({
+                turbineId: selected.id,
+                siteId: selected.siteId,
+                status: selected.status,
+                powerKw: selected.powerKw,
+                note,
+                author: "operator",
+                createdAt: new Date().toISOString(),
+            });
+            setRepairOrderMessage(`Repair order sent to ${selectedTechnician.name} (${repairPriority}, ${repairSkill}).`);
+            setRepairSummary("");
+            void loadNotes();
+        } catch {
+            const fallback = JSON.parse(localStorage.getItem("solar-repair-orders") ?? "[]") as unknown[];
+            fallback.push({
+                turbineId: selected.id,
+                siteId: selected.siteId,
+                status: selected.status,
+                powerKw: selected.powerKw,
+                note,
+                createdAt: new Date().toISOString(),
+            });
+            localStorage.setItem("solar-repair-orders", JSON.stringify(fallback));
+            setRepairOrderMessage(`Backend unreachable. Repair order saved locally (${fallback.length} records).`);
+        }
+    }, [canWriteback, loadNotes, repairPriority, repairSkill, repairSummary, selected.id, selected.powerKw, selected.siteId, selected.status, selectedEvidence.image, selectedEvidence.label, selectedTechnician]);
+
     const toolbar = (
         <div className="flex flex-wrap items-center gap-2 text-xs">
             <label className="flex items-center gap-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-300">
@@ -2447,7 +2101,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => { setSiteFilter("all"); setStatusFilter("all"); }}
-                    className="rounded bg-rose-700/70 px-2 py-1 text-white"
+                    className="rounded bg-slate-700/80 px-2 py-1 text-white"
                 >
                     Clear
                 </button>
@@ -2699,7 +2353,7 @@ function App() {
                                                 <div className="flex justify-between text-xs">
                                                     <button type="button" onClick={() => { setSelectedId(a.t.id); setView("twin"); }} className="text-slate-200 hover:text-cyan-200">{a.t.id} · {a.t.siteName}</button>
                                                     <span className="flex items-center gap-2">
-                                                        <span className={a.forecast.direction === "rising" ? "text-rose-300" : a.forecast.direction === "falling" ? "text-emerald-300" : "text-slate-500"}>
+                                                        <span className={a.forecast.direction === "rising" ? "text-amber-300" : a.forecast.direction === "falling" ? "text-emerald-300" : "text-slate-500"}>
                                                             {a.forecast.direction === "rising" ? "↑" : a.forecast.direction === "falling" ? "↓" : "→"}
                                                             {a.forecast.etaToAlarmTicks != null && ` ~${a.forecast.etaToAlarmTicks}t`}
                                                         </span>
@@ -2804,7 +2458,7 @@ function App() {
                                             title={s.name}
                                             action={
                                                 <span className="flex gap-1.5 text-[10px]">
-                                                    {s.alarms > 0 && <span className="rounded-full bg-rose-600/80 px-1.5 font-semibold text-white">{s.alarms} alarm</span>}
+                                                    {s.alarms > 0 && <span className="rounded-full bg-red-600/80 px-1.5 font-semibold text-white">{s.alarms} alarm</span>}
                                                     {s.warnings > 0 && <span className="rounded-full bg-amber-500/80 px-1.5 font-semibold text-black">{s.warnings} warn</span>}
                                                 </span>
                                             }
@@ -2978,8 +2632,115 @@ function App() {
                                     <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
                                         <div className="flex justify-between"><dt className="text-slate-400">Projected output</dt><dd>{scenario.projectedKw.toLocaleString()} kW</dd></div>
                                         <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
-                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
+                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-red-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
                                     </dl>
+                                </Panel>
+
+                                <Panel title="Repair order dispatch (technicians)">
+                                    <p className="mb-2 text-[11px] text-slate-400">Create a repair order by selecting a technician profile, required skill, and mock evidence image.</p>
+                                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
+                                        <label className="flex flex-col gap-1">
+                                            Priority
+                                            <select value={repairPriority} onChange={(e) => setRepairPriority(e.target.value as SolarRepairPriority)} className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100">
+                                                <option value="P1">P1</option>
+                                                <option value="P2">P2</option>
+                                                <option value="P3">P3</option>
+                                            </select>
+                                        </label>
+                                        <label className="flex flex-col gap-1">
+                                            Skill
+                                            <select value={repairSkill} onChange={(e) => setRepairSkill(e.target.value as SolarRepairSkill)} className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100">
+                                                <option value="Inverter">Inverter</option>
+                                                <option value="PV Module">PV Module</option>
+                                                <option value="String Combiner">String Combiner</option>
+                                                <option value="Tracker Motor">Tracker Motor</option>
+                                            </select>
+                                        </label>
+                                        <label className="flex flex-col gap-1">
+                                            Technician
+                                            <select value={selectedTechnicianId} onChange={(e) => setSelectedTechnicianId(e.target.value)} className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100">
+                                                {rankedTechnicians.map((tech) => (
+                                                    <option key={tech.id} value={tech.id}>{tech.name} · ETA {tech.etaMin}m</option>
+                                                ))}
+                                            </select>
+                                        </label>
+                                    </div>
+
+                                    <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+                                        {rankedTechnicians.slice(0, 4).map((tech) => {
+                                            const active = tech.id === selectedTechnicianId;
+                                            return (
+                                                <button
+                                                    key={tech.id}
+                                                    type="button"
+                                                    onClick={() => setSelectedTechnicianId(tech.id)}
+                                                    className={`rounded border px-2 py-2 text-left ${active ? "border-cyan-500 bg-[#0a203c]" : "border-slate-700 bg-[#08142a] hover:border-slate-500"}`}
+                                                >
+                                                    <div className="flex items-start gap-2">
+                                                        <img src={tech.photo} alt={`${tech.name} profile`} className="h-12 w-12 rounded-md border border-slate-600/70 object-cover" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs font-semibold text-slate-100">{tech.name}</p>
+                                                            <p className="text-[11px] text-slate-400">{tech.role}</p>
+                                                            <p className="mt-0.5 text-[11px] text-cyan-200">{tech.reason}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                        {tech.skills.map((skill) => (
+                                                            <span key={`${tech.id}-${skill}`} className="rounded bg-slate-700/70 px-1.5 py-0.5 text-[10px] text-slate-200">{skill}</span>
+                                                        ))}
+                                                        {tech.certifications.map((cert) => (
+                                                            <span key={`${tech.id}-${cert}`} className="rounded bg-emerald-900/40 px-1.5 py-0.5 text-[10px] text-emerald-200">{cert}</span>
+                                                        ))}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="mt-2">
+                                        <p className="mb-1 text-[11px] text-slate-400">Mock evidence image</p>
+                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                                            {MOCK_REPAIR_EVIDENCE.map((ev) => {
+                                                const active = ev.id === repairEvidenceId;
+                                                return (
+                                                    <button
+                                                        key={ev.id}
+                                                        type="button"
+                                                        onClick={() => setRepairEvidenceId(ev.id)}
+                                                        className={`rounded border p-1 text-left ${active ? "border-cyan-500" : "border-slate-700 hover:border-slate-500"}`}
+                                                    >
+                                                        <img src={ev.image} alt={ev.label} className="h-16 w-full rounded object-cover" />
+                                                        <p className="mt-1 truncate text-[10px] text-slate-300" title={ev.label}>{ev.label}</p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <textarea
+                                        value={repairSummary}
+                                        onChange={(e) => setRepairSummary(e.target.value)}
+                                        disabled={!canWriteback}
+                                        rows={2}
+                                        placeholder="Repair summary (fault details, urgency, safety constraints)..."
+                                        className="mt-2 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                    />
+
+                                    {selectedTechnician && (
+                                        <p className="mt-1 text-[11px] text-slate-400">
+                                            Selected: <span className="text-slate-200">{selectedTechnician.name}</span> · {selectedTechnician.role} · ETA {selectedTechnician.etaMin} min
+                                        </p>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleSendRepairOrder()}
+                                        disabled={!canWriteback || !selectedTechnician}
+                                        className="mt-2 w-full rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {canWriteback ? "Send repair order" : "Viewer mode — repair order disabled"}
+                                    </button>
+                                    {repairOrderMessage && <p className="mt-1 text-xs text-emerald-300">{repairOrderMessage}</p>}
                                 </Panel>
 
                                 <Panel
@@ -3102,12 +2863,16 @@ function App() {
                                     >
                                         {askLoading ? "Asking…" : "Ask Question"}
                                     </button>
-                                    {askError && <p className="mt-2 text-xs text-rose-300">{askError}</p>}
+                                    {askError && <p className="mt-2 text-xs text-red-300">{askError}</p>}
                                     {askResult && (
                                         <div className="mt-3 rounded border border-slate-700 bg-[#081226] p-3 text-sm text-slate-200">
                                             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                                                 <span>Source: {sourceLabel(askResult.source)}</span>
                                                 <span className="flex items-center gap-2">
+                                                    {askResult.source === "fabriciq" && askResult.transport && (
+                                                        <span>Transport: {askResult.transport.toUpperCase()}</span>
+                                                    )}
+                                                    {askResult.fallbackReason && <span>Fallback: {askResult.fallbackReason}</span>}
                                                     {typeof askResult.confidence === "number" && <span>Confidence: {Math.round(askResult.confidence * 100)}%</span>}
                                                     {askResult.cacheHit && <span>cached</span>}
                                                     <span>{new Date(askResult.generatedAt).toLocaleTimeString()}</span>
@@ -3122,6 +2887,25 @@ function App() {
                                                 </ul>
                                             )}
                                             {askResult.queryText && <p className="mt-2 text-xs text-slate-400">Trace: {askResult.queryText}</p>}
+                                        </div>
+                                    )}
+                                    {askHistory.length > 0 && (
+                                        <div className="mt-3 rounded border border-slate-700 bg-[#071424] p-3 text-xs text-slate-300">
+                                            <p className="mb-2 font-medium text-slate-200">Recent Ask Diagnostics</p>
+                                            <div className="space-y-1.5">
+                                                {askHistory.map((h, i) => (
+                                                    <div key={`${h.at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-1 last:border-b-0 last:pb-0">
+                                                        <span className="truncate text-slate-400" title={h.question}>{h.question}</span>
+                                                        <span className="flex items-center gap-2 text-slate-400">
+                                                            <span>{sourceLabel(h.source)}</span>
+                                                            {h.source === "fabriciq" && h.transport && <span>{h.transport.toUpperCase()}</span>}
+                                                            {h.fallbackReason && <span>fallback:{h.fallbackReason}</span>}
+                                                            <span>{h.latencyMs}ms</span>
+                                                            {h.cacheHit && <span>cached</span>}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </Panel>

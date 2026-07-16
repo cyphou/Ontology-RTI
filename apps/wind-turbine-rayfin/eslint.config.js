@@ -19,6 +19,13 @@ export default defineConfig(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // React Compiler (experimental) advisory rules: keep as warnings while the
+      // app is adopted incrementally. Downgraded from the recommended "error" so
+      // classic rules-of-hooks/exhaustive-deps stay enforced without forcing a
+      // risky memoization/effect refactor on working, tested code.
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },

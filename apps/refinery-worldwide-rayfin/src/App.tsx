@@ -21,6 +21,7 @@ import {
 import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
 import {
     fetchLiveTelemetry,
+    fetchAnomalyScores,
     fetchPowerHistory,
     isLiveTelemetryConfigured,
     type LiveTelemetrySnapshot,
@@ -65,23 +66,23 @@ type AskResult = {
     queryText?: string;
     confidence?: number;
     evidence?: string[];
+    transport?: "legacy" | "mcp";
+    fallbackReason?: string;
     cacheHit?: boolean;
 };
 
+type AskHistoryEntry = {
+    at: string;
+    question: string;
+    source: AskResult["source"];
+    transport?: AskResult["transport"];
+    latencyMs: number;
+    cacheHit: boolean;
+    fallbackReason?: string;
+};
+
 const ASK_CACHE_TTL_MS = 30_000;
-
-type PanelRenderRefs = {
-    blades: THREE.Group;
-    nacelleMat: THREE.MeshStandardMaterial;
-    ringMat: THREE.MeshBasicMaterial;
-    ring: THREE.Mesh;
-    spin: number;
-};
-
-type SceneState = {
-    byId: Map<string, PanelRenderRefs>;
-    cleanup: () => void;
-};
+const ASK_HISTORY_MAX = 8;
 
 export const STATUS_COLORS: Record<PlantStatus, string> = {
     healthy: "#58d68d",
@@ -762,6 +763,7 @@ function useLiveTelemetry(): { turbines: PlantTelemetry[]; sites: SolarPlantSite
 async function askFabricIQ(question: string, context: Record<string, unknown>): Promise<AskResult> {
     const telemetry = (context.telemetry as PlantTelemetry[] | undefined) ?? [];
     const intent = classifyAskIntent(question);
+    let dataAgentFailed = false;
 
     // Fast operational intents are answered deterministically to minimize latency,
     // avoid unnecessary remote calls, and keep triage behavior stable.
@@ -772,6 +774,7 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
             generatedAt: new Date().toISOString(),
             queryText: "Deterministic local rule engine",
             confidence: 0.98,
+            fallbackReason: "ops-fastpath",
             evidence: [`telemetry rows: ${telemetry.length}`, "routing: ops-fastpath"],
         };
     }
@@ -787,9 +790,10 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
                 queryText: agent.queryText,
                 confidence: agent.confidence,
                 evidence: agent.evidence,
+                transport: agent.transport,
             };
         } catch {
-            /* fall through to ontology-grounded reasoning */
+            dataAgentFailed = true;
         }
     }
 
@@ -801,7 +805,8 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
             generatedAt: new Date().toISOString(),
             queryText,
             confidence: 0.85,
-            evidence: ["routing: ontology-grounded"],
+            fallbackReason: dataAgentFailed ? "data-agent-failed" : undefined,
+            evidence: dataAgentFailed ? ["routing: ontology-grounded", "fallback: data-agent failed"] : ["routing: ontology-grounded"],
         };
     } catch {
         return {
@@ -810,7 +815,10 @@ async function askFabricIQ(question: string, context: Record<string, unknown>): 
             generatedAt: new Date().toISOString(),
             queryText: "Deterministic local fallback",
             confidence: 0.72,
-            evidence: ["ontology backend unreachable", "routing: local fallback"],
+            fallbackReason: dataAgentFailed ? "data-agent-and-ontology-failed" : "ontology-backend-unreachable",
+            evidence: dataAgentFailed
+                ? ["data-agent failed", "ontology backend unreachable", "routing: local fallback"]
+                : ["ontology backend unreachable", "routing: local fallback"],
         };
     }
 }
@@ -829,429 +837,6 @@ export function sourceLabel(source: AskResult["source"]): string {
 
 const LazySolarFleetScene = lazy(() => import("@/scenes/SolarFleetScene"));
 const LazyPlantTwinScene = lazy(() => import("@/scenes/PlantTwinScene"));
-
-function SolarFleetScene({
-    turbines,
-    sites,
-    selectedId,
-    dimmedIds,
-    paused,
-    onSelect,
-}: {
-    turbines: PlantTelemetry[];
-    sites: SolarPlantSite[];
-    selectedId: string;
-    dimmedIds: Set<string>;
-    paused: boolean;
-    onSelect: (id: string) => void;
-}) {
-    const hostRef = useRef<HTMLDivElement | null>(null);
-    const sceneRef = useRef<SceneState | null>(null);
-    const pausedRef = useRef(paused);
-    const zoomRef = useRef(0.62);
-
-    useEffect(() => {
-        pausedRef.current = paused;
-    }, [paused]);
-
-    useEffect(() => {
-        const host = hostRef.current;
-        if (!host) {
-            return;
-        }
-
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
-        const scene = new THREE.Scene();
-        const skyTexture = createSkyTexture();
-        scene.background = skyTexture;
-        scene.fog = new THREE.Fog("#0e3a55", 170, 380);
-
-        const camera = new THREE.PerspectiveCamera(52, host.clientWidth / host.clientHeight, 0.1, 500);
-        camera.position.set(30, 36, 64);
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.16;
-        host.innerHTML = "";
-        host.appendChild(renderer.domElement);
-
-        // Image-based lighting from the sky gradient so steel columns and LPG
-        // spheres pick up soft, realistic reflections.
-        const pmrem = new THREE.PMREMGenerator(renderer);
-        const envRT = pmrem.fromEquirectangular(skyTexture);
-        scene.environment = envRT.texture;
-        pmrem.dispose();
-
-        const ambient = new THREE.AmbientLight(0xaec6ff, 0.42);
-        const sun = new THREE.DirectionalLight(0xd6ecff, 1.18);
-        sun.position.set(34, 52, 18);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048;
-        sun.shadow.mapSize.height = 2048;
-        sun.shadow.camera.near = 1;
-        sun.shadow.camera.far = 220;
-        sun.shadow.camera.left = -70;
-        sun.shadow.camera.right = 70;
-        sun.shadow.camera.top = 46;
-        sun.shadow.camera.bottom = -46;
-        sun.shadow.bias = -0.0004;
-        sun.shadow.normalBias = 0.02;
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.24);
-        rim.position.set(-24, 18, -24);
-        const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x16324a, 0.38);
-        scene.add(ambient, sun, rim, hemi);
-
-        // Single unified lit ocean plane (large enough to fill the horizon).
-        const oceanTexture = createOceanTexture();
-        const terrain = new THREE.Mesh(
-            new THREE.PlaneGeometry(200, 120, 60, 36),
-            new THREE.MeshStandardMaterial({ map: oceanTexture, roughness: 0.72, metalness: 0.12 })
-        );
-        terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -0.15;
-        terrain.receiveShadow = true;
-        const pos = terrain.geometry.attributes.position;
-        for (let i = 0; i < pos.count; i += 1) {
-            const x = pos.getX(i);
-            const y = pos.getY(i);
-            const wave = Math.sin(x * 0.12) * 0.08 + Math.cos(y * 0.17) * 0.06;
-            pos.setZ(i, wave);
-        }
-        terrain.geometry.computeVertexNormals();
-        scene.add(terrain);
-
-        // Map plane spans exactly 92 x 46 world units (true 2:1 equirectangular) so
-        // lon/lat -> X/Z matches projectLonToX / projectLatToZ, pinning every unit to
-        // its real location without vertical distortion.
-        // Transparent + depthWrite:false so the ocean shows through and turbines stay on top.
-        const mapTexture = createMapTexture(sites);
-        const mapPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(92, 46, 1, 1),
-            new THREE.MeshBasicMaterial({ map: mapTexture, transparent: true, depthWrite: false })
-        );
-        mapPlane.rotation.x = -Math.PI / 2;
-        mapPlane.position.y = 0.06;
-        scene.add(mapPlane);
-
-        const grid = new THREE.GridHelper(92, 24, 0x2a557f, 0x2a557f);
-        grid.scale.z = 46 / 92; // constrain the square grid to the 92 x 46 map footprint
-        grid.position.y = 0.02;
-        grid.material.transparent = true;
-        grid.material.opacity = 0.12;
-        scene.add(grid);
-
-        sites.forEach((site, idx) => {
-            const marker = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.24, 0.24, 0.9, 14),
-                new THREE.MeshStandardMaterial({
-                    color: SITE_COLORS[idx % SITE_COLORS.length],
-                    emissive: SITE_COLORS[idx % SITE_COLORS.length],
-                    emissiveIntensity: 0.32,
-                })
-            );
-            marker.position.set(projectLonToX(site.lon), 0.45, projectLatToZ(site.lat));
-            scene.add(marker);
-
-            const glow = new THREE.Mesh(
-                new THREE.RingGeometry(0.5, 0.95, 24),
-                new THREE.MeshBasicMaterial({ color: SITE_COLORS[idx % SITE_COLORS.length], transparent: true, opacity: 0.55 })
-            );
-            glow.rotation.x = -Math.PI / 2;
-            glow.position.set(projectLonToX(site.lon), 0.07, projectLatToZ(site.lat));
-            scene.add(glow);
-        });
-
-        const byId = new Map<string, PanelRenderRefs>();
-        const pickables: THREE.Mesh[] = [];
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-
-        // ---- Shared refinery-unit geometry (created once, instanced per unit) ----
-        const padGeo = new THREE.BoxGeometry(2.0, 0.14, 1.4);
-        const colBaseGeo = new THREE.CylinderGeometry(0.34, 0.4, 1.2, 18);
-        const colMidGeo = new THREE.CylinderGeometry(0.27, 0.32, 1.05, 18);
-        const colTopGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.75, 18);
-        const colDomeGeo = new THREE.SphereGeometry(0.2, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2);
-        const ventGeo = new THREE.CylinderGeometry(0.04, 0.05, 0.5, 8);
-        const platformRingGeo = new THREE.TorusGeometry(0.33, 0.035, 8, 22);
-        const sphereTankGeo = new THREE.SphereGeometry(0.4, 20, 16);
-        const legGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.45, 6);
-        const tankGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.6, 22);
-        const tankRimGeo = new THREE.TorusGeometry(0.5, 0.04, 8, 24);
-        const tankTopGeo = new THREE.CylinderGeometry(0.34, 0.5, 0.18, 22);
-        const pipeGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.25, 8);
-        const pipeSupportGeo = new THREE.BoxGeometry(0.08, 0.5, 0.08);
-        const stackGeo = new THREE.CylinderGeometry(0.07, 0.11, 2.6, 12);
-        const flameOuterGeo = new THREE.ConeGeometry(0.2, 0.8, 14);
-        const flameInnerGeo = new THREE.ConeGeometry(0.11, 0.5, 12);
-        const beaconGeo = new THREE.SphereGeometry(0.15, 14, 14);
-        const ringGeoUnit = new THREE.RingGeometry(0.95, 1.25, 36);
-        const pickGeo = new THREE.BoxGeometry(2.3, 3.0, 1.7);
-
-        // Refinery hardware materials: brushed-steel column, pale tanks, grey stacks
-        // and a layered self-lit flame so units pop against the dark ocean scene.
-        const columnMat = new THREE.MeshStandardMaterial({ color: "#c2ccd9", roughness: 0.34, metalness: 0.78 });
-        const tankMat = new THREE.MeshStandardMaterial({ color: "#dde3ea", roughness: 0.48, metalness: 0.42 });
-        const sphereMat = new THREE.MeshStandardMaterial({ color: "#cfd8e1", roughness: 0.3, metalness: 0.62 });
-        const stackMat = new THREE.MeshStandardMaterial({ color: "#7e8794", roughness: 0.58, metalness: 0.5 });
-        const trimMat = new THREE.MeshStandardMaterial({ color: "#8b97a6", roughness: 0.5, metalness: 0.6 });
-        const pipeMat = new THREE.MeshStandardMaterial({ color: "#9aa6b4", roughness: 0.5, metalness: 0.55 });
-        const padMat = new THREE.MeshStandardMaterial({ color: "#4a5462", roughness: 0.78, metalness: 0.15 });
-        const flameOuterMat = new THREE.MeshStandardMaterial({ color: "#ff8a3d", emissive: "#ff5a1f", emissiveIntensity: 1.0, transparent: true, opacity: 0.82, roughness: 0.5 });
-        const flameInnerMat = new THREE.MeshStandardMaterial({ color: "#ffe08a", emissive: "#ffcc55", emissiveIntensity: 1.25, roughness: 0.4 });
-
-        // A distillation column: stacked steel segments, domed top, vent pipe and
-        // catwalk platform rings - the signature refinery silhouette.
-        const buildColumn = () => {
-            const unit = new THREE.Group();
-            const base = new THREE.Mesh(colBaseGeo, columnMat); base.position.y = 0.74; base.castShadow = true; unit.add(base);
-            const mid = new THREE.Mesh(colMidGeo, columnMat); mid.position.y = 1.72; mid.castShadow = true; unit.add(mid);
-            const top = new THREE.Mesh(colTopGeo, columnMat); top.position.y = 2.55; top.castShadow = true; unit.add(top);
-            const dome = new THREE.Mesh(colDomeGeo, columnMat); dome.position.y = 2.92; unit.add(dome);
-            const vent = new THREE.Mesh(ventGeo, stackMat); vent.position.y = 3.25; unit.add(vent);
-            [1.15, 2.05, 2.7].forEach((y) => {
-                const r = new THREE.Mesh(platformRingGeo, trimMat);
-                r.rotation.x = Math.PI / 2;
-                r.position.y = y;
-                unit.add(r);
-            });
-            return unit;
-        };
-
-        // A spherical LPG pressure store carried on four short legs.
-        const buildSphereTank = () => {
-            const g = new THREE.Group();
-            const ball = new THREE.Mesh(sphereTankGeo, sphereMat); ball.position.y = 0.62; ball.castShadow = true; g.add(ball);
-            for (let k = 0; k < 4; k += 1) {
-                const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
-                const leg = new THREE.Mesh(legGeo, trimMat);
-                leg.position.set(Math.cos(a) * 0.26, 0.22, Math.sin(a) * 0.26);
-                g.add(leg);
-            }
-            return g;
-        };
-
-        turbines.forEach((t) => {
-            const group = new THREE.Group();
-            group.position.set(t.x, 0, t.z);
-            scene.add(group);
-
-            // Concrete pad.
-            const pad = new THREE.Mesh(padGeo, padMat);
-            pad.position.y = 0.08;
-            pad.receiveShadow = true;
-            group.add(pad);
-
-            // Distillation column (rear-centre).
-            const column = buildColumn();
-            column.position.set(-0.1, 0, -0.15);
-            group.add(column);
-
-            // Floating-roof storage tank (front-left) with rim + domed roof.
-            const tank = new THREE.Mesh(tankGeo, tankMat);
-            tank.position.set(-0.66, 0.44, 0.34);
-            tank.castShadow = true;
-            group.add(tank);
-            const tankRim = new THREE.Mesh(tankRimGeo, trimMat);
-            tankRim.rotation.x = Math.PI / 2;
-            tankRim.position.set(-0.66, 0.74, 0.34);
-            group.add(tankRim);
-            const tankTop = new THREE.Mesh(tankTopGeo, tankMat);
-            tankTop.position.set(-0.66, 0.83, 0.34);
-            group.add(tankTop);
-
-            // LPG sphere (front-right).
-            const sphere = buildSphereTank();
-            sphere.position.set(0.66, 0, -0.42);
-            group.add(sphere);
-
-            // Pipe bridge linking the tank and the column.
-            const pipe = new THREE.Mesh(pipeGeo, pipeMat);
-            pipe.rotation.z = Math.PI / 2;
-            pipe.position.set(-0.3, 0.62, 0.34);
-            group.add(pipe);
-            [-0.66, 0.05].forEach((px) => {
-                const sup = new THREE.Mesh(pipeSupportGeo, pipeMat);
-                sup.position.set(px, 0.37, 0.34);
-                group.add(sup);
-            });
-
-            // Flare stack with a layered, flickering flame (animated by telemetry).
-            const stack = new THREE.Mesh(stackGeo, stackMat);
-            stack.position.set(0.74, 1.3, 0.5);
-            group.add(stack);
-            const flame = new THREE.Group();
-            flame.position.set(0.74, 2.6, 0.5);
-            const flameOuter = new THREE.Mesh(flameOuterGeo, flameOuterMat); flameOuter.position.y = 0.4; flame.add(flameOuter);
-            const flameInner = new THREE.Mesh(flameInnerGeo, flameInnerMat); flameInner.position.y = 0.3; flame.add(flameInner);
-            group.add(flame);
-
-            // Status beacon on the column crown (color driven by live telemetry).
-            const nacelleMat = new THREE.MeshStandardMaterial({
-                color: STATUS_COLORS[t.status],
-                emissive: STATUS_COLORS[t.status],
-                emissiveIntensity: 0.6,
-                roughness: 0.3,
-                metalness: 0.2,
-            });
-            const beacon = new THREE.Mesh(beaconGeo, nacelleMat);
-            beacon.position.set(-0.1, 3.55, -0.15);
-            group.add(beacon);
-
-            const pickMesh = new THREE.Mesh(
-                pickGeo,
-                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
-            );
-            pickMesh.position.y = 1.4;
-            pickMesh.userData.turbineId = t.id;
-            pickables.push(pickMesh);
-            group.add(pickMesh);
-
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: STATUS_COLORS[t.status],
-                transparent: true,
-                opacity: t.id === selectedId ? 0.9 : 0.55,
-            });
-            const ring = new THREE.Mesh(ringGeoUnit, ringMat);
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = 0.03;
-            group.add(ring);
-
-            byId.set(t.id, {
-                nacelleMat,
-                ringMat,
-                ring,
-                blades: flame,
-                spin: 0.08 + seededRand(t.id.length + t.powerKw * 0.001) * 0.12,
-            });
-        });
-
-        const onClick = (event: MouseEvent) => {
-            const rect = renderer.domElement.getBoundingClientRect();
-            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointer, camera);
-            const hits = raycaster.intersectObjects(pickables);
-            if (hits.length > 0) {
-                const id = hits[0].object.userData.turbineId as string;
-                onSelect(id);
-            }
-        };
-        renderer.domElement.addEventListener("click", onClick);
-
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + event.deltaY * 0.0009, 0.4, 1.8);
-        };
-        renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
-
-        const onResize = () => {
-            if (host.clientWidth === 0 || host.clientHeight === 0) {
-                return;
-            }
-            camera.aspect = host.clientWidth / host.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(host.clientWidth, host.clientHeight);
-        };
-        window.addEventListener("resize", onResize);
-
-        let tick = 0;
-        const animate = () => {
-            if (!pausedRef.current) {
-                tick += 0.03;
-                byId.forEach((refs) => {
-                    // Flare flame flicker driven by per-unit phase.
-                    refs.blades.scale.y = 1 + Math.sin(tick * 2.2 + refs.spin * 30) * 0.28;
-                    refs.blades.scale.x = 1 + Math.sin(tick * 3.1 + refs.spin * 12) * 0.12;
-                });
-            }
-            oceanTexture.offset.x = tick * 0.0015;
-            oceanTexture.offset.y = Math.sin(tick * 0.05) * 0.01;
-            const z = zoomRef.current;
-            camera.position.x = (26 + Math.sin(tick * 0.17) * 9) * z;
-            camera.position.y = 36 * z;
-            camera.position.z = (61 + Math.cos(tick * 0.13) * 5) * z;
-            camera.lookAt(0, 0, 0);
-            renderer.render(scene, camera);
-        };
-        renderer.setAnimationLoop(animate);
-
-        const cleanup = () => {
-            renderer.setAnimationLoop(null);
-            renderer.domElement.removeEventListener("click", onClick);
-            renderer.domElement.removeEventListener("wheel", onWheel);
-            window.removeEventListener("resize", onResize);
-            renderer.dispose();
-            scene.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
-                    obj.geometry.dispose();
-                    const material = Array.isArray(obj.material) ? obj.material : [obj.material];
-                    material.forEach((m) => m.dispose());
-                }
-            });
-            mapTexture.dispose();
-            oceanTexture.dispose();
-            skyTexture.dispose();
-            envRT.dispose();
-        };
-
-        sceneRef.current = {
-            byId,
-            cleanup,
-        };
-
-        return () => {
-            sceneRef.current = null;
-            cleanup();
-        };
-    }, [onSelect, sites]);
-
-    useEffect(() => {
-        const ref = sceneRef.current;
-        if (!ref) {
-            return;
-        }
-
-        ref.byId.forEach((meshRefs, id) => {
-            const t = turbines.find((row) => row.id === id);
-            if (!t) {
-                return;
-            }
-
-            const dimmed = dimmedIds.has(id);
-            meshRefs.nacelleMat.color.set(STATUS_COLORS[t.status]);
-            meshRefs.nacelleMat.emissive.set(STATUS_COLORS[t.status]);
-            meshRefs.nacelleMat.emissiveIntensity = dimmed ? 0.02 : 0.16;
-            meshRefs.ringMat.color.set(STATUS_COLORS[t.status]);
-            meshRefs.ringMat.opacity = dimmed ? 0.06 : t.id === selectedId ? 0.98 : 0.56;
-            meshRefs.ring.scale.setScalar(t.id === selectedId ? 1.24 : dimmed ? 0.7 : 1);
-            meshRefs.spin = dimmed ? 0.003 : 0.055 + Math.min(0.22, t.irradianceWm2 / 80);
-        });
-    }, [selectedId, turbines, dimmedIds]);
-
-    return (
-        <div className="relative h-full w-full">
-            <div ref={hostRef} className="h-full w-full" />
-            <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
-                <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.15, 0.4, 1.8); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
-                <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.15, 0.4, 1.8); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button type="button" title="Reset zoom" onClick={() => { zoomRef.current = 0.62; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
-            </div>
-        </div>
-    );
-}
 
 type StatusFilter = PlantStatus | "all";
 
@@ -1442,7 +1027,7 @@ function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: View
                         <span aria-hidden="true" className="text-lg leading-none">{n.icon}</span>
                         <span className="hidden md:inline">{n.label}</span>
                         {badge > 0 && (
-                            <span aria-hidden="true" className="ml-auto rounded-full bg-rose-600 px-1.5 text-[10px] font-semibold leading-4 text-white">{badge}</span>
+                            <span aria-hidden="true" className="ml-auto rounded-full bg-red-600 px-1.5 text-[10px] font-semibold leading-4 text-white">{badge}</span>
                         )}
                     </button>
                 );
@@ -1675,284 +1260,6 @@ function Meter({ label, value, unit, max, warn, alarm, property }: { label: stri
     );
 }
 
-// Dedicated, scaled-up single-turbine digital-twin scene with orbit + wheel zoom.
-function PlantTwinScene({ turbine, paused }: { turbine: PlantTelemetry; paused: boolean }) {
-    const hostRef = useRef<HTMLDivElement | null>(null);
-    const pausedRef = useRef(paused);
-    const turbineRef = useRef(turbine);
-    const zoomRef = useRef(1);
-    const colorApiRef = useRef<((c: string) => void) | null>(null);
-    const labelRefs = useRef<Array<HTMLDivElement | null>>([]);
-
-    useEffect(() => { pausedRef.current = paused; }, [paused]);
-    useEffect(() => { turbineRef.current = turbine; }, [turbine]);
-
-    useEffect(() => {
-        const host = hostRef.current;
-        if (!host) {
-            return;
-        }
-
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color("#081a2e");
-        scene.fog = new THREE.Fog("#081a2e", 42, 130);
-
-        const camera = new THREE.PerspectiveCamera(46, host.clientWidth / host.clientHeight, 0.1, 400);
-        camera.position.set(12, 10, 24);
-        camera.lookAt(0, 6.5, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.12;
-        host.innerHTML = "";
-        host.appendChild(renderer.domElement);
-
-        // Soft image-based reflections for the close-up steel hardware.
-        const detailSky = createSkyTexture();
-        const pmrem = new THREE.PMREMGenerator(renderer);
-        const envRT = pmrem.fromEquirectangular(detailSky);
-        scene.environment = envRT.texture;
-        pmrem.dispose();
-        detailSky.dispose();
-
-        const ambient = new THREE.AmbientLight(0xbcd4ff, 0.5);
-        const sun = new THREE.DirectionalLight(0xffffff, 1.22);
-        sun.position.set(12, 24, 10);
-        sun.castShadow = true;
-        sun.shadow.mapSize.set(2048, 2048);
-        sun.shadow.camera.near = 1;
-        sun.shadow.camera.far = 120;
-        sun.shadow.camera.left = -20;
-        sun.shadow.camera.right = 20;
-        sun.shadow.camera.top = 24;
-        sun.shadow.camera.bottom = -8;
-        sun.shadow.bias = -0.0004;
-        sun.shadow.normalBias = 0.02;
-        const rim = new THREE.DirectionalLight(0x4fa3ff, 0.35);
-        rim.position.set(-14, 10, -12);
-        scene.add(ambient, sun, rim);
-
-        const pad = new THREE.Mesh(
-            new THREE.CircleGeometry(9, 48),
-            new THREE.MeshStandardMaterial({ color: "#123247", roughness: 0.9, metalness: 0.05 })
-        );
-        pad.rotation.x = -Math.PI / 2;
-        pad.receiveShadow = true;
-        scene.add(pad);
-
-        const padRing = new THREE.Mesh(
-            new THREE.RingGeometry(8.6, 9, 48),
-            new THREE.MeshBasicMaterial({ color: "#2a557f", transparent: true, opacity: 0.6 })
-        );
-        padRing.rotation.x = -Math.PI / 2;
-        padRing.position.y = 0.02;
-        scene.add(padRing);
-
-        const grid = new THREE.GridHelper(20, 20, 0x2a557f, 0x1c3a59);
-        grid.position.y = 0.01;
-        (grid.material as THREE.Material).transparent = true;
-        (grid.material as THREE.Material).opacity = 0.22;
-        scene.add(grid);
-
-        const group = new THREE.Group();
-        scene.add(group);
-
-        const baseMat = new THREE.MeshStandardMaterial({ color: "#5a6675", roughness: 0.68, metalness: 0.22 });
-        const steelMat = new THREE.MeshStandardMaterial({ color: "#c2cad6", roughness: 0.42, metalness: 0.68 });
-        const tankMat = new THREE.MeshStandardMaterial({ color: "#dde3ea", roughness: 0.5, metalness: 0.38 });
-        const stackMat = new THREE.MeshStandardMaterial({ color: "#8a939f", roughness: 0.6, metalness: 0.5 });
-        const flameMat = new THREE.MeshStandardMaterial({ color: "#ff9b3d", emissive: "#ff5a1f", emissiveIntensity: 0.95, roughness: 0.4 });
-        const pipeMat = new THREE.MeshStandardMaterial({ color: "#9aa6b4", roughness: 0.5, metalness: 0.55 });
-        const statusMat = new THREE.MeshStandardMaterial({
-            color: STATUS_COLORS[turbineRef.current.status],
-            emissive: STATUS_COLORS[turbineRef.current.status],
-            emissiveIntensity: 0.7,
-            roughness: 0.3,
-            metalness: 0.2,
-        });
-        const ringMat = new THREE.MeshBasicMaterial({ color: STATUS_COLORS[turbineRef.current.status], transparent: true, opacity: 0.85 });
-
-        // Foundation pad block.
-        const pedestal = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.4, 4.5), baseMat);
-        pedestal.position.y = 0.2;
-        pedestal.receiveShadow = true;
-        group.add(pedestal);
-
-        // Distillation column - the main process unit (caption "Column").
-        const column = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 6.4, 28), steelMat);
-        column.position.set(0, 3.6, 0);
-        column.castShadow = true;
-        group.add(column);
-        [2.0, 3.6, 5.2].forEach((y) => {
-            const plat = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.08, 10, 28), pipeMat);
-            plat.rotation.x = Math.PI / 2;
-            plat.position.y = y;
-            group.add(plat);
-        });
-
-        // Storage tank (caption "Tank").
-        const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.4, 28), tankMat);
-        tank.position.set(-3.6, 1.4, 0);
-        tank.castShadow = true;
-        group.add(tank);
-        const tankDome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), tankMat);
-        tankDome.position.set(-3.6, 2.6, 0);
-        group.add(tankDome);
-
-        // Flare stack with flame (caption "Flare"). `blades` holds the flame so the
-        // animate loop can flicker it with live feed rate.
-        const flareStack = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 3.6, 16), stackMat);
-        flareStack.position.set(2.8, 1.8, 1.4);
-        flareStack.castShadow = true;
-        group.add(flareStack);
-        const blades = new THREE.Group();
-        blades.position.set(2.8, 3.9, 1.4);
-        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.3, 16), flameMat);
-        blades.add(flame);
-        group.add(blades);
-
-        // Product pipe header (caption "Throughput").
-        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 4.2, 16), pipeMat);
-        pipe.rotation.z = Math.PI / 2;
-        pipe.position.set(0, 0.7, 2.8);
-        group.add(pipe);
-
-        // Status beacon above the column.
-        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), statusMat);
-        beacon.position.set(0, 7.1, 0);
-        group.add(beacon);
-
-        const ring = new THREE.Mesh(new THREE.RingGeometry(3.6, 4.2, 48), ringMat);
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.y = 0.05;
-        group.add(ring);
-
-        colorApiRef.current = (c: string) => {
-            statusMat.color.set(c);
-            statusMat.emissive.set(c);
-            ringMat.color.set(c);
-        };
-
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + event.deltaY * 0.0009, 0.16, 2.0);
-        };
-        renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
-
-        const onResize = () => {
-            if (host.clientWidth === 0 || host.clientHeight === 0) {
-                return;
-            }
-            camera.aspect = host.clientWidth / host.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(host.clientWidth, host.clientHeight);
-        };
-        window.addEventListener("resize", onResize);
-
-        let tick = 0;
-        const partAnchors = TWIN_PARTS.map((p) => new THREE.Vector3(p.pos[0], p.pos[1], p.pos[2]));
-        const projected = new THREE.Vector3();
-        const animate = () => {
-            if (!pausedRef.current) {
-                tick += 0.02;
-                // Flare flame flicker, amplitude scaled by live feed rate.
-                const feed = Math.min(1, turbineRef.current.irradianceWm2 / 200);
-                blades.scale.y = 1 + Math.sin(tick * 4) * 0.22 * (0.5 + feed);
-                blades.scale.x = 1 + Math.sin(tick * 5.3) * 0.12;
-            }
-            const z = zoomRef.current;
-            camera.position.x = Math.sin(tick * 0.25) * 14 * z;
-            camera.position.z = Math.cos(tick * 0.25) * 20 * z;
-            camera.position.y = 7 * z + 2.5;
-            // As you zoom in (smaller z), lower the focus toward the panel table so the
-            // array's working parts fill the frame.
-            const focus = THREE.MathUtils.clamp((z - 0.16) / (1 - 0.16), 0, 1);
-            const focusY = THREE.MathUtils.lerp(5.0, 2.4, focus);
-            camera.lookAt(0, focusY, 0);
-            renderer.render(scene, camera);
-
-            // Project each part anchor to screen space and move its HTML callout.
-            const w = host.clientWidth;
-            const h = host.clientHeight;
-            for (let i = 0; i < partAnchors.length; i += 1) {
-                const el = labelRefs.current[i];
-                if (!el) {
-                    continue;
-                }
-                projected.copy(partAnchors[i]).project(camera);
-                const behind = projected.z > 1;
-                const sx = (projected.x * 0.5 + 0.5) * w;
-                const sy = (-projected.y * 0.5 + 0.5) * h;
-                el.style.transform = `translate(-50%, -50%) translate(${sx}px, ${sy}px)`;
-                el.style.opacity = behind ? "0" : "1";
-            }
-        };
-        renderer.setAnimationLoop(animate);
-
-        return () => {
-            renderer.setAnimationLoop(null);
-            renderer.domElement.removeEventListener("wheel", onWheel);
-            window.removeEventListener("resize", onResize);
-            colorApiRef.current = null;
-            renderer.dispose();
-            scene.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
-                    obj.geometry.dispose();
-                    const material = Array.isArray(obj.material) ? obj.material : [obj.material];
-                    material.forEach((m) => m.dispose());
-                }
-            });
-            envRT.dispose();
-        };
-    }, []);
-
-    useEffect(() => {
-        colorApiRef.current?.(STATUS_COLORS[turbine.status]);
-    }, [turbine.status]);
-
-    return (
-        <div className="relative h-full w-full">
-            <div ref={hostRef} className="h-full w-full" />
-            {(() => {
-                const readouts = [
-                    { text: `${turbine.irradianceWm2} kbd`, color: signalColor("irradiance", turbine.irradianceWm2) },
-                    { text: `${turbine.moduleTempC}°C`, color: signalColor("moduleTemp", turbine.moduleTempC) },
-                    { text: `${turbine.inverterLoadPct}%`, color: signalColor("inverterLoad", turbine.inverterLoadPct) },
-                    { text: `${turbine.powerKw.toLocaleString()} kbd`, color: "#6ee7ff" },
-                ];
-                return TWIN_PARTS.map((p, i) => (
-                    <div
-                        key={p.key}
-                        ref={(el) => { labelRefs.current[i] = el; }}
-                        className="pointer-events-none absolute left-0 top-0 z-10 flex items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-600/60 bg-[#06101fe6] px-2 py-1 text-[11px] shadow-[0_4px_14px_rgba(0,0,0,0.5)] backdrop-blur transition-opacity"
-                    >
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: readouts[i].color }} />
-                        <span className="text-slate-400">{p.caption}</span>
-                        <span className="font-semibold" style={{ color: readouts[i].color }}>{readouts[i].text}</span>
-                    </div>
-                ));
-            })()}
-            <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-lg border border-slate-700/70 bg-[#06101fcc] text-slate-100 backdrop-blur">
-                <button type="button" title="Zoom in" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current - 0.12, 0.16, 2.0); }} className="px-2.5 py-1.5 text-sm hover:bg-slate-700/60">＋</button>
-                <button type="button" title="Zoom out" onClick={() => { zoomRef.current = THREE.MathUtils.clamp(zoomRef.current + 0.12, 0.16, 2.0); }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-sm hover:bg-slate-700/60">－</button>
-                <button type="button" title="Reset zoom" onClick={() => { zoomRef.current = 1; }} className="border-t border-slate-700/60 px-2.5 py-1.5 text-xs hover:bg-slate-700/60">⟳</button>
-            </div>
-        </div>
-    );
-}
-
 const SIGNAL_DEFS: SignalMetadata[] = SIGNAL_ORDER.map((k) => SIGNAL_METADATA[k]);
 
 function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect }: {
@@ -2123,6 +1430,7 @@ function App() {
     const [askLoading, setAskLoading] = useState(false);
     const [askError, setAskError] = useState<string | null>(null);
     const [askResult, setAskResult] = useState<AskResult | null>(null);
+    const [askHistory, setAskHistory] = useState<AskHistoryEntry[]>([]);
     const [writebackMessage, setWritebackMessage] = useState<string | null>(null);
     const [ackLog, setAckLog] = useState<Record<string, { at: string; by: string }>>(() => JSON.parse(localStorage.getItem("refinery-ack-log") ?? "{}"));
     const [ackMessage, setAckMessage] = useState<string | null>(null);
@@ -2264,6 +1572,42 @@ function App() {
             }
         }
     }, [turbines]);
+
+    // Hydrate anomaly-score history from persisted telemetry when live mode is on
+    // so trend direction/ETA starts from recent context instead of a cold window.
+    useEffect(() => {
+        if (!isLiveTelemetryConfigured()) {
+            return;
+        }
+        let cancelled = false;
+        const idsToHydrate = turbines
+            .map((t) => t.id)
+            .filter((id) => (anomalyHistRef.current.get(id)?.length ?? 0) < 3);
+        if (idsToHydrate.length === 0) {
+            return;
+        }
+        void (async () => {
+            const seeded = await Promise.all(
+                idsToHydrate.map(async (id) => ({ id, scores: await fetchAnomalyScores(id, 12) })),
+            );
+            if (cancelled) {
+                return;
+            }
+            seeded.forEach(({ id, scores }) => {
+                if (!scores || scores.length === 0) {
+                    return;
+                }
+                const current = anomalyHistRef.current.get(id) ?? [];
+                if (current.length < 3) {
+                    anomalyHistRef.current.set(id, scores.slice(-12));
+                }
+            });
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [turbines]);
+
     const unackedAlerts = useMemo(() => activeAlerts.filter((t) => !ackLog[t.id]), [activeAlerts, ackLog]);
 
     const fc = useMemo(
@@ -2469,6 +1813,7 @@ function App() {
             if (!trimmed) {
                 throw new Error("Please enter a question.");
             }
+            const started = performance.now();
 
             const alarmsNow = turbines.filter((t) => t.status === "alarm").length;
             const warningsNow = turbines.filter((t) => t.status === "warning").length;
@@ -2478,7 +1823,17 @@ function App() {
             const now = Date.now();
             const cached = askCacheRef.current.get(cacheKey);
             if (cached && now - cached.at <= ASK_CACHE_TTL_MS) {
-                setAskResult({ ...cached.result, cacheHit: true });
+                const cachedResult = { ...cached.result, cacheHit: true };
+                setAskResult(cachedResult);
+                setAskHistory((prev) => [{
+                    at: new Date().toISOString(),
+                    question: trimmed,
+                    source: cachedResult.source,
+                    transport: cachedResult.transport,
+                    latencyMs: Math.max(0, Math.round(performance.now() - started)),
+                    cacheHit: true,
+                    fallbackReason: cachedResult.fallbackReason,
+                }, ...prev].slice(0, ASK_HISTORY_MAX));
                 return;
             }
 
@@ -2530,6 +1885,15 @@ function App() {
                 }
             }
             setAskResult(storable);
+            setAskHistory((prev) => [{
+                at: new Date().toISOString(),
+                question: trimmed,
+                source: storable.source,
+                transport: storable.transport,
+                latencyMs: Math.max(0, Math.round(performance.now() - started)),
+                cacheHit: false,
+                fallbackReason: storable.fallbackReason,
+            }, ...prev].slice(0, ASK_HISTORY_MAX));
         } catch (err) {
             setAskError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -2678,7 +2042,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => { setSiteFilter("all"); setStatusFilter("all"); }}
-                    className="rounded bg-rose-700/70 px-2 py-1 text-white"
+                    className="rounded bg-slate-700/80 px-2 py-1 text-white"
                 >
                     Clear
                 </button>
@@ -2930,7 +2294,7 @@ function App() {
                                                 <div className="flex justify-between text-xs">
                                                     <button type="button" onClick={() => { setSelectedId(a.t.id); setView("twin"); }} className="text-slate-200 hover:text-cyan-200">{a.t.id} · {a.t.siteName}</button>
                                                     <span className="flex items-center gap-2">
-                                                        <span className={a.forecast.direction === "rising" ? "text-rose-300" : a.forecast.direction === "falling" ? "text-emerald-300" : "text-slate-500"}>
+                                                        <span className={a.forecast.direction === "rising" ? "text-amber-300" : a.forecast.direction === "falling" ? "text-emerald-300" : "text-slate-500"}>
                                                             {a.forecast.direction === "rising" ? "↑" : a.forecast.direction === "falling" ? "↓" : "→"}
                                                             {a.forecast.etaToAlarmTicks != null && ` ~${a.forecast.etaToAlarmTicks}t`}
                                                         </span>
@@ -3035,7 +2399,7 @@ function App() {
                                             title={s.name}
                                             action={
                                                 <span className="flex gap-1.5 text-[10px]">
-                                                    {s.alarms > 0 && <span className="rounded-full bg-rose-600/80 px-1.5 font-semibold text-white">{s.alarms} alarm</span>}
+                                                    {s.alarms > 0 && <span className="rounded-full bg-red-600/80 px-1.5 font-semibold text-white">{s.alarms} alarm</span>}
                                                     {s.warnings > 0 && <span className="rounded-full bg-amber-500/80 px-1.5 font-semibold text-black">{s.warnings} warn</span>}
                                                 </span>
                                             }
@@ -3209,7 +2573,7 @@ function App() {
                                     <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
                                         <div className="flex justify-between"><dt className="text-slate-400">Projected throughput</dt><dd>{scenario.projectedKw.toLocaleString()} kbd</dd></div>
                                         <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
-                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Volume vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kbd·t</dd></div>
+                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Volume vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-red-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kbd·t</dd></div>
                                     </dl>
                                 </Panel>
 
@@ -3333,12 +2697,16 @@ function App() {
                                     >
                                         {askLoading ? "Asking…" : "Ask Question"}
                                     </button>
-                                    {askError && <p className="mt-2 text-xs text-rose-300">{askError}</p>}
+                                    {askError && <p className="mt-2 text-xs text-red-300">{askError}</p>}
                                     {askResult && (
                                         <div className="mt-3 rounded border border-slate-700 bg-[#081226] p-3 text-sm text-slate-200">
                                             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                                                 <span>Source: {sourceLabel(askResult.source)}</span>
                                                 <span className="flex items-center gap-2">
+                                                    {askResult.source === "fabriciq" && askResult.transport && (
+                                                        <span>Transport: {askResult.transport.toUpperCase()}</span>
+                                                    )}
+                                                    {askResult.fallbackReason && <span>Fallback: {askResult.fallbackReason}</span>}
                                                     {typeof askResult.confidence === "number" && <span>Confidence: {Math.round(askResult.confidence * 100)}%</span>}
                                                     {askResult.cacheHit && <span>cached</span>}
                                                     <span>{new Date(askResult.generatedAt).toLocaleTimeString()}</span>
@@ -3353,6 +2721,25 @@ function App() {
                                                 </ul>
                                             )}
                                             {askResult.queryText && <p className="mt-2 text-xs text-slate-400">Trace: {askResult.queryText}</p>}
+                                        </div>
+                                    )}
+                                    {askHistory.length > 0 && (
+                                        <div className="mt-3 rounded border border-slate-700 bg-[#071424] p-3 text-xs text-slate-300">
+                                            <p className="mb-2 font-medium text-slate-200">Recent Ask Diagnostics</p>
+                                            <div className="space-y-1.5">
+                                                {askHistory.map((h, i) => (
+                                                    <div key={`${h.at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-1 last:border-b-0 last:pb-0">
+                                                        <span className="truncate text-slate-400" title={h.question}>{h.question}</span>
+                                                        <span className="flex items-center gap-2 text-slate-400">
+                                                            <span>{sourceLabel(h.source)}</span>
+                                                            {h.source === "fabriciq" && h.transport && <span>{h.transport.toUpperCase()}</span>}
+                                                            {h.fallbackReason && <span>fallback:{h.fallbackReason}</span>}
+                                                            <span>{h.latencyMs}ms</span>
+                                                            {h.cacheHit && <span>cached</span>}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </Panel>
