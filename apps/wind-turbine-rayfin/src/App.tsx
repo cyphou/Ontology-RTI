@@ -2854,35 +2854,40 @@ function App() {
         const logStep = (step: string, detail: string) =>
             setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
         try {
-            // 1 — Frame the incident on the fleet map.
+            // 1 — Frame the incident on the fleet map (reset any active filters).
             setDemoScriptStep("story");
             setDemoStepIndex(0);
             setDemoRunLog([{ step: "story", at: new Date().toISOString(), detail: "Framed the incident" }]);
+            setSiteFilter("all");
+            setStatusFilter("all");
+            setGraphFilter("all");
             setView("map");
             handlePrimeDemoStory();
             // Priming opens the technician card; keep it closed so the guided
             // view-to-view journey (map → twin → graph) stays fully visible.
             setTechPopupOpen(false);
             await delay(dwellMs);
-            // 2 — Locate the affected turbine on the map.
+            // 2 — Locate: filter the fleet map down to the affected site (field).
             setDemoScriptStep("locate");
             setDemoStepIndex(1);
             setView("map");
             setTechPopupOpen(false);
-            setWoMessage(`Fleet map focused on ${selected.id} (${selected.siteName}).`);
-            logStep("locate", `Focused fleet map on ${selected.id}`);
+            setSiteFilter(selected.siteId);
+            setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
+            logStep("locate", `Filtered map to site ${selected.siteName} and focused ${selected.id}`);
             await delay(dwellMs);
-            // 3 — Inspect the digital twin.
+            // 3 — Inspect the digital twin for the selected turbine.
             setDemoScriptStep("twin");
             setDemoStepIndex(2);
             setView("twin");
             logStep("twin", "Inspected the digital twin");
             await delay(dwellMs);
-            // 4 — Analyze the ontology graph.
+            // 4 — Analyze the ontology graph, filtered to the turbine's severity.
             setDemoScriptStep("graph");
             setDemoStepIndex(3);
+            setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
             setView("graph");
-            logStep("graph", "Analyzed the ontology graph");
+            logStep("graph", `Analyzed the ontology graph (filter: ${selected.status})`);
             await delay(dwellMs);
             // 5 — Take action: guided dispatch.
             setDemoScriptStep("dispatch");
@@ -2891,11 +2896,13 @@ function App() {
             await handleAutoHealNow();
             logStep("dispatch", "Ran guided dispatch");
             await delay(dwellMs);
-            // 6 — Call field support and close the loop.
+            // 6 — Call field support, close the loop, and reset filters.
             setDemoScriptStep("support");
             setDemoStepIndex(5);
             setView("operations");
             const closed = await handleCallFieldSupport();
+            setSiteFilter("all");
+            setGraphFilter("all");
             logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
@@ -2904,7 +2911,7 @@ function App() {
             setAutoPlayRunning(false);
             setDemoScriptStep("idle");
         }
-    }, [autoPlayRunning, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, selected.id, selected.siteName]);
+    }, [autoPlayRunning, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, selected.id, selected.siteId, selected.siteName, selected.status]);
 
     const handleRunDispatchQualityCheck = useCallback(() => {
         const missing = dispatchQuality.checks.filter((c) => !c.ok).map((c) => c.label);
@@ -2930,11 +2937,12 @@ function App() {
         {
             id: "locate",
             label: "2. Locate on map",
-            detail: "Focus the fleet map on the affected turbine and site.",
+            detail: "Filter the fleet map to the affected site (field).",
             action: () => {
                 setDemoScriptStep("locate");
                 setView("map");
-                setWoMessage(`Fleet map focused on ${selected.id} (${selected.siteName}).`);
+                setSiteFilter(selected.siteId);
+                setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
             },
         },
         {
@@ -2949,9 +2957,10 @@ function App() {
         {
             id: "graph",
             label: "4. Ontology graph",
-            detail: "Trace asset relationships in the ontology graph.",
+            detail: "Filter the ontology graph to the turbine's severity.",
             action: () => {
                 setDemoScriptStep("graph");
+                setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
                 setView("graph");
             },
         },
@@ -3756,8 +3765,8 @@ function App() {
             {demoScriptStep !== "idle" && (() => {
                 const narration = demoNarration(demoScriptStep);
                 return (
-                    <div className="pointer-events-none fixed inset-x-0 top-[84px] z-[210] flex justify-center px-4">
-                        <div role="status" aria-live="polite" className="pointer-events-auto w-full max-w-[640px] rounded-xl border border-cyan-500/40 bg-[#061224f2] px-4 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-md">
+                    <div className="pointer-events-none fixed inset-x-0 top-2 z-[210] flex justify-center px-4">
+                        <div role="status" aria-live="polite" className="pointer-events-auto w-full max-w-[760px] rounded-xl border border-cyan-500/50 bg-[#061224f7] px-5 py-3.5 shadow-[0_18px_50px_rgba(0,0,0,0.6)] backdrop-blur-md">
                             <div className="flex items-center justify-between gap-2">
                                 <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
                                     Demo narration · Step {narration.index} of {narration.total}
@@ -3769,8 +3778,8 @@ function App() {
                                     )}
                                 </div>
                             </div>
-                            <p className="mt-1.5 text-sm font-semibold text-slate-100">{narration.title}</p>
-                            <p className="mt-0.5 text-xs leading-5 text-slate-300">{narration.caption}</p>
+                            <p className="mt-1.5 text-base font-semibold text-slate-100">{narration.title}</p>
+                            <p className="mt-0.5 text-sm leading-5 text-slate-300">{narration.caption}</p>
                             <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
                                 <span className="rounded bg-[#0a1830] px-1.5 py-0.5 font-semibold text-cyan-100">{selected.id}</span>
                                 <span className="rounded bg-[#0a1830] px-1.5 py-0.5 text-slate-300">{suggestedComponent}</span>
