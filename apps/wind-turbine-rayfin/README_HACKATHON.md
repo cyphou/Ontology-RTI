@@ -146,6 +146,9 @@ flowchart LR
 - Designed as a reusable industry template pattern for Rayfin
 - Config-driven runtime wiring through environment variables
 - Works both online (Fabric-connected) and offline (simulation)
+- Sibling variants already exist for other industries, proving the pattern generalizes:
+  - Oil & Gas / Refinery: [refinery-worldwide-rayfin](../refinery-worldwide-rayfin/README.md)
+  - Solar: [solar-france-rayfin](../solar-france-rayfin/README.md)
 
 ### Quality signals
 - Unit tests for mission logic and telemetry services

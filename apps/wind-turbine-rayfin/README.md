@@ -41,6 +41,10 @@ This pattern is reusable beyond Wind Turbine. Rayfin apps can be connected to:
 - Semantic Models for live telemetry aggregation and KPI querying
 - Ontology-backed entities for writeback workflows (notes, dispatch, configuration)
 
+Other industry variants already exist, showing the pattern generalizes across domains:
+- Oil & Gas / Refinery: [refinery-worldwide-rayfin](../refinery-worldwide-rayfin/README.md)
+- Solar: [solar-france-rayfin](../solar-france-rayfin/README.md)
+
 ### Solution Architecture
 
 ```mermaid
