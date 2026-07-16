@@ -4902,7 +4902,7 @@ function App() {
                                                                     const load = responderLoad[person.id] ?? 0;
                                                                     const workerOrders = maintenanceOrders
                                                                         .filter((o) => o.assignee === person.name)
-                                                                        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+                                                                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                                                                     return (
                                                                         <li key={person.id} className="ops-worker rounded-xl border border-[#2a313b]/70 bg-[#101c2e] p-2.5">
                                                                             <div className="flex items-start gap-2.5">
