@@ -4519,346 +4519,10 @@ function App() {
                                     </div>
                                 </section>
 
-                                {/* 2 — Plan work order (primary) + live analytics / SLA sidebar */}
+                                {/* 2 — Workers timetable (primary) + live analytics / SLA sidebar */}
                                 <div className="ops-section grid grid-cols-1 gap-4 lg:grid-cols-3">
-                                    {/* Dispatch console — escalation, what-if planning & expert controls */}
-                                    <div className="ops-plan rounded-2xl border border-cyan-500/25 bg-gradient-to-b from-cyan-500/[0.06] via-transparent to-transparent p-4 shadow-[0_18px_40px_rgba(4,20,40,0.4)] lg:col-span-2">
-                                        <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <div>
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300">Dispatch console</p>
-                                                <p className="mt-0.5 text-xs text-slate-400">Suspected <span className="font-semibold text-slate-200">{suggestedComponent}</span> on {selected.id} — schedule &amp; dispatch technicians from the Workers timetable below.</p>
-                                            </div>
-                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${suggestedPriority === "P1" ? "bg-rose-500/10 text-rose-300 ring-rose-500/40" : suggestedPriority === "P2" ? "bg-amber-500/10 text-amber-300 ring-amber-500/40" : "bg-emerald-500/10 text-emerald-300 ring-emerald-500/40"}`}>
-                                                {suggestedPriority}{selectedForecast.etaToAlarmTicks != null ? ` · ETA ~${selectedForecast.etaToAlarmTicks}t` : ""}
-                                            </span>
-                                        </div>
-
-                                        {/* Projected impact snapshot (from the what-if plan) */}
-                                        <div className={`mt-3 flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${scenario.energyDeltaKwt < 0 ? "border-rose-500/30 bg-rose-500/[0.07]" : "border-emerald-500/30 bg-emerald-500/[0.07]"}`}>
-                                            <div>
-                                                <p className="text-[10px] uppercase tracking-wide text-slate-400">Projected impact</p>
-                                                <p className="mt-0.5 text-[11px] text-slate-400">curtail {simCurtail}% · downtime {simDowntime}t · horizon {simHorizon}t</p>
-                                            </div>
-                                            <p className={`text-xl font-bold ${scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()}<span className="text-xs font-medium text-slate-400"> kW·t</span></p>
-                                        </div>
-
-                                        {needsEscalation && (
-                                            <div className="mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-[11px] text-rose-200">
-                                                <p>No responder above {escalationThreshold}% match for {suggestedPriority}. Escalate to manager.</p>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void handleEscalateManager()}
-                                                    className="mt-1.5 w-full rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-500"
-                                                >
-                                                    Escalate to Ops Duty Manager
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {/* What-if planning — collapsible; feeds the scenario used by every raised work order */}
-                                        <details className="wow-disclosure mt-3">
-                                            <summary>What-if planning</summary>
-                                            <div className="wow-disclosure-body">
-                                                <div className="rounded-xl border border-white/5 bg-[#0a1830]/60 p-3">
-                                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">Simulate intervention</p>
-                                                    <p className="mb-2 mt-0.5 text-[11px] text-slate-400">Model curtailment and a maintenance window against {selected.id}'s current output baseline. These values are attached to every work order you raise.</p>
-                                                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
-                                                        <label className="flex flex-col gap-1">
-                                                            Curtail %
-                                                            <input type="number" min={0} max={100} value={simCurtail} onChange={(e) => setSimCurtail(Number(e.target.value))} aria-label="Curtailment percent" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                        </label>
-                                                        <label className="flex flex-col gap-1">
-                                                            Downtime (t)
-                                                            <input type="number" min={0} max={simHorizon} value={simDowntime} onChange={(e) => setSimDowntime(Number(e.target.value))} aria-label="Maintenance downtime ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                        </label>
-                                                        <label className="flex flex-col gap-1">
-                                                            Horizon (t)
-                                                            <input type="number" min={1} max={96} value={simHorizon} onChange={(e) => setSimHorizon(Number(e.target.value))} aria-label="Scenario horizon ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                        </label>
-                                                    </div>
-                                                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
-                                                        <div className="flex justify-between"><dt className="text-slate-400">Projected output</dt><dd>{scenario.projectedKw.toLocaleString()} kW</dd></div>
-                                                        <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
-                                                        <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
-                                                    </dl>
-                                                </div>
-                                            </div>
-                                        </details>
-
-                                        {/* Expert controls — collapsed by default */}
-                                        <details className="wow-disclosure mt-3">
-                                            <summary>Advanced dispatch &amp; writeback</summary>
-                                            <div className="wow-disclosure-body space-y-2">
-                                                <p className="text-[11px] text-slate-400">
-                                                    Current mode: <span className={canWriteback ? "text-emerald-300" : "text-amber-300"}>{canWriteback ? "Operator" : "Viewer"}</span>
-                                                    {canWriteback ? " — ontology writeback enabled." : " — writeback is read-only, but dispatch/escalation demo actions auto-switch to Operator."}
-                                                </p>
-                                                <div className="flex gap-2">
-                                                    <label className="flex-1 text-xs text-slate-400">
-                                                        Action
-                                                        <select
-                                                            value={wbAction}
-                                                            onChange={(e) => setWbAction(e.target.value)}
-                                                            disabled={!canWriteback}
-                                                            className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
-                                                        >
-                                                            {["Acknowledge", "Inspect", "Throttle", "Boost", "Shutdown"].map((a) => (
-                                                                <option key={a} value={a}>{a}</option>
-                                                            ))}
-                                                        </select>
-                                                    </label>
-                                                    <label className="flex-1 text-xs text-slate-400">
-                                                        Setpoint (kW)
-                                                        <input
-                                                            type="number"
-                                                            value={wbSetpoint}
-                                                            onChange={(e) => setWbSetpoint(e.target.value)}
-                                                            disabled={!canWriteback}
-                                                            placeholder={String(selected.powerKw)}
-                                                            className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
-                                                        />
-                                                    </label>
-                                                </div>
-                                                <input
-                                                    value={wbNote}
-                                                    onChange={(e) => setWbNote(e.target.value)}
-                                                    disabled={!canWriteback}
-                                                    placeholder="Optional note…"
-                                                    className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleWriteback}
-                                                    disabled={!canWriteback}
-                                                    className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    {canWriteback ? `Write ${wbAction} to ontology` : "Viewer mode — writeback disabled"}
-                                                </button>
-                                                {writebackMessage && <p className="text-xs text-emerald-300">{writebackMessage}</p>}
-                                            </div>
-                                        </details>
-
-                                        <details className="wow-disclosure mt-2">
-                                            <summary>Dispatch quality &amp; evidence</summary>
-                                            <div className="wow-disclosure-body space-y-2 text-[10px]">
-                                                <div>
-                                                    <p className="text-[#b8c1cc]">Dispatch quality score: <span className="font-semibold text-slate-100">{dispatchQuality.score}%</span></p>
-                                                    <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-slate-400">
-                                                        {dispatchQuality.checks.map((check) => (
-                                                            <span key={check.label} className={check.ok ? "text-emerald-300" : "text-amber-300"}>
-                                                                {check.ok ? "OK" : "WARN"} {check.label}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleRunDispatchQualityCheck}
-                                                        className="mt-1.5 w-full rounded border border-[#b8c1cc]/60 bg-[#233040] px-2 py-1 text-[11px] font-medium text-[#e7edf5] hover:bg-[#2f3c4d]"
-                                                    >
-                                                        Run Dispatch Quality Check
-                                                    </button>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-1.5">
-                                                    {matchingEvidence.map((ev) => {
-                                                        const active = selectedEvidence?.id === ev.id;
-                                                        return (
-                                                            <button
-                                                                key={ev.id}
-                                                                type="button"
-                                                                onClick={() => setSelectedEvidenceId(ev.id)}
-                                                                className={`rounded border p-1 text-left ${active ? "border-cyan-500" : "border-slate-700 hover:border-slate-500"}`}
-                                                            >
-                                                                <img src={ev.image} alt={ev.label} className="h-14 w-full rounded object-cover" />
-                                                                <p className="mt-0.5 truncate text-[10px] text-slate-300" title={ev.label}>{ev.label}</p>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {selectedEvidence && <p className="text-[10px] text-slate-500">Selected evidence: {selectedEvidence.label}</p>}
-                                            </div>
-                                        </details>
-
-                                        <details className="wow-disclosure mt-2">
-                                            <summary>Responder roster &amp; filters</summary>
-                                            <div className="wow-disclosure-body space-y-1.5">
-                                                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                                                    <label className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-1.5 py-1 text-slate-300">
-                                                        Shift
-                                                        <select
-                                                            value={responderShiftFilter}
-                                                            onChange={(e) => setResponderShiftFilter(e.target.value as "all" | "day" | "swing" | "night")}
-                                                            className="mt-0.5 w-full bg-transparent text-slate-100 outline-none"
-                                                        >
-                                                            <option value="all">All</option>
-                                                            <option value="day">Day</option>
-                                                            <option value="swing">Swing</option>
-                                                            <option value="night">Night</option>
-                                                        </select>
-                                                    </label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setOnCallOnly((v) => !v)}
-                                                        className={`rounded border px-1.5 py-1 text-left ${onCallOnly ? "border-[#b8c1cc]/60 bg-[#232a31] text-[#e7edf5]" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}
-                                                    >
-                                                        On-call only: {onCallOnly ? "ON" : "OFF"}
-                                                    </button>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-1 rounded border border-[#2a313b]/70 bg-[#101925] px-2 py-1 text-[10px]" aria-label="Responder availability board">
-                                                    <span className="font-semibold uppercase tracking-wide text-cyan-300/90">Roster</span>
-                                                    <span className="text-slate-300">{responderAvailability.total} in scope</span>
-                                                    <span className="text-emerald-300">· {responderAvailability.onCall} on-call</span>
-                                                    <span className="text-sky-300">· {responderAvailability.free} free</span>
-                                                    <span className="ml-auto text-slate-400">D{responderAvailability.byShift.day} · S{responderAvailability.byShift.swing} · N{responderAvailability.byShift.night}</span>
-                                                </div>
-                                                <ul className="space-y-1.5">
-                                                    {suggestedResponders.map((person) => (
-                                                        <li key={person.id} className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5">
-                                                            <div className="flex items-center gap-2">
-                                                                <img src={person.photo} alt={`${person.name} portrait`} className="h-8 w-8 rounded-md border border-[#3a4657] object-cover" />
-                                                                <div className="min-w-0 flex-1">
-                                                                    <p className="truncate text-xs font-medium text-slate-100">{person.name}</p>
-                                                                    <p className="truncate text-[11px] text-slate-400">{person.role}</p>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-[11px] font-semibold text-[#e7edf5]">{Math.round(person.score)}%</p>
-                                                                    <p className="text-[10px] text-slate-500">match</p>
-                                                                </div>
-                                                            </div>
-                                                            <p className="mt-1 text-[10px] text-slate-400">{person.reason}</p>
-                                                            <p className="mt-0.5 text-[10px] text-slate-500">Shift {person.shift} · On-call {person.onCall ? "yes" : "no"} · Active {person.currentLoad}</p>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => void handleDispatchResponder(person)}
-                                                                className="mt-1.5 w-full rounded bg-[#6f7f93] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#8190a3]"
-                                                            >
-                                                                {`Dispatch ${person.name.split(" ")[0]}`}
-                                                            </button>
-                                                        </li>
-                                                    ))}
-                                                    {suggestedResponders.length === 0 && (
-                                                        <li className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5 text-[11px] text-slate-400">
-                                                            No responders available for selected filter.
-                                                        </li>
-                                                    )}
-                                                </ul>
-                                            </div>
-                                        </details>
-                                    </div>
-
-                                    {/* Right sidebar: live analytics + SLA / escalation */}
-                                    <div className="space-y-4">
-                                        <Panel title="Live analytics">
-                                            <div>
-                                                <div className="mb-1 flex items-center justify-between gap-2">
-                                                    <p className="text-xs text-slate-400">Power trend (live)</p>
-                                                    <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
-                                                        {HISTORY_WINDOWS.map((window) => (
-                                                            <button key={window} type="button" onClick={() => setHistoryWindow(window)} className={`px-2 py-1 ${historyWindow === window ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>
-                                                                {window}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
-                                            </div>
-                                            <div className="mt-2 rounded-xl border border-cyan-900/60 bg-[#06182f] px-2 py-2 text-xs">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-slate-400">Forecast</span>
-                                                    <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
-                                                        {[3, 5, 10].map((h) => (
-                                                            <button
-                                                                key={h}
-                                                                type="button"
-                                                                onClick={() => setForecastHorizon(h)}
-                                                                aria-label={`Forecast horizon ${h} ticks`}
-                                                                className={`px-2 py-0.5 ${forecastHorizon === h ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}
-                                                            >
-                                                                +{h}t
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div className="mt-1 flex items-center justify-between">
-                                                    <span className="text-slate-500">+{forecastHorizon} ticks projected</span>
-                                                    <span className="font-semibold text-cyan-200">{forecast.toLocaleString()} kW</span>
-                                                </div>
-                                                <div className="mt-0.5 flex items-center justify-between text-[11px] text-slate-400">
-                                                    <span>Range {fc.lo.toLocaleString()}–{fc.hi.toLocaleString()} kW</span>
-                                                    <span>Confidence {fc.confidence}%</span>
-                                                </div>
-                                                <div className="mt-1.5 grid grid-cols-3 gap-1">
-                                                    {multiForecast.map((m) => (
-                                                        <div key={m.h} className="rounded bg-[#08142a] px-1.5 py-1 text-center">
-                                                            <div className="text-[10px] text-slate-500">+{m.h}t</div>
-                                                            <div className="text-[11px] font-medium text-cyan-200">{m.value.toLocaleString()}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </Panel>
-
-                                        <Panel title="SLA & escalation">
-                                            <div className={`rounded-xl border px-3 py-2.5 text-[11px] ${isSlaOverdue ? "border-rose-500/45 bg-rose-500/10 text-rose-200" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}>
-                                                <div className="flex items-center gap-2.5" role="group" aria-label={`SLA ${orderPriority}: ${slaState.label}, ${Math.round(slaState.fraction * 100)}% of window elapsed`}>
-                                                    <svg viewBox="0 0 36 36" className="h-11 w-11 shrink-0" aria-hidden="true">
-                                                        <circle cx="18" cy="18" r="15.5" fill="none" stroke="#2a313b" strokeWidth="4" />
-                                                        <circle
-                                                            cx="18"
-                                                            cy="18"
-                                                            r="15.5"
-                                                            fill="none"
-                                                            stroke={slaState.color}
-                                                            strokeWidth="4"
-                                                            strokeLinecap="round"
-                                                            strokeDasharray={`${(slaState.fraction * 97.4).toFixed(1)} 97.4`}
-                                                            transform="rotate(-90 18 18)"
-                                                        />
-                                                        <text x="18" y="20.5" textAnchor="middle" fontSize="9" fill="#e7edf5" fontWeight="600">{Math.round(slaState.fraction * 100)}%</text>
-                                                    </svg>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="flex items-center justify-between gap-2">
-                                                            <span>SLA {orderPriority}</span>
-                                                            <span className="font-semibold" style={{ color: slaState.color }}>{slaState.label}</span>
-                                                        </p>
-                                                        <p className="mt-0.5 text-[10px] text-slate-400">
-                                                            {isSlaOverdue ? `Overdue by ${Math.max(0, (orderAgeMin ?? orderSlaMin) - orderSlaMin)} min` : `${slaRemainingMin} min remaining of ${orderSlaMin} min budget`}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {isSlaOverdue && canEscalateRegional && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void handleEscalateRegional()}
-                                                        className="mt-2 w-full rounded-lg bg-rose-700 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-600"
-                                                    >
-                                                        Escalate to Regional Reliability Lead
-                                                    </button>
-                                                )}
-                                                {escalationStage !== "none" && <p className="mt-1 text-[10px] text-amber-200">Escalation stage: {escalationStage.toUpperCase()}</p>}
-                                                <ul className="mt-2 space-y-1">
-                                                    {escalationTimeline.map((entry, i) => {
-                                                        const dot = entry.state === "done" ? "#5fa27b" : entry.state === "current" ? slaState.color : "#3a4657";
-                                                        return (
-                                                            <li key={entry.id} className="flex items-start gap-2">
-                                                                <div className="flex flex-col items-center">
-                                                                    <span className="mt-0.5 h-2.5 w-2.5 rounded-full border border-[#0a1830]" style={{ backgroundColor: dot }} />
-                                                                    {i < escalationTimeline.length - 1 && <span className="h-3 w-px bg-slate-600" />}
-                                                                </div>
-                                                                <div className="min-w-0 flex-1 leading-tight">
-                                                                    <p className={`truncate text-[11px] ${entry.state === "pending" ? "text-slate-500" : "text-slate-200"}`}>{entry.label}</p>
-                                                                    <p className="text-[9px] uppercase tracking-wide" style={{ color: entry.state === "pending" ? "#64748b" : dot }}>{entry.state} · {entry.note}</p>
-                                                                </div>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            </div>
-                                        </Panel>
-                                    </div>
-                                </div>
-
-                                {/* 2.5 — Workers timetable: full roster scheduling board */}
-                                <section className="ops-section ops-timetable relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#07142a] p-4 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
+                                {/* Workers timetable — primary scheduling board (moved up as the first major section under the hero) */}
+                                <section className="ops-section ops-timetable relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#07142a] p-4 shadow-[0_20px_45px_rgba(4,20,40,0.45)] lg:col-span-2">
                                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgba(6,182,212,0.18),transparent_55%),radial-gradient(circle_at_5%_130%,rgba(16,185,129,0.12),transparent_50%)]" />
                                     <div className="relative">
                                         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -4962,6 +4626,130 @@ function App() {
                                     </div>
                                 </section>
 
+                                    {/* Right sidebar: live analytics + SLA / escalation */}
+                                    <div className="space-y-4">
+                                        <Panel title="Live analytics">
+                                            <div>
+                                                <div className="mb-1 flex items-center justify-between gap-2">
+                                                    <p className="text-xs text-slate-400">Power trend (live)</p>
+                                                    <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
+                                                        {HISTORY_WINDOWS.map((window) => (
+                                                            <button key={window} type="button" onClick={() => setHistoryWindow(window)} className={`px-2 py-1 ${historyWindow === window ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>
+                                                                {window}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
+                                            </div>
+                                            <div className="mt-2 rounded-xl border border-cyan-900/60 bg-[#06182f] px-2 py-2 text-xs">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-slate-400">Forecast</span>
+                                                    <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
+                                                        {[3, 5, 10].map((h) => (
+                                                            <button
+                                                                key={h}
+                                                                type="button"
+                                                                onClick={() => setForecastHorizon(h)}
+                                                                aria-label={`Forecast horizon ${h} ticks`}
+                                                                className={`px-2 py-0.5 ${forecastHorizon === h ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}
+                                                            >
+                                                                +{h}t
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-1 flex items-center justify-between">
+                                                    <span className="text-slate-500">+{forecastHorizon} ticks projected</span>
+                                                    <span className="font-semibold text-cyan-200">{forecast.toLocaleString()} kW</span>
+                                                </div>
+                                                <div className="mt-0.5 flex items-center justify-between text-[11px] text-slate-400">
+                                                    <span>Range {fc.lo.toLocaleString()}–{fc.hi.toLocaleString()} kW</span>
+                                                    <span>Confidence {fc.confidence}%</span>
+                                                </div>
+                                                <div className="mt-1.5 grid grid-cols-3 gap-1">
+                                                    {multiForecast.map((m) => (
+                                                        <div key={m.h} className="rounded bg-[#08142a] px-1.5 py-1 text-center">
+                                                            <div className="text-[10px] text-slate-500">+{m.h}t</div>
+                                                            <div className="text-[11px] font-medium text-cyan-200">{m.value.toLocaleString()}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </Panel>
+
+                                        <Panel title="SLA & escalation">
+                                            {needsEscalation && (
+                                                <div className="mb-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-[11px] text-rose-200">
+                                                    <p>No responder above {escalationThreshold}% match for {suggestedPriority}. Escalate to manager.</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void handleEscalateManager()}
+                                                        className="mt-1.5 w-full rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-500"
+                                                    >
+                                                        Escalate to Ops Duty Manager
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className={`rounded-xl border px-3 py-2.5 text-[11px] ${isSlaOverdue ? "border-rose-500/45 bg-rose-500/10 text-rose-200" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}>
+                                                <div className="flex items-center gap-2.5" role="group" aria-label={`SLA ${orderPriority}: ${slaState.label}, ${Math.round(slaState.fraction * 100)}% of window elapsed`}>
+                                                    <svg viewBox="0 0 36 36" className="h-11 w-11 shrink-0" aria-hidden="true">
+                                                        <circle cx="18" cy="18" r="15.5" fill="none" stroke="#2a313b" strokeWidth="4" />
+                                                        <circle
+                                                            cx="18"
+                                                            cy="18"
+                                                            r="15.5"
+                                                            fill="none"
+                                                            stroke={slaState.color}
+                                                            strokeWidth="4"
+                                                            strokeLinecap="round"
+                                                            strokeDasharray={`${(slaState.fraction * 97.4).toFixed(1)} 97.4`}
+                                                            transform="rotate(-90 18 18)"
+                                                        />
+                                                        <text x="18" y="20.5" textAnchor="middle" fontSize="9" fill="#e7edf5" fontWeight="600">{Math.round(slaState.fraction * 100)}%</text>
+                                                    </svg>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="flex items-center justify-between gap-2">
+                                                            <span>SLA {orderPriority}</span>
+                                                            <span className="font-semibold" style={{ color: slaState.color }}>{slaState.label}</span>
+                                                        </p>
+                                                        <p className="mt-0.5 text-[10px] text-slate-400">
+                                                            {isSlaOverdue ? `Overdue by ${Math.max(0, (orderAgeMin ?? orderSlaMin) - orderSlaMin)} min` : `${slaRemainingMin} min remaining of ${orderSlaMin} min budget`}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {isSlaOverdue && canEscalateRegional && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void handleEscalateRegional()}
+                                                        className="mt-2 w-full rounded-lg bg-rose-700 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-600"
+                                                    >
+                                                        Escalate to Regional Reliability Lead
+                                                    </button>
+                                                )}
+                                                {escalationStage !== "none" && <p className="mt-1 text-[10px] text-amber-200">Escalation stage: {escalationStage.toUpperCase()}</p>}
+                                                <ul className="mt-2 space-y-1">
+                                                    {escalationTimeline.map((entry, i) => {
+                                                        const dot = entry.state === "done" ? "#5fa27b" : entry.state === "current" ? slaState.color : "#3a4657";
+                                                        return (
+                                                            <li key={entry.id} className="flex items-start gap-2">
+                                                                <div className="flex flex-col items-center">
+                                                                    <span className="mt-0.5 h-2.5 w-2.5 rounded-full border border-[#0a1830]" style={{ backgroundColor: dot }} />
+                                                                    {i < escalationTimeline.length - 1 && <span className="h-3 w-px bg-slate-600" />}
+                                                                </div>
+                                                                <div className="min-w-0 flex-1 leading-tight">
+                                                                    <p className={`truncate text-[11px] ${entry.state === "pending" ? "text-slate-500" : "text-slate-200"}`}>{entry.label}</p>
+                                                                    <p className="text-[9px] uppercase tracking-wide" style={{ color: entry.state === "pending" ? "#64748b" : dot }}>{entry.state} · {entry.note}</p>
+                                                                </div>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            </div>
+                                        </Panel>
+                                    </div>
+                                </div>
+
                                 {/* 3 — Work orders board + dispatch notes */}
                                 <div className="ops-section grid grid-cols-1 gap-4 lg:grid-cols-3">
                                     <div className="lg:col-span-2">
@@ -5027,6 +4815,203 @@ function App() {
                                         )}
                                     </Panel>
                                 </div>
+
+                                {/* 3.5 — Tools & advanced: relocated dispatch console controls (what-if, writeback, quality & roster) */}
+                                <section className="ops-section">
+                                    <Panel title="Tools & advanced">
+                                        <p className="mb-3 text-[11px] text-slate-400">Dispatch planning, ontology writeback, quality checks and the responder roster — collapsed by default; expand what you need.</p>
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                            {/* What-if planning — collapsible; feeds the scenario used by every raised work order */}
+                                            <details className="wow-disclosure">
+                                                <summary>What-if planning</summary>
+                                                <div className="wow-disclosure-body">
+                                                    <div className="rounded-xl border border-white/5 bg-[#0a1830]/60 p-3">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">Simulate intervention</p>
+                                                        <p className="mb-2 mt-0.5 text-[11px] text-slate-400">Model curtailment and a maintenance window against {selected.id}'s current output baseline. These values are attached to every work order you raise.</p>
+                                                        <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
+                                                            <label className="flex flex-col gap-1">
+                                                                Curtail %
+                                                                <input type="number" min={0} max={100} value={simCurtail} onChange={(e) => setSimCurtail(Number(e.target.value))} aria-label="Curtailment percent" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                            </label>
+                                                            <label className="flex flex-col gap-1">
+                                                                Downtime (t)
+                                                                <input type="number" min={0} max={simHorizon} value={simDowntime} onChange={(e) => setSimDowntime(Number(e.target.value))} aria-label="Maintenance downtime ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                            </label>
+                                                            <label className="flex flex-col gap-1">
+                                                                Horizon (t)
+                                                                <input type="number" min={1} max={96} value={simHorizon} onChange={(e) => setSimHorizon(Number(e.target.value))} aria-label="Scenario horizon ticks" className="rounded-lg border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                            </label>
+                                                        </div>
+                                                        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
+                                                            <div className="flex justify-between"><dt className="text-slate-400">Projected output</dt><dd>{scenario.projectedKw.toLocaleString()} kW</dd></div>
+                                                            <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
+                                                            <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
+                                                        </dl>
+                                                    </div>
+                                                </div>
+                                            </details>
+
+                                            {/* Expert controls — collapsed by default */}
+                                            <details className="wow-disclosure">
+                                                <summary>Advanced dispatch &amp; writeback</summary>
+                                                <div className="wow-disclosure-body space-y-2">
+                                                    <p className="text-[11px] text-slate-400">
+                                                        Current mode: <span className={canWriteback ? "text-emerald-300" : "text-amber-300"}>{canWriteback ? "Operator" : "Viewer"}</span>
+                                                        {canWriteback ? " — ontology writeback enabled." : " — writeback is read-only, but dispatch/escalation demo actions auto-switch to Operator."}
+                                                    </p>
+                                                    <div className="flex gap-2">
+                                                        <label className="flex-1 text-xs text-slate-400">
+                                                            Action
+                                                            <select
+                                                                value={wbAction}
+                                                                onChange={(e) => setWbAction(e.target.value)}
+                                                                disabled={!canWriteback}
+                                                                className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                                            >
+                                                                {["Acknowledge", "Inspect", "Throttle", "Boost", "Shutdown"].map((a) => (
+                                                                    <option key={a} value={a}>{a}</option>
+                                                                ))}
+                                                            </select>
+                                                        </label>
+                                                        <label className="flex-1 text-xs text-slate-400">
+                                                            Setpoint (kW)
+                                                            <input
+                                                                type="number"
+                                                                value={wbSetpoint}
+                                                                onChange={(e) => setWbSetpoint(e.target.value)}
+                                                                disabled={!canWriteback}
+                                                                placeholder={String(selected.powerKw)}
+                                                                className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                    <input
+                                                        value={wbNote}
+                                                        onChange={(e) => setWbNote(e.target.value)}
+                                                        disabled={!canWriteback}
+                                                        placeholder="Optional note…"
+                                                        className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleWriteback}
+                                                        disabled={!canWriteback}
+                                                        className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    >
+                                                        {canWriteback ? `Write ${wbAction} to ontology` : "Viewer mode — writeback disabled"}
+                                                    </button>
+                                                    {writebackMessage && <p className="text-xs text-emerald-300">{writebackMessage}</p>}
+                                                </div>
+                                            </details>
+
+                                            <details className="wow-disclosure">
+                                                <summary>Dispatch quality &amp; evidence</summary>
+                                                <div className="wow-disclosure-body space-y-2 text-[10px]">
+                                                    <div>
+                                                        <p className="text-[#b8c1cc]">Dispatch quality score: <span className="font-semibold text-slate-100">{dispatchQuality.score}%</span></p>
+                                                        <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-slate-400">
+                                                            {dispatchQuality.checks.map((check) => (
+                                                                <span key={check.label} className={check.ok ? "text-emerald-300" : "text-amber-300"}>
+                                                                    {check.ok ? "OK" : "WARN"} {check.label}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRunDispatchQualityCheck}
+                                                            className="mt-1.5 w-full rounded border border-[#b8c1cc]/60 bg-[#233040] px-2 py-1 text-[11px] font-medium text-[#e7edf5] hover:bg-[#2f3c4d]"
+                                                        >
+                                                            Run Dispatch Quality Check
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-1.5">
+                                                        {matchingEvidence.map((ev) => {
+                                                            const active = selectedEvidence?.id === ev.id;
+                                                            return (
+                                                                <button
+                                                                    key={ev.id}
+                                                                    type="button"
+                                                                    onClick={() => setSelectedEvidenceId(ev.id)}
+                                                                    className={`rounded border p-1 text-left ${active ? "border-cyan-500" : "border-slate-700 hover:border-slate-500"}`}
+                                                                >
+                                                                    <img src={ev.image} alt={ev.label} className="h-14 w-full rounded object-cover" />
+                                                                    <p className="mt-0.5 truncate text-[10px] text-slate-300" title={ev.label}>{ev.label}</p>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {selectedEvidence && <p className="text-[10px] text-slate-500">Selected evidence: {selectedEvidence.label}</p>}
+                                                </div>
+                                            </details>
+
+                                            <details className="wow-disclosure">
+                                                <summary>Responder roster &amp; filters</summary>
+                                                <div className="wow-disclosure-body space-y-1.5">
+                                                    <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                                                        <label className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-1.5 py-1 text-slate-300">
+                                                            Shift
+                                                            <select
+                                                                value={responderShiftFilter}
+                                                                onChange={(e) => setResponderShiftFilter(e.target.value as "all" | "day" | "swing" | "night")}
+                                                                className="mt-0.5 w-full bg-transparent text-slate-100 outline-none"
+                                                            >
+                                                                <option value="all">All</option>
+                                                                <option value="day">Day</option>
+                                                                <option value="swing">Swing</option>
+                                                                <option value="night">Night</option>
+                                                            </select>
+                                                        </label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setOnCallOnly((v) => !v)}
+                                                            className={`rounded border px-1.5 py-1 text-left ${onCallOnly ? "border-[#b8c1cc]/60 bg-[#232a31] text-[#e7edf5]" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}
+                                                        >
+                                                            On-call only: {onCallOnly ? "ON" : "OFF"}
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-1 rounded border border-[#2a313b]/70 bg-[#101925] px-2 py-1 text-[10px]" aria-label="Responder availability board">
+                                                        <span className="font-semibold uppercase tracking-wide text-cyan-300/90">Roster</span>
+                                                        <span className="text-slate-300">{responderAvailability.total} in scope</span>
+                                                        <span className="text-emerald-300">· {responderAvailability.onCall} on-call</span>
+                                                        <span className="text-sky-300">· {responderAvailability.free} free</span>
+                                                        <span className="ml-auto text-slate-400">D{responderAvailability.byShift.day} · S{responderAvailability.byShift.swing} · N{responderAvailability.byShift.night}</span>
+                                                    </div>
+                                                    <ul className="space-y-1.5">
+                                                        {suggestedResponders.map((person) => (
+                                                            <li key={person.id} className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <img src={person.photo} alt={`${person.name} portrait`} className="h-8 w-8 rounded-md border border-[#3a4657] object-cover" />
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="truncate text-xs font-medium text-slate-100">{person.name}</p>
+                                                                        <p className="truncate text-[11px] text-slate-400">{person.role}</p>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <p className="text-[11px] font-semibold text-[#e7edf5]">{Math.round(person.score)}%</p>
+                                                                        <p className="text-[10px] text-slate-500">match</p>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="mt-1 text-[10px] text-slate-400">{person.reason}</p>
+                                                                <p className="mt-0.5 text-[10px] text-slate-500">Shift {person.shift} · On-call {person.onCall ? "yes" : "no"} · Active {person.currentLoad}</p>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => void handleDispatchResponder(person)}
+                                                                    className="mt-1.5 w-full rounded bg-[#6f7f93] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#8190a3]"
+                                                                >
+                                                                    {`Dispatch ${person.name.split(" ")[0]}`}
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                        {suggestedResponders.length === 0 && (
+                                                            <li className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5 text-[11px] text-slate-400">
+                                                                No responders available for selected filter.
+                                                            </li>
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    </Panel>
+                                </section>
 
                                 {/* 4 — Signal thresholds (governance) */}
                                 <section className="ops-section">
