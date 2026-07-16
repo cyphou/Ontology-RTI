@@ -2894,8 +2894,8 @@ function App() {
     const [deviceSaveBusy, setDeviceSaveBusy] = useState(false);
     const [deviceSaveMessage, setDeviceSaveMessage] = useState<string | null>(null);
 
-    const [live, setLive] = useState(true);
-    const [refreshMs, setRefreshMs] = useState(2500);
+    const live = true;
+    const refreshMs = 2500;
     const [siteFilter, setSiteFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
     const [search, setSearch] = useState("");
@@ -4520,22 +4520,6 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                             </>
                         )}
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setLive((v) => !v)}
-                        className={`rounded px-2.5 py-1.5 font-medium text-white ${live ? "bg-[#5f915f]" : "bg-[#4a525e]"}`}
-                    >
-                        {live ? "⏸ Pause" : "▶ Resume"}
-                    </button>
-                    <select
-                        value={refreshMs}
-                        onChange={(e) => setRefreshMs(Number(e.target.value))}
-                        className="rounded border border-[#2a313b] bg-[#1a1f26] px-2 py-1.5"
-                    >
-                        <option value={1000}>1s</option>
-                        <option value={2500}>2.5s</option>
-                        <option value={5000}>5s</option>
-                    </select>
                     <div className="hidden text-right sm:block">
                         <div className="text-slate-400">pde_windturbine</div>
                         <div>{new Date().toLocaleTimeString()}</div>
