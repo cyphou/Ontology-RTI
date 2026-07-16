@@ -2849,6 +2849,7 @@ function App() {
         setAutoPlayRunning(true);
         setDemoIntroOpen(false);
         setDemoPanelOpen(true);
+        const dwellMs = 20000;
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
         const logStep = (step: string, detail: string) =>
             setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
@@ -2859,33 +2860,37 @@ function App() {
             setDemoRunLog([{ step: "story", at: new Date().toISOString(), detail: "Framed the incident" }]);
             setView("map");
             handlePrimeDemoStory();
-            await delay(1800);
+            // Priming opens the technician card; keep it closed so the guided
+            // view-to-view journey (map → twin → graph) stays fully visible.
+            setTechPopupOpen(false);
+            await delay(dwellMs);
             // 2 — Locate the affected turbine on the map.
             setDemoScriptStep("locate");
             setDemoStepIndex(1);
             setView("map");
+            setTechPopupOpen(false);
             setWoMessage(`Fleet map focused on ${selected.id} (${selected.siteName}).`);
             logStep("locate", `Focused fleet map on ${selected.id}`);
-            await delay(1800);
+            await delay(dwellMs);
             // 3 — Inspect the digital twin.
             setDemoScriptStep("twin");
             setDemoStepIndex(2);
             setView("twin");
             logStep("twin", "Inspected the digital twin");
-            await delay(1800);
+            await delay(dwellMs);
             // 4 — Analyze the ontology graph.
             setDemoScriptStep("graph");
             setDemoStepIndex(3);
             setView("graph");
             logStep("graph", "Analyzed the ontology graph");
-            await delay(1800);
+            await delay(dwellMs);
             // 5 — Take action: guided dispatch.
             setDemoScriptStep("dispatch");
             setDemoStepIndex(4);
             setView("operations");
             await handleAutoHealNow();
             logStep("dispatch", "Ran guided dispatch");
-            await delay(1800);
+            await delay(dwellMs);
             // 6 — Call field support and close the loop.
             setDemoScriptStep("support");
             setDemoStepIndex(5);
@@ -2895,7 +2900,7 @@ function App() {
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
         } finally {
-            await delay(1800);
+            await delay(1500);
             setAutoPlayRunning(false);
             setDemoScriptStep("idle");
         }
