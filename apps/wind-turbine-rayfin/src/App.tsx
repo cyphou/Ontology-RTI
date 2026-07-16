@@ -190,22 +190,6 @@ type AskHistoryEntry = {
 const ASK_CACHE_TTL_MS = 30_000;
 const ASK_HISTORY_MAX = 8;
 
-type TurbineRenderRefs = {
-    blades: THREE.Group;
-    nacelleMat: THREE.MeshStandardMaterial;
-    ringMat: THREE.MeshBasicMaterial;
-    ring: THREE.Mesh;
-    spin: number;
-};
-
-type SiteRenderRefs = {
-    marker: THREE.Mesh;
-    markerMat: THREE.MeshStandardMaterial;
-    glow: THREE.Mesh;
-    glowMat: THREE.MeshBasicMaterial;
-    baseY: number;
-};
-
 export const STATUS_COLORS: Record<TurbineStatus, string> = {
     healthy: "#58d68d",
     warning: "#ffd166",
