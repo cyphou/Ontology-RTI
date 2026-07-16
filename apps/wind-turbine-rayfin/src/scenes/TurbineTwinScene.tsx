@@ -4,6 +4,15 @@ import { STATUS_COLORS, TWIN_COMPONENT_DEVICES, TWIN_PARTS, createBladeGeometry,
 
 export type TwinPartKey = "rotor" | "nacelle" | "drivetrain" | "base";
 
+// Per-part zoom targets, shared by the in-scene click focus and the parent-driven
+// `focusPart` prop so a scripted focus reproduces a real user click exactly.
+const PART_FOCUS_ZOOM: Record<TwinPartKey, number> = {
+    rotor: 0.62,
+    nacelle: 0.68,
+    drivetrain: 0.74,
+    base: 0.84,
+};
+
 type TurbineStatus = "healthy" | "warning" | "alarm";
 
 type TurbineTelemetry = {
@@ -17,12 +26,14 @@ type TurbineTelemetry = {
 export default function TurbineTwinScene({
     turbine,
     paused,
+    focusPart = null,
     onPartFocusChange,
     onDeviceFocusChange,
     deviceGraph,
 }: {
     turbine: TurbineTelemetry;
     paused: boolean;
+    focusPart?: TwinPartKey | null;
     onPartFocusChange?: (part: TwinPartKey | null) => void;
     onDeviceFocusChange?: (device: TwinDeviceKey | null) => void;
     deviceGraph?: Record<TwinPartKey, TwinDeviceNode[]>;
@@ -50,6 +61,26 @@ export default function TurbineTwinScene({
         // every live-telemetry tick (the turbine object is rebuilt each refresh). This
         // keeps a clicked component selected across refreshes so the graph stays reachable.
     }, [onDeviceFocusChange, onPartFocusChange, turbine.id]);
+
+    // Controlled focus: when the parent drives `focusPart` (e.g. the guided demo
+    // focusing the rotor), reproduce a user click on that part — set the focused part
+    // and its zoom, then notify the parent. A null value releases the focus. The
+    // callbacks here are stable state setters, so this effect only fires on a genuine
+    // `focusPart` change and never clobbers manual in-scene clicks.
+    useEffect(() => {
+        if (focusPart) {
+            focusedPartRef.current = focusPart;
+            focusedDeviceRef.current = null;
+            zoomRef.current = PART_FOCUS_ZOOM[focusPart];
+            onPartFocusChange?.(focusPart);
+            onDeviceFocusChange?.(null);
+        } else {
+            focusedPartRef.current = null;
+            focusedDeviceRef.current = null;
+            onPartFocusChange?.(null);
+            onDeviceFocusChange?.(null);
+        }
+    }, [focusPart, onDeviceFocusChange, onPartFocusChange]);
 
     useEffect(() => {
         const host = hostRef.current;
@@ -258,10 +289,10 @@ export default function TurbineTwinScene({
         group.add(ring);
 
         const partFocus = {
-            rotor: { lookAt: new THREE.Vector3(1.7, HUB + 0.65, 0), offset: new THREE.Vector3(6.5, 1.8, 4.8), zoom: 0.62 },
-            nacelle: { lookAt: new THREE.Vector3(-0.4, HUB + 0.8, 0), offset: new THREE.Vector3(5.2, 2.0, 5.8), zoom: 0.68 },
-            drivetrain: { lookAt: new THREE.Vector3(0.0, HUB * 0.58, 0), offset: new THREE.Vector3(6.2, 1.6, 6.8), zoom: 0.74 },
-            base: { lookAt: new THREE.Vector3(0, 0.45, 0), offset: new THREE.Vector3(7.5, 2.4, 8.0), zoom: 0.84 },
+            rotor: { lookAt: new THREE.Vector3(1.7, HUB + 0.65, 0), offset: new THREE.Vector3(6.5, 1.8, 4.8), zoom: PART_FOCUS_ZOOM.rotor },
+            nacelle: { lookAt: new THREE.Vector3(-0.4, HUB + 0.8, 0), offset: new THREE.Vector3(5.2, 2.0, 5.8), zoom: PART_FOCUS_ZOOM.nacelle },
+            drivetrain: { lookAt: new THREE.Vector3(0.0, HUB * 0.58, 0), offset: new THREE.Vector3(6.2, 1.6, 6.8), zoom: PART_FOCUS_ZOOM.drivetrain },
+            base: { lookAt: new THREE.Vector3(0, 0.45, 0), offset: new THREE.Vector3(7.5, 2.4, 8.0), zoom: PART_FOCUS_ZOOM.base },
         } satisfies Record<TwinPartKey, { lookAt: THREE.Vector3; offset: THREE.Vector3; zoom: number }>;
 
         const deviceRoot = new THREE.Group();

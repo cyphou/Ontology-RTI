@@ -2097,6 +2097,8 @@ function App() {
     const [detailOpen, setDetailOpen] = useState(false);
     const [focusedTwinPart, setFocusedTwinPart] = useState<TwinPartKey | null>(null);
     const [focusedTwinDevice, setFocusedTwinDevice] = useState<TwinDeviceKey | null>(null);
+    // Parent-driven twin focus used by the guided demo to visibly click/zoom a part.
+    const [demoFocusPart, setDemoFocusPart] = useState<TwinPartKey | null>(null);
     const [twinDeviceGraph, setTwinDeviceGraph] = useState<Record<TwinPartKey, TwinDeviceNode[]>>(TWIN_COMPONENT_DEVICES);
     const [twinDeviceRows, setTwinDeviceRows] = useState<TurbineDeviceRecord[]>([]);
     const [deviceDraft, setDeviceDraft] = useState<TwinDeviceDraft | null>(null);
@@ -2844,6 +2846,24 @@ function App() {
 
     const runAskRef = useRef<(override?: string) => Promise<void>>(async () => {});
 
+    // Visibly "click" a few graph nodes during the graph step: highlight the current
+    // turbine, then two peers (same site when possible, else other turbines), then
+    // restore the original selection so downstream steps act on the right turbine.
+    const cycleGraphSelection = useCallback(async (dwellMs: number) => {
+        const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+        const originalId = selected.id;
+        const others = turbines.filter((t) => t.id !== originalId);
+        const sameSite = others.filter((t) => t.siteId === selected.siteId);
+        const peers = (sameSite.length >= 2 ? sameSite : others).slice(0, 2);
+        const cycleIds = [originalId, ...peers.map((t) => t.id), originalId];
+        const stepMs = Math.max(1200, Math.floor(dwellMs / cycleIds.length));
+        for (const id of cycleIds) {
+            setSelectedId(id);
+            await delay(stepMs);
+        }
+        setSelectedId(originalId);
+    }, [selected.id, selected.siteId, turbines]);
+
     const handleAutoRunDemo = useCallback(async () => {
         if (autoPlayRunning) {
             return;
@@ -2890,13 +2910,19 @@ function App() {
             setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
             setView("graph");
             logStep("graph", `Analyzed the ontology graph (filter: ${selected.status})`);
-            await delay(dwellMs);
+            // Visibly click across a few graph nodes, then restore the incident turbine.
+            await cycleGraphSelection(dwellMs);
             // 5 — Take action: open the dispatch popup, then raise the work order.
             setDemoScriptStep("dispatch");
             setDemoStepIndex(4);
             setView("operations");
             setTechPopupOpen(true);
-            await handleAutoHealNow();
+            const dispatched = await handleAutoHealNow();
+            if (!dispatched) {
+                // No responder available — still raise a tracked order via the same path
+                // the "Raise work order" button uses so an order lands in maintenanceOrders.
+                await handleRaiseWorkOrder();
+            }
             logStep("dispatch", "Ran guided dispatch");
             await delay(dwellMs);
             // 6 — Call field support, close the loop, and reset filters.
@@ -2925,7 +2951,7 @@ function App() {
             setAutoPlayRunning(false);
             setDemoScriptStep("idle");
         }
-    }, [autoPlayRunning, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, selected.id, selected.siteId, selected.siteName, selected.status]);
+    }, [autoPlayRunning, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, handleRaiseWorkOrder, selected.id, selected.siteId, selected.siteName, selected.status]);
 
     const handleRunDispatchQualityCheck = useCallback(() => {
         const missing = dispatchQuality.checks.filter((c) => !c.ok).map((c) => c.label);
@@ -2972,10 +2998,12 @@ function App() {
             id: "graph",
             label: "4. Ontology graph",
             detail: "Filter the ontology graph to the turbine's severity.",
-            action: () => {
+            action: async () => {
                 setDemoScriptStep("graph");
                 setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
                 setView("graph");
+                // Visibly click across a few graph nodes, then restore the incident turbine.
+                await cycleGraphSelection(8000);
             },
         },
         {
@@ -2987,7 +3015,10 @@ function App() {
                 setView("operations");
                 setTechPopupOpen(true);
                 if (!demoScriptLead) {
-                    await handleAutoHealNow();
+                    const ok = await handleAutoHealNow();
+                    if (!ok) {
+                        await handleRaiseWorkOrder();
+                    }
                     return;
                 }
                 await handleDispatchResponder(demoScriptLead);
@@ -3017,12 +3048,19 @@ function App() {
                 await runAskRef.current(prompt);
             },
         },
-    ], [demoScriptLead, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, selected.siteName]);
+    ], [demoScriptLead, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, handleRaiseWorkOrder, selected.siteName]);
 
     const handleStartDemoFromIntro = useCallback(() => {
         setDemoIntroOpen(false);
         void handleAutoRunDemo();
     }, [handleAutoRunDemo]);
+
+    // Drive the twin's controlled focus from the guided demo: focus the rotor while on
+    // the twin step + view, release it otherwise. Works for both the auto-run and the
+    // manual step-by-step flow since both set `view` and `demoScriptStep`.
+    useEffect(() => {
+        setDemoFocusPart(view === "twin" && demoScriptStep === "twin" ? "rotor" : null);
+    }, [view, demoScriptStep]);
 
     const runAsk = useCallback(async (override?: string) => {
         setAskLoading(true);
@@ -4033,7 +4071,7 @@ function App() {
                                     <div className="relative h-[480px] overflow-hidden rounded-xl border border-slate-700/60 bg-[#051020]">
                                         <SceneErrorBoundary label="Digital twin">
                                             <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
-                                                <LazyTurbineTwinScene turbine={selected} paused={!live} onPartFocusChange={setFocusedTwinPart} onDeviceFocusChange={setFocusedTwinDevice} deviceGraph={twinDeviceGraph} />
+                                                <LazyTurbineTwinScene turbine={selected} paused={!live} focusPart={demoFocusPart} onPartFocusChange={setFocusedTwinPart} onDeviceFocusChange={setFocusedTwinDevice} deviceGraph={twinDeviceGraph} />
                                             </Suspense>
                                         </SceneErrorBoundary>
                                         <div className="absolute left-3 top-3 rounded-lg border border-slate-700/60 bg-[#06101fcc] px-3 py-2 backdrop-blur">
@@ -4969,6 +5007,21 @@ function App() {
                                                 </ul>
                                             )}
                                             {askResult.queryText && <p className="mt-2 text-xs text-slate-400">Trace: {askResult.queryText}</p>}
+                                        </div>
+                                    )}
+                                    {(runHistory.length > 0 || demoRunLog.length > 0) && (
+                                        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 transition-all duration-200 hover:border-cyan-400/60">
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-medium text-cyan-200">Fabric IQ · suggested next step</p>
+                                                <p className="truncate text-xs text-slate-400">Compile this guided mission into an exportable report.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleDownloadMissionReport}
+                                                className="shrink-0 rounded bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
+                                            >
+                                                Open mission report
+                                            </button>
                                         </div>
                                     )}
                                     {askHistory.length > 0 && (
