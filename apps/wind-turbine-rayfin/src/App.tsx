@@ -4742,14 +4742,14 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                         <button
                                             type="button"
                                             onClick={() => { const i = turbines.findIndex((t) => t.id === selectedId); setSelectedId(turbines[(i - 1 + turbines.length) % turbines.length].id); }}
-                                            className="rounded bg-slate-700 px-2 py-1 text-xs text-white"
+                                            className="rounded bg-slate-700/80 px-2 py-1 text-xs text-white hover:bg-slate-600"
                                         >
                                             ‹ Prev
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => { const i = turbines.findIndex((t) => t.id === selectedId); setSelectedId(turbines[(i + 1) % turbines.length].id); }}
-                                            className="rounded bg-slate-700 px-2 py-1 text-xs text-white"
+                                            className="rounded bg-slate-700/80 px-2 py-1 text-xs text-white hover:bg-slate-600"
                                         >
                                             Next ›
                                         </button>
@@ -4869,43 +4869,50 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                                         <input value={deviceDraft.property} onChange={(e) => handleTwinDraftChange({ property: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
                                                     </label>
                                                 </div>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    <label className="space-y-1">
-                                                        <span className="text-slate-400">Unit</span>
-                                                        <input value={deviceDraft.unit} onChange={(e) => handleTwinDraftChange({ unit: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                    </label>
-                                                    <label className="space-y-1">
-                                                        <span className="text-slate-400">Zoom</span>
-                                                        <input value={deviceDraft.zoom} onChange={(e) => handleTwinDraftChange({ zoom: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                    </label>
-                                                    <label className="space-y-1">
-                                                        <span className="text-slate-400">Sort</span>
-                                                        <input value={deviceDraft.sortOrder} onChange={(e) => handleTwinDraftChange({ sortOrder: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                    </label>
-                                                </div>
-                                                <label className="space-y-1">
-                                                    <span className="text-slate-400">Anchor (x,y,z)</span>
-                                                    <input value={deviceDraft.anchor} onChange={(e) => handleTwinDraftChange({ anchor: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
-                                                <label className="space-y-1">
-                                                    <span className="text-slate-400">LookAt (x,y,z)</span>
-                                                    <input value={deviceDraft.lookAt} onChange={(e) => handleTwinDraftChange({ lookAt: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
-                                                <label className="space-y-1">
-                                                    <span className="text-slate-400">Offset (x,y,z)</span>
-                                                    <input value={deviceDraft.offset} onChange={(e) => handleTwinDraftChange({ offset: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
-                                                <label className="space-y-1">
-                                                    <span className="text-slate-400">Note</span>
-                                                    <textarea value={deviceDraft.note} onChange={(e) => handleTwinDraftChange({ note: e.target.value })} rows={2} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
-                                                </label>
-                                                <div className="flex flex-wrap gap-2 pt-1">
-                                                    <button type="button" onClick={() => void handleTwinDraftSave()} disabled={deviceSaveBusy || !deviceDraftDirty} className="rounded bg-cyan-600 px-2 py-1 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">Save</button>
-                                                    <button type="button" onClick={handleTwinDraftReset} disabled={deviceSaveBusy || !deviceDraftDirty} className="rounded bg-slate-700 px-2 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50">Reset</button>
-                                                    <button type="button" onClick={() => void handleTwinAddSibling()} disabled={deviceSaveBusy} className="rounded bg-emerald-600 px-2 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50">Add sibling</button>
-                                                    <button type="button" onClick={() => void handleTwinDeleteDevice()} disabled={deviceSaveBusy} className="rounded bg-red-700 px-2 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50">Delete</button>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button type="button" onClick={() => void handleTwinDraftSave()} disabled={deviceSaveBusy || !deviceDraftDirty} className="rounded bg-cyan-600 px-3 py-1 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+                                                    <button type="button" onClick={handleTwinDraftReset} disabled={deviceSaveBusy || !deviceDraftDirty} className="rounded bg-slate-700 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50">Reset</button>
                                                 </div>
                                                 {deviceSaveMessage && <p className="text-[11px] text-cyan-200">{deviceSaveMessage}</p>}
+                                                <details className="wow-disclosure">
+                                                    <summary>Advanced metadata</summary>
+                                                    <div className="wow-disclosure-body space-y-2">
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <label className="space-y-1">
+                                                                <span className="text-slate-400">Unit</span>
+                                                                <input value={deviceDraft.unit} onChange={(e) => handleTwinDraftChange({ unit: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                            </label>
+                                                            <label className="space-y-1">
+                                                                <span className="text-slate-400">Zoom</span>
+                                                                <input value={deviceDraft.zoom} onChange={(e) => handleTwinDraftChange({ zoom: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                            </label>
+                                                            <label className="space-y-1">
+                                                                <span className="text-slate-400">Sort</span>
+                                                                <input value={deviceDraft.sortOrder} onChange={(e) => handleTwinDraftChange({ sortOrder: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                            </label>
+                                                        </div>
+                                                        <label className="space-y-1">
+                                                            <span className="text-slate-400">Anchor (x,y,z)</span>
+                                                            <input value={deviceDraft.anchor} onChange={(e) => handleTwinDraftChange({ anchor: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                        <label className="space-y-1">
+                                                            <span className="text-slate-400">LookAt (x,y,z)</span>
+                                                            <input value={deviceDraft.lookAt} onChange={(e) => handleTwinDraftChange({ lookAt: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                        <label className="space-y-1">
+                                                            <span className="text-slate-400">Offset (x,y,z)</span>
+                                                            <input value={deviceDraft.offset} onChange={(e) => handleTwinDraftChange({ offset: e.target.value })} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                        <label className="space-y-1">
+                                                            <span className="text-slate-400">Note</span>
+                                                            <textarea value={deviceDraft.note} onChange={(e) => handleTwinDraftChange({ note: e.target.value })} rows={2} className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100" />
+                                                        </label>
+                                                        <div className="flex flex-wrap gap-2 pt-1">
+                                                            <button type="button" onClick={() => void handleTwinAddSibling()} disabled={deviceSaveBusy} className="rounded bg-slate-700 px-2 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50">Add sibling</button>
+                                                            <button type="button" onClick={() => void handleTwinDeleteDevice()} disabled={deviceSaveBusy} className="rounded bg-red-700 px-2 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50">Delete</button>
+                                                        </div>
+                                                    </div>
+                                                </details>
                                             </div>
                                         )}
                                     </Panel>
@@ -4990,7 +4997,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                                         <span>Power {t.powerKw.toLocaleString()} kW</span>
                                                     </div>
                                                     <div className="mt-2 flex gap-2">
-                                                        <button type="button" onClick={() => { setSelectedId(t.id); setView("twin"); }} className="rounded bg-slate-700 px-2 py-1 text-xs text-white">Inspect</button>
+                                                        <button type="button" onClick={() => { setSelectedId(t.id); setView("twin"); }} className="rounded bg-slate-700/80 px-2 py-1 text-xs text-white hover:bg-slate-600">Inspect</button>
                                                         {ackLog[t.id] ? (
                                                             <span className="rounded bg-emerald-900/60 px-2 py-1 text-xs text-emerald-300">✓ Ack {new Date(ackLog[t.id].at).toLocaleTimeString()} · {ackLog[t.id].by}</span>
                                                         ) : (
@@ -5044,7 +5051,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                             <button key={s} type="button" onClick={() => setGraphFilter(s)} className={`px-2 py-1 capitalize ${graphFilter === s ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>{s}</button>
                                         ))}
                                     </div>
-                                    <button type="button" onClick={() => setGraphNonce((n) => n + 1)} className="rounded bg-slate-700 px-2 py-1 text-white">Reset view</button>
+                                    <button type="button" onClick={() => setGraphNonce((n) => n + 1)} className="rounded bg-slate-700/80 px-2 py-1 text-white hover:bg-slate-600">Reset view</button>
                                 </div>
                             </div>
                             <div className="relative h-[calc(100%-2rem)] rounded-xl border border-slate-700/60 bg-[#051020]">
@@ -5180,8 +5187,24 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                         <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
                                     </div>
                                     <div className="mt-2 rounded border border-cyan-900/60 bg-[#06182f] px-2 py-2 text-xs">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-slate-400">Forecast (+{forecastHorizon} ticks)</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400">Forecast</span>
+                                            <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
+                                                {[3, 5, 10].map((h) => (
+                                                    <button
+                                                        key={h}
+                                                        type="button"
+                                                        onClick={() => setForecastHorizon(h)}
+                                                        aria-label={`Forecast horizon ${h} ticks`}
+                                                        className={`px-2 py-0.5 ${forecastHorizon === h ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}
+                                                    >
+                                                        +{h}t
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="mt-1 flex items-center justify-between">
+                                            <span className="text-slate-500">+{forecastHorizon} ticks projected</span>
                                             <span className="font-semibold text-cyan-200">{forecast.toLocaleString()} kW</span>
                                         </div>
                                         <div className="mt-0.5 flex items-center justify-between text-[11px] text-slate-400">
@@ -5204,63 +5227,6 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                             Current mode: <span className={canWriteback ? "text-emerald-300" : "text-amber-300"}>{canWriteback ? "Operator" : "Viewer"}</span>
                                             {canWriteback ? " — ontology writeback enabled." : " — writeback is read-only, but dispatch/escalation demo actions auto-switch to Operator."}
                                         </p>
-                                        <div className="flex gap-2">
-                                            <label className="flex-1 text-xs text-slate-400">
-                                                Action
-                                                <select
-                                                    value={wbAction}
-                                                    onChange={(e) => setWbAction(e.target.value)}
-                                                    disabled={!canWriteback}
-                                                    className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
-                                                >
-                                                    {["Acknowledge", "Inspect", "Throttle", "Boost", "Shutdown"].map((a) => (
-                                                        <option key={a} value={a}>{a}</option>
-                                                    ))}
-                                                </select>
-                                            </label>
-                                            <label className="flex-1 text-xs text-slate-400">
-                                                Setpoint (kW)
-                                                <input
-                                                    type="number"
-                                                    value={wbSetpoint}
-                                                    onChange={(e) => setWbSetpoint(e.target.value)}
-                                                    disabled={!canWriteback}
-                                                    placeholder={String(selected.powerKw)}
-                                                    className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
-                                                />
-                                            </label>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                                            <span>Forecast horizon</span>
-                                            <select
-                                                value={forecastHorizon}
-                                                onChange={(e) => setForecastHorizon(Number(e.target.value))}
-                                                aria-label="Forecast horizon"
-                                                className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100"
-                                            >
-                                                <option value={3}>3 ticks</option>
-                                                <option value={5}>5 ticks</option>
-                                                <option value={10}>10 ticks</option>
-                                            </select>
-                                            <span className="ml-2 text-slate-500">History</span>
-                                            <select
-                                                value={historyWindow}
-                                                onChange={(e) => setHistoryWindow(e.target.value as HistoryWindow)}
-                                                aria-label="History window"
-                                                className="rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-100"
-                                            >
-                                                {HISTORY_WINDOWS.map((window) => (
-                                                    <option key={window} value={window}>{window}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <input
-                                            value={wbNote}
-                                            onChange={(e) => setWbNote(e.target.value)}
-                                            disabled={!canWriteback}
-                                            placeholder="Optional note…"
-                                            className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
-                                        />
                                         <button
                                             type="button"
                                             onClick={handleWriteback}
@@ -5270,6 +5236,44 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                             {canWriteback ? `Write ${wbAction} to ontology` : "Viewer mode — writeback disabled"}
                                         </button>
                                         {writebackMessage && <p className="text-xs text-emerald-300">{writebackMessage}</p>}
+                                        <details className="wow-disclosure">
+                                            <summary>Advanced dispatch</summary>
+                                            <div className="wow-disclosure-body space-y-2">
+                                                <div className="flex gap-2">
+                                                    <label className="flex-1 text-xs text-slate-400">
+                                                        Action
+                                                        <select
+                                                            value={wbAction}
+                                                            onChange={(e) => setWbAction(e.target.value)}
+                                                            disabled={!canWriteback}
+                                                            className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                                        >
+                                                            {["Acknowledge", "Inspect", "Throttle", "Boost", "Shutdown"].map((a) => (
+                                                                <option key={a} value={a}>{a}</option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+                                                    <label className="flex-1 text-xs text-slate-400">
+                                                        Setpoint (kW)
+                                                        <input
+                                                            type="number"
+                                                            value={wbSetpoint}
+                                                            onChange={(e) => setWbSetpoint(e.target.value)}
+                                                            disabled={!canWriteback}
+                                                            placeholder={String(selected.powerKw)}
+                                                            className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                                        />
+                                                    </label>
+                                                </div>
+                                                <input
+                                                    value={wbNote}
+                                                    onChange={(e) => setWbNote(e.target.value)}
+                                                    disabled={!canWriteback}
+                                                    placeholder="Optional note…"
+                                                    className="w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100"
+                                                />
+                                            </div>
+                                        </details>
                                     </div>
                                 </Panel>
 
@@ -5302,30 +5306,103 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                         <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Suspected</span><div className="text-slate-100">{suggestedComponent}</div></div>
                                         <div className="rounded bg-[#0a1830] px-2 py-1.5"><span className="text-slate-400">Priority</span><div className={suggestedPriority === "P1" ? "text-red-300" : suggestedPriority === "P2" ? "text-amber-300" : "text-emerald-300"}>{suggestedPriority}{selectedForecast.etaToAlarmTicks != null ? ` · ETA ~${selectedForecast.etaToAlarmTicks}t` : ""}</div></div>
                                     </div>
-                                    <div className="mt-2 rounded border border-[#2a313b]/70 bg-[#101925] p-2">
-                                        <p className="text-[10px] uppercase tracking-wide text-[#b8c1cc]">WorkIQ mock · remediation roster</p>
-                                        <p className="mt-1 text-[10px] text-slate-400">
-                                            Primary: <span className="text-slate-200">{primaryResponder ? `${primaryResponder.name} (${Math.round(primaryResponder.score)}%)` : "none"}</span>
-                                            {nextResponders.length > 0 && (
-                                                <span> · Next: <span className="text-slate-300">{nextResponders.map((r) => `${r.name.split(" ")[0]} ${Math.round(r.score)}%`).join(" • ")}</span></span>
-                                            )}
+                                    <div className="mt-2 flex items-center justify-between gap-2">
+                                        <p className="text-[10px] uppercase tracking-wide text-[#b8c1cc]">WorkIQ · remediation roster</p>
+                                        <p className="truncate text-[10px] text-slate-400">
+                                            Primary <span className="text-slate-200">{primaryResponder ? `${primaryResponder.name.split(" ")[0]} ${Math.round(primaryResponder.score)}%` : "none"}</span>
+                                            {nextResponders.length > 0 && <span className="text-slate-500"> · next {nextResponders.map((r) => `${r.name.split(" ")[0]} ${Math.round(r.score)}%`).join(" • ")}</span>}
                                         </p>
-                                        <div className="mt-2 rounded border border-cyan-800/50 bg-[#0a1c2f] p-2">
-                                            <p className="text-[10px] uppercase tracking-wide text-cyan-300">Incident storytelling card</p>
-                                            {primaryResponder ? (
-                                                <div className="mt-1 flex items-start gap-2">
-                                                    <img src={primaryResponder.photo} alt={`${primaryResponder.name} portrait`} className="h-12 w-12 rounded-md border border-[#3a4657] object-cover" />
-                                                    <div className="min-w-0 flex-1 text-[11px]">
-                                                        <p className="font-semibold text-slate-100">{primaryResponder.name}</p>
-                                                        <p className="text-slate-400">{primaryResponder.role} · ETA {primaryResponder.etaMin} min · shift {primaryResponder.shift}</p>
-                                                        <p className="mt-0.5 text-slate-300">{incidentStory}</p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <p className="mt-1 text-[11px] text-slate-400">No primary responder selected.</p>
-                                            )}
+                                    </div>
 
-                                            <div className="mt-2 rounded border border-[#2a313b]/70 bg-[#101925] px-2 py-1.5 text-[10px]">
+                                    <div className="mt-2 rounded border border-cyan-800/50 bg-[#0a1c2f] p-2">
+                                        <p className="text-[10px] uppercase tracking-wide text-cyan-300">Incident storytelling card</p>
+                                        {primaryResponder ? (
+                                            <div className="mt-1 flex items-start gap-2">
+                                                <img src={primaryResponder.photo} alt={`${primaryResponder.name} portrait`} className="h-12 w-12 rounded-md border border-[#3a4657] object-cover" />
+                                                <div className="min-w-0 flex-1 text-[11px]">
+                                                    <p className="font-semibold text-slate-100">{primaryResponder.name}</p>
+                                                    <p className="text-slate-400">{primaryResponder.role} · ETA {primaryResponder.etaMin} min · shift {primaryResponder.shift}</p>
+                                                    <p className="mt-0.5 text-slate-300">{incidentStory}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="mt-1 text-[11px] text-slate-400">No primary responder selected.</p>
+                                        )}
+                                    </div>
+
+                                    {needsEscalation && (
+                                        <div className="mt-2 rounded border border-[#d85c57]/55 bg-[#32191d] px-2 py-1.5 text-[11px] text-red-200">
+                                            <p>No responder above {escalationThreshold}% match for {suggestedPriority}. Escalate to manager.</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleEscalateManager()}
+                                                className="mt-1 w-full rounded bg-[#d85c57] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#e06f6a]"
+                                            >
+                                                Escalate to Ops Duty Manager
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className={`mt-2 rounded border px-2 py-1.5 text-[11px] ${isSlaOverdue ? "border-[#d85c57]/55 bg-[#32191d] text-red-200" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}>
+                                        <div className="flex items-center gap-2.5" role="group" aria-label={`SLA ${orderPriority}: ${slaState.label}, ${Math.round(slaState.fraction * 100)}% of window elapsed`}>
+                                            <svg viewBox="0 0 36 36" className="h-11 w-11 shrink-0" aria-hidden="true">
+                                                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#2a313b" strokeWidth="4" />
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r="15.5"
+                                                    fill="none"
+                                                    stroke={slaState.color}
+                                                    strokeWidth="4"
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={`${(slaState.fraction * 97.4).toFixed(1)} 97.4`}
+                                                    transform="rotate(-90 18 18)"
+                                                />
+                                                <text x="18" y="20.5" textAnchor="middle" fontSize="9" fill="#e7edf5" fontWeight="600">{Math.round(slaState.fraction * 100)}%</text>
+                                            </svg>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="flex items-center justify-between gap-2">
+                                                    <span>SLA {orderPriority}</span>
+                                                    <span className="font-semibold" style={{ color: slaState.color }}>{slaState.label}</span>
+                                                </p>
+                                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                                    {isSlaOverdue ? `Overdue by ${Math.max(0, (orderAgeMin ?? orderSlaMin) - orderSlaMin)} min` : `${slaRemainingMin} min remaining of ${orderSlaMin} min budget`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {isSlaOverdue && canEscalateRegional && (
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleEscalateRegional()}
+                                                className="mt-1 w-full rounded bg-[#b94455] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#c65665]"
+                                            >
+                                                Escalate to Regional Reliability Lead
+                                            </button>
+                                        )}
+                                        {escalationStage !== "none" && <p className="mt-1 text-[10px] text-amber-200">Escalation stage: {escalationStage.toUpperCase()}</p>}
+                                        <ul className="mt-2 space-y-1">
+                                            {escalationTimeline.map((entry, i) => {
+                                                const dot = entry.state === "done" ? "#5fa27b" : entry.state === "current" ? slaState.color : "#3a4657";
+                                                return (
+                                                    <li key={entry.id} className="flex items-start gap-2">
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="mt-0.5 h-2.5 w-2.5 rounded-full border border-[#0a1830]" style={{ backgroundColor: dot }} />
+                                                            {i < escalationTimeline.length - 1 && <span className="h-3 w-px bg-slate-600" />}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1 leading-tight">
+                                                            <p className={`truncate text-[11px] ${entry.state === "pending" ? "text-slate-500" : "text-slate-200"}`}>{entry.label}</p>
+                                                            <p className="text-[9px] uppercase tracking-wide" style={{ color: entry.state === "pending" ? "#64748b" : dot }}>{entry.state} · {entry.note}</p>
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+
+                                    <details className="wow-disclosure mt-2">
+                                        <summary>Dispatch quality &amp; evidence</summary>
+                                        <div className="wow-disclosure-body space-y-2 text-[10px]">
+                                            <div>
                                                 <p className="text-[#b8c1cc]">Dispatch quality score: <span className="font-semibold text-slate-100">{dispatchQuality.score}%</span></p>
                                                 <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-slate-400">
                                                     {dispatchQuality.checks.map((check) => (
@@ -5342,8 +5419,7 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                                     Run Dispatch Quality Check
                                                 </button>
                                             </div>
-
-                                            <div className="mt-2 grid grid-cols-2 gap-1.5">
+                                            <div className="grid grid-cols-2 gap-1.5">
                                                 {matchingEvidence.map((ev) => {
                                                     const active = selectedEvidence?.id === ev.id;
                                                     return (
@@ -5359,136 +5435,75 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                                                     );
                                                 })}
                                             </div>
-                                            {selectedEvidence && <p className="mt-1 text-[10px] text-slate-500">Selected evidence: {selectedEvidence.label}</p>}
+                                            {selectedEvidence && <p className="text-[10px] text-slate-500">Selected evidence: {selectedEvidence.label}</p>}
                                         </div>
-                                        <div className="mt-1 grid grid-cols-2 gap-1.5 text-[10px]">
-                                            <label className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-1.5 py-1 text-slate-300">
-                                                Shift
-                                                <select
-                                                    value={responderShiftFilter}
-                                                    onChange={(e) => setResponderShiftFilter(e.target.value as "all" | "day" | "swing" | "night")}
-                                                    className="mt-0.5 w-full bg-transparent text-slate-100 outline-none"
-                                                >
-                                                    <option value="all">All</option>
-                                                    <option value="day">Day</option>
-                                                    <option value="swing">Swing</option>
-                                                    <option value="night">Night</option>
-                                                </select>
-                                            </label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setOnCallOnly((v) => !v)}
-                                                className={`rounded border px-1.5 py-1 text-left ${onCallOnly ? "border-[#b8c1cc]/60 bg-[#232a31] text-[#e7edf5]" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}
-                                            >
-                                                On-call only: {onCallOnly ? "ON" : "OFF"}
-                                            </button>
-                                        </div>
-                                        <div className="mt-1.5 flex flex-wrap items-center gap-1 rounded border border-[#2a313b]/70 bg-[#101925] px-2 py-1 text-[10px]" aria-label="Responder availability board">
-                                            <span className="font-semibold uppercase tracking-wide text-cyan-300/90">Roster</span>
-                                            <span className="text-slate-300">{responderAvailability.total} in scope</span>
-                                            <span className="text-emerald-300">· {responderAvailability.onCall} on-call</span>
-                                            <span className="text-sky-300">· {responderAvailability.free} free</span>
-                                            <span className="ml-auto text-slate-400">D{responderAvailability.byShift.day} · S{responderAvailability.byShift.swing} · N{responderAvailability.byShift.night}</span>
-                                        </div>
-                                        {needsEscalation && (
-                                            <div className="mt-2 rounded border border-[#d85c57]/55 bg-[#32191d] px-2 py-1.5 text-[11px] text-red-200">
-                                                <p>No responder above {escalationThreshold}% match for {suggestedPriority}. Escalate to manager.</p>
+                                    </details>
+
+                                    <details className="wow-disclosure mt-2">
+                                        <summary>Responder roster &amp; filters</summary>
+                                        <div className="wow-disclosure-body space-y-1.5">
+                                            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                                                <label className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-1.5 py-1 text-slate-300">
+                                                    Shift
+                                                    <select
+                                                        value={responderShiftFilter}
+                                                        onChange={(e) => setResponderShiftFilter(e.target.value as "all" | "day" | "swing" | "night")}
+                                                        className="mt-0.5 w-full bg-transparent text-slate-100 outline-none"
+                                                    >
+                                                        <option value="all">All</option>
+                                                        <option value="day">Day</option>
+                                                        <option value="swing">Swing</option>
+                                                        <option value="night">Night</option>
+                                                    </select>
+                                                </label>
                                                 <button
                                                     type="button"
-                                                    onClick={() => void handleEscalateManager()}
-                                                    className="mt-1 w-full rounded bg-[#d85c57] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#e06f6a]"
+                                                    onClick={() => setOnCallOnly((v) => !v)}
+                                                    className={`rounded border px-1.5 py-1 text-left ${onCallOnly ? "border-[#b8c1cc]/60 bg-[#232a31] text-[#e7edf5]" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}
                                                 >
-                                                    Escalate to Ops Duty Manager
+                                                    On-call only: {onCallOnly ? "ON" : "OFF"}
                                                 </button>
                                             </div>
-                                        )}
-                                        <div className={`mt-2 rounded border px-2 py-1.5 text-[11px] ${isSlaOverdue ? "border-[#d85c57]/55 bg-[#32191d] text-red-200" : "border-[#2a313b]/70 bg-[#151f2b] text-slate-300"}`}>
-                                            <div className="flex items-center gap-2.5" role="group" aria-label={`SLA ${orderPriority}: ${slaState.label}, ${Math.round(slaState.fraction * 100)}% of window elapsed`}>
-                                                <svg viewBox="0 0 36 36" className="h-11 w-11 shrink-0" aria-hidden="true">
-                                                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#2a313b" strokeWidth="4" />
-                                                    <circle
-                                                        cx="18"
-                                                        cy="18"
-                                                        r="15.5"
-                                                        fill="none"
-                                                        stroke={slaState.color}
-                                                        strokeWidth="4"
-                                                        strokeLinecap="round"
-                                                        strokeDasharray={`${(slaState.fraction * 97.4).toFixed(1)} 97.4`}
-                                                        transform="rotate(-90 18 18)"
-                                                    />
-                                                    <text x="18" y="20.5" textAnchor="middle" fontSize="9" fill="#e7edf5" fontWeight="600">{Math.round(slaState.fraction * 100)}%</text>
-                                                </svg>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="flex items-center justify-between gap-2">
-                                                        <span>SLA {orderPriority}</span>
-                                                        <span className="font-semibold" style={{ color: slaState.color }}>{slaState.label}</span>
-                                                    </p>
-                                                    <p className="mt-0.5 text-[10px] text-slate-400">
-                                                        {isSlaOverdue ? `Overdue by ${Math.max(0, (orderAgeMin ?? orderSlaMin) - orderSlaMin)} min` : `${slaRemainingMin} min remaining of ${orderSlaMin} min budget`}
-                                                    </p>
-                                                </div>
+                                            <div className="flex flex-wrap items-center gap-1 rounded border border-[#2a313b]/70 bg-[#101925] px-2 py-1 text-[10px]" aria-label="Responder availability board">
+                                                <span className="font-semibold uppercase tracking-wide text-cyan-300/90">Roster</span>
+                                                <span className="text-slate-300">{responderAvailability.total} in scope</span>
+                                                <span className="text-emerald-300">· {responderAvailability.onCall} on-call</span>
+                                                <span className="text-sky-300">· {responderAvailability.free} free</span>
+                                                <span className="ml-auto text-slate-400">D{responderAvailability.byShift.day} · S{responderAvailability.byShift.swing} · N{responderAvailability.byShift.night}</span>
                                             </div>
-                                            {isSlaOverdue && canEscalateRegional && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void handleEscalateRegional()}
-                                                    className="mt-1 w-full rounded bg-[#b94455] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#c65665]"
-                                                >
-                                                    Escalate to Regional Reliability Lead
-                                                </button>
-                                            )}
-                                            {escalationStage !== "none" && <p className="mt-1 text-[10px] text-amber-200">Escalation stage: {escalationStage.toUpperCase()}</p>}
-                                            <ul className="mt-2 space-y-1">
-                                                {escalationTimeline.map((entry, i) => {
-                                                    const dot = entry.state === "done" ? "#5fa27b" : entry.state === "current" ? slaState.color : "#3a4657";
-                                                    return (
-                                                        <li key={entry.id} className="flex items-start gap-2">
-                                                            <div className="flex flex-col items-center">
-                                                                <span className="mt-0.5 h-2.5 w-2.5 rounded-full border border-[#0a1830]" style={{ backgroundColor: dot }} />
-                                                                {i < escalationTimeline.length - 1 && <span className="h-3 w-px bg-slate-600" />}
+                                            <ul className="space-y-1.5">
+                                                {suggestedResponders.map((person) => (
+                                                    <li key={person.id} className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <img src={person.photo} alt={`${person.name} portrait`} className="h-8 w-8 rounded-md border border-[#3a4657] object-cover" />
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate text-xs font-medium text-slate-100">{person.name}</p>
+                                                                <p className="truncate text-[11px] text-slate-400">{person.role}</p>
                                                             </div>
-                                                            <div className="min-w-0 flex-1 leading-tight">
-                                                                <p className={`truncate text-[11px] ${entry.state === "pending" ? "text-slate-500" : "text-slate-200"}`}>{entry.label}</p>
-                                                                <p className="text-[9px] uppercase tracking-wide" style={{ color: entry.state === "pending" ? "#64748b" : dot }}>{entry.state} · {entry.note}</p>
+                                                            <div className="text-right">
+                                                                <p className="text-[11px] font-semibold text-[#e7edf5]">{Math.round(person.score)}%</p>
+                                                                <p className="text-[10px] text-slate-500">match</p>
                                                             </div>
-                                                        </li>
-                                                    );
-                                                })}
+                                                        </div>
+                                                        <p className="mt-1 text-[10px] text-slate-400">{person.reason}</p>
+                                                        <p className="mt-0.5 text-[10px] text-slate-500">Shift {person.shift} · On-call {person.onCall ? "yes" : "no"} · Active {person.currentLoad}</p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void handleDispatchResponder(person)}
+                                                            className="mt-1.5 w-full rounded bg-[#6f7f93] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#8190a3]"
+                                                        >
+                                                            {`Dispatch ${person.name.split(" ")[0]}`}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {suggestedResponders.length === 0 && (
+                                                    <li className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5 text-[11px] text-slate-400">
+                                                        No responders available for selected filter.
+                                                    </li>
+                                                )}
                                             </ul>
                                         </div>
-                                        <ul className="mt-2 space-y-1.5">
-                                            {suggestedResponders.map((person) => (
-                                                <li key={person.id} className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <img src={person.photo} alt={`${person.name} portrait`} className="h-8 w-8 rounded-md border border-[#3a4657] object-cover" />
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="truncate text-xs font-medium text-slate-100">{person.name}</p>
-                                                            <p className="truncate text-[11px] text-slate-400">{person.role}</p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-[11px] font-semibold text-[#e7edf5]">{Math.round(person.score)}%</p>
-                                                            <p className="text-[10px] text-slate-500">match</p>
-                                                        </div>
-                                                    </div>
-                                                    <p className="mt-1 text-[10px] text-slate-400">{person.reason}</p>
-                                                    <p className="mt-0.5 text-[10px] text-slate-500">Shift {person.shift} · On-call {person.onCall ? "yes" : "no"} · Active {person.currentLoad}</p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void handleDispatchResponder(person)}
-                                                        className="mt-1.5 w-full rounded bg-[#6f7f93] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#8190a3]"
-                                                    >
-                                                        {`Dispatch ${person.name.split(" ")[0]}`}
-                                                    </button>
-                                                </li>
-                                            ))}
-                                            {suggestedResponders.length === 0 && (
-                                                <li className="rounded border border-[#2a313b]/70 bg-[#151f2b] px-2 py-1.5 text-[11px] text-slate-400">
-                                                    No responders available for selected filter.
-                                                </li>
-                                            )}
-                                        </ul>
-                                    </div>
+                                    </details>
                                     <p className="mt-2 text-[11px] text-slate-400">Plan (from simulator): curtail {simCurtail}% · downtime {simDowntime}t · projected {scenario.energyDeltaKwt.toLocaleString()} kW·t</p>
                                     <input value={woAssignee} onChange={(e) => setWoAssignee(e.target.value)} placeholder="Assign to… (optional)" aria-label="Assign work order to" className="mt-2 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-sm text-slate-100" />
                                     <button type="button" onClick={handleRaiseWorkOrder} className="mt-2 w-full rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-500">{`Raise ${suggestedPriority} work order`}</button>
