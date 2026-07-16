@@ -3756,7 +3756,7 @@ function App() {
             {demoScriptStep !== "idle" && (() => {
                 const narration = demoNarration(demoScriptStep);
                 return (
-                    <div className="pointer-events-none fixed inset-x-0 top-[84px] z-[120] flex justify-center px-4">
+                    <div className="pointer-events-none fixed inset-x-0 top-[84px] z-[210] flex justify-center px-4">
                         <div role="status" aria-live="polite" className="pointer-events-auto w-full max-w-[640px] rounded-xl border border-cyan-500/40 bg-[#061224f2] px-4 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-md">
                             <div className="flex items-center justify-between gap-2">
                                 <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
@@ -3771,6 +3771,12 @@ function App() {
                             </div>
                             <p className="mt-1.5 text-sm font-semibold text-slate-100">{narration.title}</p>
                             <p className="mt-0.5 text-xs leading-5 text-slate-300">{narration.caption}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                                <span className="rounded bg-[#0a1830] px-1.5 py-0.5 font-semibold text-cyan-100">{selected.id}</span>
+                                <span className="rounded bg-[#0a1830] px-1.5 py-0.5 text-slate-300">{suggestedComponent}</span>
+                                <span className={`rounded px-1.5 py-0.5 font-semibold ${suggestedPriority === "P1" ? "bg-rose-900/50 text-rose-200" : suggestedPriority === "P2" ? "bg-amber-900/50 text-amber-200" : "bg-emerald-900/50 text-emerald-200"}`}>{suggestedPriority}</span>
+                                {primaryResponder && <span className="rounded bg-[#0a1830] px-1.5 py-0.5 text-slate-300">Lead: {primaryResponder.name}</span>}
+                            </div>
                             <div className="mt-2 flex gap-1">
                                 {Array.from({ length: narration.total }).map((_, i) => (
                                     <span key={i} className={`h-1 flex-1 rounded-full ${i < narration.index ? "bg-cyan-400" : "bg-slate-700"}`} />
