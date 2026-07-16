@@ -3324,20 +3324,6 @@ function App() {
         })();
     }, [turbines, loadNotes]);
 
-    const handleExport = useCallback(() => {
-        const header = "id,site,siteId,latitude,longitude,powerKw,windMs,nacelleTempC,vibrationMmS,status";
-        const rows = visibleTurbines.map((t) =>
-            [t.id, t.siteName, t.siteId, t.latitude.toFixed(3), t.longitude.toFixed(3), t.powerKw, t.windMs, t.nacelleTempC, t.vibrationMmS, t.status].join(","),
-        );
-        const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `fleet-snapshot-${Date.now()}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }, [visibleTurbines]);
-
     const handleSearch = useCallback(() => {
         const q = search.trim().toLowerCase();
         if (!q) {
@@ -4208,18 +4194,6 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
 
     const toolbar = (
         <div className="flex flex-wrap items-center gap-2 text-xs">
-            <label className="flex items-center gap-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-slate-300">
-                <span>Mode</span>
-                <select
-                    value={operatorRole}
-                    onChange={(e) => setOperatorRole(normalizeOperatorRole(e.target.value))}
-                    className="bg-transparent text-slate-100 outline-none"
-                >
-                    <option value="operator">Operator</option>
-                    <option value="viewer">Viewer</option>
-                </select>
-            </label>
-
             <select
                 value={siteFilter}
                 onChange={(e) => setSiteFilter(e.target.value)}
@@ -4246,19 +4220,14 @@ ${evidence ? `<div class="ev"><div class="muted">Evidence: ${safe(evidence.label
                 ))}
             </div>
 
-            <div className="flex items-center gap-1">
-                <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
-                    placeholder="Find turbine…"
-                    aria-label="Find turbine by id"
-                    className="w-32 rounded border border-slate-700 bg-[#08142a] px-2 py-1"
-                />
-                <button type="button" onClick={handleSearch} className="rounded bg-slate-700 px-2 py-1 text-white">Go</button>
-            </div>
-
-            <button type="button" onClick={handleExport} className="rounded bg-slate-700 px-2 py-1 text-white">⬇ CSV</button>
+            <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                placeholder="Find turbine…"
+                aria-label="Find turbine by id"
+                className="w-32 rounded border border-slate-700 bg-[#08142a] px-2 py-1"
+            />
 
             {(siteFilter !== "all" || statusFilter !== "all") && (
                 <button
