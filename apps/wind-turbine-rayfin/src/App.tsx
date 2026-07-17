@@ -2088,6 +2088,59 @@ function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect
     );
 }
 
+// Guided-demo spotlight: tracks the DOM element matching `selector` and draws a
+// pulsing halo around it so the audience sees exactly where to look on each page.
+// A rAF loop keeps the halo glued to the target through view changes, scrolls and
+// resizes; it no-ops (renders nothing) when inactive or the target is absent.
+function DemoSpotlight({ selector, active }: { selector: string | null; active: boolean }) {
+    const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+    useEffect(() => {
+        if (!active || !selector) {
+            setRect(null);
+            return;
+        }
+        let raf = 0;
+        const tick = () => {
+            const el = document.querySelector(selector) as HTMLElement | null;
+            if (el) {
+                const r = el.getBoundingClientRect();
+                if (r.width > 4 && r.height > 4) {
+                    setRect((prev) =>
+                        prev && Math.abs(prev.top - r.top) < 0.5 && Math.abs(prev.left - r.left) < 0.5 && Math.abs(prev.width - r.width) < 0.5 && Math.abs(prev.height - r.height) < 0.5
+                            ? prev
+                            : { top: r.top, left: r.left, width: r.width, height: r.height },
+                    );
+                } else {
+                    setRect(null);
+                }
+            } else {
+                setRect(null);
+            }
+            raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, [selector, active]);
+
+    if (!active || !rect) {
+        return null;
+    }
+    const pad = 8;
+    return (
+        <div
+            aria-hidden="true"
+            className="demo-spotlight pointer-events-none fixed z-[200]"
+            style={{
+                top: Math.max(4, rect.top - pad),
+                left: Math.max(4, rect.left - pad),
+                width: rect.width + pad * 2,
+                height: rect.height + pad * 2,
+            }}
+        />
+    );
+}
+
 function App() {
     const initialRoute = parseHash();
     const [seed, setSeed] = useState(0);
@@ -3764,6 +3817,31 @@ function App() {
         missionReportRef.current = handleOpenMissionReport;
     }, [handleOpenMissionReport]);
 
+    // Per-step target for the guided-demo spotlight halo. Map steps share the map
+    // region; the dispatch step yields no halo while the technician popup is open
+    // (the popup itself is already the focus).
+    const demoSpotSelector = useMemo<string | null>(() => {
+        switch (demoScriptStep) {
+            case "story":
+            case "locate":
+                return '[data-demo-spot="map"]';
+            case "twin":
+                return '[data-demo-spot="twin"]';
+            case "graph":
+                return '[data-demo-spot="graph"]';
+            case "dispatch":
+                return techPopupOpen ? null : '[data-demo-spot="operations"]';
+            case "support":
+                return '[data-demo-spot="operations"]';
+            case "ask":
+                return '[data-demo-spot="ask"]';
+            case "analytics":
+                return '[data-demo-spot="analytics"]';
+            default:
+                return null;
+        }
+    }, [demoScriptStep, techPopupOpen]);
+
     return (
         <main className="wow-surface relative flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_12%_8%,#202833_0%,#12171f_52%,#0d1016_100%)] text-slate-100">
             <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[#b8c1cc]/10 blur-3xl" />
@@ -3983,7 +4061,7 @@ function App() {
                     </div>
 
                     {view === "map" && (
-                        <div className="relative h-full min-h-[420px] md:min-h-[520px]">
+                        <div data-demo-spot="map" className="relative h-full min-h-[420px] md:min-h-[520px]">
                             <SceneErrorBoundary label="Fleet map">
                                 <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
                                     <LazyWindFarmScene turbines={turbines} sites={sites} selectedId={selected.id} dimmedIds={dimmedIds} paused={!live} onSelect={openTurbine} />
@@ -4156,7 +4234,7 @@ function App() {
                                         </span>
                                     </div>
 
-                                    <div className="relative h-[480px] overflow-hidden rounded-xl border border-slate-700/60 bg-[#051020]">
+                                    <div data-demo-spot="twin" className="relative h-[480px] overflow-hidden rounded-xl border border-slate-700/60 bg-[#051020]">
                                         <SceneErrorBoundary label="Digital twin">
                                             <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
                                                 <LazyTurbineTwinScene turbine={selected} paused={!live} focusPart={demoFocusPart} onPartFocusChange={setFocusedTwinPart} onDeviceFocusChange={setFocusedTwinDevice} deviceGraph={twinDeviceGraph} />
@@ -4449,7 +4527,7 @@ function App() {
                                     <button type="button" onClick={() => setGraphNonce((n) => n + 1)} className="rounded bg-slate-700/80 px-2 py-1 text-white hover:bg-slate-600">Reset view</button>
                                 </div>
                             </div>
-                            <div className="relative h-[calc(100%-2rem)] rounded-xl border border-slate-700/60 bg-[#051020]">
+                            <div data-demo-spot="graph" className="relative h-[calc(100%-2rem)] rounded-xl border border-slate-700/60 bg-[#051020]">
                                 <RelationshipGraph key={graphNonce} turbines={turbines} sites={sites} selectedId={selected.id} statusFilter={graphFilter} onSelect={(id) => setSelectedId(id)} />
                                 <div className="pointer-events-none absolute right-3 top-2 rounded-md border border-slate-700/60 bg-[#08142acc] px-2.5 py-2 text-[11px] text-slate-300 backdrop-blur-sm">
                                     <p className="mb-1 font-medium text-slate-400">Node types</p>
@@ -4468,7 +4546,7 @@ function App() {
                     {view === "analytics" && (
                         <div className="h-full overflow-y-auto p-4">
                             <div className="mb-3">{toolbar}</div>
-                            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                            <div data-demo-spot="analytics" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                                 <MetricCard label="Fleet output" value={`${(fleetPower / 1000).toFixed(2)} MW`} sub={`${visibleTurbines.length} turbines online`} />
                                 <MetricCard label="Capacity factor" value={`${capacityFactor.toFixed(0)}%`} sub={`of ${fleetRatedMw.toFixed(0)} MW rated`} accent="text-emerald-300" />
                                 <MetricCard label="Avg wind" value={`${avgWind.toFixed(1)} m/s`} sub="across visible fleet" />
@@ -4558,7 +4636,7 @@ function App() {
                         <div className="ops-wow h-full overflow-y-auto p-4">
                             <div className="mx-auto max-w-[1400px] space-y-4">
                                 {/* 1 — Hero strip: selected turbine at a glance */}
-                                <section className="ops-section ops-hero relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#07142a] p-4 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
+                                <section data-demo-spot="operations" className="ops-section ops-hero relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#07142a] p-4 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
                                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_-40%,rgba(6,182,212,0.30),transparent_55%),radial-gradient(circle_at_95%_140%,rgba(16,185,129,0.20),transparent_50%)]" />
                                     <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                         <div className="min-w-0">
@@ -5142,7 +5220,7 @@ function App() {
 
                     {view === "ask" && (
                         <div className="h-full overflow-y-auto p-4">
-                            <div className="ask-wow mx-auto max-w-3xl space-y-4">
+                            <div data-demo-spot="ask" className="ask-wow mx-auto max-w-3xl space-y-4">
                                 {/* Hero: ask box */}
                                 <div className="relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-cyan-500/10 via-[#0b1a30]/70 to-transparent p-5 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
                                     <div className="flex items-start justify-between gap-3">
@@ -5347,6 +5425,8 @@ function App() {
                     )}
                 </section>
             </div>
+
+            <DemoSpotlight selector={demoSpotSelector} active={demoScriptStep !== "idle"} />
 
             {reportModal && (
                 <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/60 p-4" onClick={() => setReportModal(null)}>
