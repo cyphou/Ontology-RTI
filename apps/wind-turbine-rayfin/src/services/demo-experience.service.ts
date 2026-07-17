@@ -306,7 +306,7 @@ export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
     responderRoles: ["Field Reliability Engineer", "Generator Specialist", "Remote Operations Lead"],
     evidenceLabels: ["Gearbox oil trace", "Vibration spectrum anomaly", "Generator thermal hotspot", "Converter cabinet alarm"],
     steps: {
-        story: { title: "Detect & frame the incident", caption: "The ontology surfaces the probable component, priority, and a lead technician for the affected turbine." },
+        story: { title: "Welcome — from detection to resolution", caption: "This guided demo follows one live wind-fleet incident end to end: locate it on the map, inspect the digital twin, trace the ontology graph, dispatch a technician, then ask Fabric IQ. To begin, the ontology has framed the probable component, priority, and lead technician for the affected turbine." },
         locate: { title: "Locate on the fleet map", caption: "The global map centers on the affected turbine and its wind site for situational awareness." },
         twin: { title: "Inspect the digital twin", caption: "Drill into the 3D digital twin to read component- and device-level signals for the turbine." },
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause." },
@@ -336,7 +336,7 @@ export const SOLAR_DEMO_MANIFEST: DomainDemoManifest = {
     responderRoles: ["PV Field Technician", "Inverter Specialist", "Site Operations Lead"],
     evidenceLabels: ["Panel hotspot thermal", "String underperformance", "Inverter fault code", "Combiner box arc trace"],
     steps: {
-        story: { title: "Detect & frame the incident", caption: "The ontology surfaces the probable component, priority, and a lead technician for the affected inverter string." },
+        story: { title: "Welcome — from detection to resolution", caption: "This guided demo follows one live solar incident end to end: locate the inverter string on the map, inspect the digital twin, trace the ontology graph, dispatch a technician, then ask Fabric IQ. To begin, the ontology has framed the probable component, priority, and lead technician for the affected inverter string." },
         locate: { title: "Locate on the site map", caption: "The map centers on the affected inverter string and its solar plant for situational awareness." },
         twin: { title: "Inspect the digital twin", caption: "Drill into the 3D digital twin to read module- and inverter-level signals for the string." },
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause." },
@@ -354,7 +354,7 @@ export const REFINERY_DEMO_MANIFEST: DomainDemoManifest = {
     responderRoles: ["Rotating Equipment Engineer", "Process Safety Lead", "Control Room Operator"],
     evidenceLabels: ["Seal leak thermogram", "Vibration trip log", "Exchanger fouling scan", "Flare event snapshot"],
     steps: {
-        story: { title: "Detect & frame the incident", caption: "The ontology surfaces the probable asset, priority, and a lead engineer for the affected process unit." },
+        story: { title: "Welcome — from detection to resolution", caption: "This guided demo follows one live refinery incident end to end: locate the process unit on the map, inspect the digital twin, trace the ontology graph, dispatch an engineer, then ask Fabric IQ. To begin, the ontology has framed the probable asset, priority, and lead engineer for the affected process unit." },
         locate: { title: "Locate on the site map", caption: "The map centers on the affected process unit and its refinery for situational awareness." },
         twin: { title: "Inspect the digital twin", caption: "Drill into the 3D digital twin to read asset- and sensor-level signals for the unit." },
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause." },
