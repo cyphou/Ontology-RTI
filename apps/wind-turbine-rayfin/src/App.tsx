@@ -2879,7 +2879,9 @@ function App() {
         }
         setAutoPlayRunning(true);
         setDemoIntroOpen(false);
-        setDemoPanelOpen(true);
+        // Close the demo control popover on Run all so it never overlaps the
+        // walkthrough — the top narration banner carries the live progress instead.
+        setDemoPanelOpen(false);
         const dwellMs = 10000;
         const preActionMs = 5000;
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
