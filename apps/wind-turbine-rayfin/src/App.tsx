@@ -5143,8 +5143,8 @@ function App() {
                                                 <p className="text-xs text-slate-400">Plain-language answers over your live wind fleet.</p>
                                             </div>
                                         </div>
-                                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${isDataAgentConfigured() ? "bg-emerald-500/15 text-emerald-300" : "bg-slate-600/40 text-slate-300"}`}>
-                                            {isDataAgentConfigured() ? "● Live Data Agent" : "○ Local engine"}
+                                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${isDataAgentConfigured() ? "bg-emerald-500/15 text-emerald-300" : "bg-cyan-500/15 text-cyan-300"}`}>
+                                            {isDataAgentConfigured() ? "● Live Data Agent" : "● Fabric IQ"}
                                         </span>
                                     </div>
 
@@ -5200,9 +5200,11 @@ function App() {
                                             <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-lg">🤖</span>
                                             <span className="text-sm font-semibold text-slate-100">Answer</span>
                                             <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${askResult.source === "fabriciq" ? "bg-emerald-500/15 text-emerald-300" : askResult.source === "ontology" ? "bg-cyan-500/15 text-cyan-300" : "bg-slate-600/40 text-slate-300"}`}>
-                                                    {sourceLabel(askResult.source)}
-                                                </span>
+                                                {askResult.source !== "local" && (
+                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${askResult.source === "fabriciq" ? "bg-emerald-500/15 text-emerald-300" : "bg-cyan-500/15 text-cyan-300"}`}>
+                                                        {sourceLabel(askResult.source)}
+                                                    </span>
+                                                )}
                                                 {typeof askResult.confidence === "number" && (
                                                     <span className="rounded-full bg-slate-700/50 px-2 py-0.5 text-[10px] font-medium text-slate-200">{Math.round(askResult.confidence * 100)}% sure</span>
                                                 )}
@@ -5217,15 +5219,27 @@ function App() {
                                                 ))}
                                             </ul>
                                         )}
-                                        <p className="mt-3 text-[10px] text-slate-500">Answered {new Date(askResult.generatedAt).toLocaleTimeString()}</p>
+                                        <div className="mt-3 rounded-lg border border-slate-800 bg-[#0c1a2e] p-3">
+                                            <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wide text-slate-500">
+                                                <span>Fleet snapshot</span>
+                                                <span>{visibleTurbines.length} turbines</span>
+                                            </div>
+                                            <HealthBar healthy={healthy} warning={warnings} alarm={alarms} />
+                                            <div className="mt-1.5 flex flex-wrap gap-3 text-[11px] text-slate-400">
+                                                <span className="flex items-center gap-1"><span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: STATUS_COLORS.healthy }} />{healthy} healthy</span>
+                                                <span className="flex items-center gap-1"><span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: STATUS_COLORS.warning }} />{warnings} warning</span>
+                                                <span className="flex items-center gap-1"><span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: STATUS_COLORS.alarm }} />{alarms} alarm</span>
+                                            </div>
+                                        </div>
+                                        <p className="mt-2 text-[10px] text-slate-500">Answered {new Date(askResult.generatedAt).toLocaleTimeString()}</p>
                                     </div>
                                 )}
 
                                 {/* Suggested next steps */}
-                                {(runHistory.length > 0 || demoRunLog.length > 0) && (
+                                {(askResult || runHistory.length > 0 || demoRunLog.length > 0) && (
                                     <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4">
                                         <p className="flex items-center gap-1.5 text-sm font-semibold text-cyan-200"><span aria-hidden="true">🧭</span>Suggested next steps</p>
-                                        <p className="mt-0.5 text-xs text-slate-400">Compile this guided mission or jump back to the fleet.</p>
+                                        <p className="mt-0.5 text-xs text-slate-400">Dive into analytics, compile the mission, or jump back to the fleet.</p>
                                         <div className="mt-3 flex flex-wrap items-center gap-2">
                                             <button
                                                 type="button"
@@ -5233,6 +5247,13 @@ function App() {
                                                 className="flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
                                             >
                                                 <span aria-hidden="true">📄</span>Open mission report
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setView("analytics")}
+                                                className="flex items-center gap-1.5 rounded-lg border border-cyan-600/50 bg-cyan-900/25 px-3 py-1.5 text-xs font-medium text-cyan-100 transition-all duration-200 hover:-translate-y-[1px] hover:border-cyan-400 hover:text-white"
+                                            >
+                                                <span aria-hidden="true">📊</span>Go to Analytics
                                             </button>
                                             <button
                                                 type="button"
