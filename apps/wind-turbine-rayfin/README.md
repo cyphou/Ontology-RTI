@@ -101,6 +101,13 @@ Runs fully on a **synthetic telemetry generator** and a local engine offline, th
 </tr>
 </table>
 
+> [!NOTE]
+> **What is Rayfin?** Rayfin is Microsoft Fabric's framework for building full **web apps** —
+> not just report tiles — that are **hosted natively inside the Fabric shell**. This app is a
+> React 19 + Vite + Three.js SPA, **provisioned and deployed by the `rayfin` CLI**, and wired to
+> Fabric data through a `postMessage` **host bridge**. The same code runs locally for dev and
+> inside the Fabric portal, and stays **fallback-safe** when no connection is configured.
+
 ## 📚 Table of contents
 
 - 🏁 [Hackathon Snapshot](#hackathon-snapshot)
