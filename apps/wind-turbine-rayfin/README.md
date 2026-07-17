@@ -108,6 +108,17 @@ Runs fully on a **synthetic telemetry generator** and a local engine offline, th
 > Fabric data through a `postMessage` **host bridge**. The same code runs locally for dev and
 > inside the Fabric portal, and stays **fallback-safe** when no connection is configured.
 
+**How Rayfin powers this app**
+
+| 🧩 Rayfin capability | 🌀 How the Wind Turbine app uses it |
+|---|---|
+| **Native Fabric hosting** | Renders the full 3D Three.js command center *inside* the Fabric shell — a real SPA, not a tile |
+| **`rayfin` CLI provisioning** | Writes workspace / item / tenant IDs into `.env.local` so the app finds its workspace |
+| **`postMessage` host bridge** | `getFabricClient()` reaches Fabric data (semantic model, Data Agent, ontology) without custom auth plumbing |
+| **One-command deploy** | `rayfin up` builds and ships the static app to the Fabric workspace |
+| **Fallback-safe scaffolding** | Cleanly degrades to synthetic telemetry + a local engine when connections are unset — demos never break |
+| **Reusable app template** | The same shell + demo engine power the Solar and Refinery variants from per-domain manifests |
+
 ## 📚 Table of contents
 
 - 🏁 [Hackathon Snapshot](#hackathon-snapshot)
