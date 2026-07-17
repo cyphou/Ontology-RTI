@@ -750,30 +750,3 @@ body,
     transform: none;
   }
 }
-
-/* Guided-demo spotlight: a pulsing halo drawn around the focused zone of each page. */
-.demo-spotlight {
-  border: 2px solid rgba(56, 189, 248, 0.92);
-  border-radius: 14px;
-  background: rgba(56, 189, 248, 0.06);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2), 0 0 24px rgba(56, 189, 248, 0.38), inset 0 0 20px rgba(56, 189, 248, 0.1);
-  transition: top 0.35s cubic-bezier(0.22, 1, 0.36, 1), left 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.35s cubic-bezier(0.22, 1, 0.36, 1), height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  animation: demoSpotPulse 1.7s ease-in-out infinite;
-}
-
-@keyframes demoSpotPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2), 0 0 18px rgba(56, 189, 248, 0.3), inset 0 0 18px rgba(56, 189, 248, 0.1);
-  }
-  50% {
-    box-shadow: 0 0 0 7px rgba(56, 189, 248, 0.08), 0 0 34px rgba(56, 189, 248, 0.5), inset 0 0 26px rgba(56, 189, 248, 0.16);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .demo-spotlight {
-    animation: none;
-  }
-}
