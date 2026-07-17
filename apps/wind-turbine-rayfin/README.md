@@ -28,6 +28,14 @@
    <img src="https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest"/>
 </p>
 
+<p align="center">
+   🎥 <a href="Rayfin-Windturbine-AutoDemo.mp4"><b>Auto-demo video</b></a>
+   &nbsp;·&nbsp;
+   📊 <a href="Fabric-Rayfin-Wind-Turbine.pptx"><b>Explainer deck (PPTX)</b></a>
+   &nbsp;·&nbsp;
+   🌐 <a href="https://naive-cave-f911045ee7-westcentralus.webapp.msit.fabricapps.net"><b>Live app</b></a>
+</p>
+
 ---
 
 ## ✨ Highlights
@@ -55,15 +63,15 @@
 
 ## Hackathon Snapshot
 
-### Problem Statement
+### 🎯 Problem Statement
 Wind-farm operations teams often monitor telemetry, alarms, and maintenance context across disconnected tools, causing slower triage and inconsistent dispatch decisions.
 
-### Target User
+### 👥 Target User
 - Wind operations controller (NOC / dispatch)
 - Site technicians and reliability engineers
 - Field teams and customers evaluating reusable Rayfin templates
 
-### What We Built
+### 🛠️ What We Built
 - Live multi-site 3D fleet map
 - Turbine-level digital twin diagnostics
 - Guided incident triage and dispatch actions
@@ -71,7 +79,7 @@ Wind-farm operations teams often monitor telemetry, alarms, and maintenance cont
 - Ask Fabric IQ natural-language assistant
 - Fallback-safe simulation mode when live Fabric wiring is unavailable
 
-### Reusable Fabric Connections (Across Apps)
+### 🔌 Reusable Fabric Connections (Across Apps)
 This pattern is reusable beyond Wind Turbine. Rayfin apps can be connected to:
 - Real-Time Intelligence (RTI) — Eventhouse/KQL as the telemetry backend for live and near-real-time signals
 - Ontology + Graph model as the backbone for the digital twin (asset topology, component/device relationships)
@@ -337,3 +345,10 @@ With neither set, the app is fully functional on synthetic data — no Fabric ro
 ## Need help?
 
 If you have any questions or run into any problems, please [file an issue](../../issues) on this repository.
+
+---
+
+<p align="center">
+  <sub>Built with 💨 on <b>Microsoft Fabric</b> + <b>Rayfin</b> · React 19 · Vite · Three.js · Vitest</sub><br/>
+  <sub>Part of the <a href="../../README.md">IQ Ontology Accelerator</a> — reusable industry twins for Microsoft Fabric.</sub>
+</p>
