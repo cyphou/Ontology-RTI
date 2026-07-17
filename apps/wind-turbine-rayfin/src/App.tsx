@@ -2162,6 +2162,7 @@ function App() {
     const [demoPanelOpen, setDemoPanelOpen] = useState(false);
     const [demoStepIndex, setDemoStepIndex] = useState(0);
     const [demoIntroOpen, setDemoIntroOpen] = useState(false);
+    const [reportModal, setReportModal] = useState<MissionReport | null>(null);
     const [techPopupOpen, setTechPopupOpen] = useState(false);
     const [techPopupResponderId, setTechPopupResponderId] = useState<string | null>(null);
     const [selectedEvidenceId, setSelectedEvidenceId] = useState(MOCK_WIND_EVIDENCE[0]?.id ?? "");
@@ -3706,19 +3707,29 @@ function App() {
         recordMissionRun(report);
     }, [autoPlayRunning, demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, recordMissionRun, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
 
+    const buildDemoReport = useCallback((): MissionReport => buildMissionReport({
+        turbineId: selected.id,
+        siteName: selected.siteName,
+        component: suggestedComponent,
+        priority: suggestedPriority,
+        responder: primaryResponder?.name ?? null,
+        dispatchQualityScore: dispatchQuality.score,
+        challengeScore: missionChallenge.score,
+        challengeVerdict: missionChallenge.verdict,
+        events: demoRunLog.length > 0 ? demoRunLog : [{ step: "manual", at: new Date().toISOString(), detail: "No scripted run recorded yet" }],
+        outcome: selectedOpenOrder ? `Open order (${selectedOpenOrder.priority})` : "No open order",
+    }), [demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
+
+    // Open the mission report as a visible modal (the demo "goes to" the report after IQ).
+    const handleOpenMissionReport = useCallback(() => {
+        const report = buildDemoReport();
+        recordMissionRun(report);
+        setReportModal(report);
+        setWoMessage(`Mission report ready (${report.stepCount} steps, ${(report.durationMs / 1000).toFixed(1)}s).`);
+    }, [buildDemoReport, recordMissionRun]);
+
     const handleDownloadMissionReport = useCallback(() => {
-        const report = buildMissionReport({
-            turbineId: selected.id,
-            siteName: selected.siteName,
-            component: suggestedComponent,
-            priority: suggestedPriority,
-            responder: primaryResponder?.name ?? null,
-            dispatchQualityScore: dispatchQuality.score,
-            challengeScore: missionChallenge.score,
-            challengeVerdict: missionChallenge.verdict,
-            events: demoRunLog.length > 0 ? demoRunLog : [{ step: "manual", at: new Date().toISOString(), detail: "No scripted run recorded yet" }],
-            outcome: selectedOpenOrder ? `Open order (${selectedOpenOrder.priority})` : "No open order",
-        });
+        const report = buildDemoReport();
         recordMissionRun(report);
         const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -3728,13 +3739,13 @@ function App() {
         a.click();
         URL.revokeObjectURL(url);
         setWoMessage(`Mission report exported (${report.stepCount} steps, ${(report.durationMs / 1000).toFixed(1)}s).`);
-    }, [demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, recordMissionRun, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
+    }, [buildDemoReport, recordMissionRun, selected.id]);
 
-    // Keep a stable ref to the latest mission-report handler so the guided demo (declared
-    // earlier) can "click" the report button without a forward reference.
+    // Keep a stable ref to the latest report opener so the guided demo (declared earlier)
+    // can "go to" the report after the Ask IQ step without a forward reference.
     useEffect(() => {
-        missionReportRef.current = handleDownloadMissionReport;
-    }, [handleDownloadMissionReport]);
+        missionReportRef.current = handleOpenMissionReport;
+    }, [handleOpenMissionReport]);
 
     return (
         <main className="wow-surface relative flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_12%_8%,#202833_0%,#12171f_52%,#0d1016_100%)] text-slate-100">
@@ -5201,7 +5212,7 @@ function App() {
                                         <div className="mt-3 flex flex-wrap items-center gap-2">
                                             <button
                                                 type="button"
-                                                onClick={handleDownloadMissionReport}
+                                                onClick={handleOpenMissionReport}
                                                 className="flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
                                             >
                                                 <span aria-hidden="true">📄</span>Open mission report
@@ -5288,6 +5299,66 @@ function App() {
                     )}
                 </section>
             </div>
+
+            {reportModal && (
+                <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/60 p-4" onClick={() => setReportModal(null)}>
+                    <div role="dialog" aria-modal="true" aria-label="Mission report" className="flex max-h-[92vh] w-[min(94vw,720px)] flex-col overflow-hidden rounded-2xl border border-cyan-500/40 bg-[#0a1526] shadow-[0_24px_70px_rgba(0,0,0,0.7)]" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative border-b border-cyan-500/20 bg-gradient-to-br from-cyan-500/12 via-transparent to-transparent px-5 py-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/15 text-2xl">📄</span>
+                                    <div>
+                                        <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-300">Guided mission report</p>
+                                        <h2 className="text-lg font-semibold text-slate-100">{reportModal.turbineId} · {reportModal.siteName}</h2>
+                                    </div>
+                                </div>
+                                <button type="button" onClick={() => setReportModal(null)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100" aria-label="Close report">✕</button>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                                <span className={`rounded-full px-2.5 py-1 font-semibold ${reportModal.challengeVerdict === "ready" ? "bg-emerald-500/15 text-emerald-300" : reportModal.challengeVerdict === "watch" ? "bg-amber-500/15 text-amber-300" : "bg-rose-500/15 text-rose-300"}`}>{reportModal.challengeVerdict.toUpperCase()} · {reportModal.challengeScore}%</span>
+                                <span className="rounded-full bg-slate-700/50 px-2.5 py-1 text-slate-200">Dispatch quality {reportModal.dispatchQualityScore}%</span>
+                                <span className="rounded-full bg-slate-700/50 px-2.5 py-1 text-slate-200">{reportModal.stepCount} steps · {(reportModal.durationMs / 1000).toFixed(1)}s</span>
+                            </div>
+                        </div>
+                        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                {[
+                                    { label: "Turbine", value: reportModal.turbineId },
+                                    { label: "Site", value: reportModal.siteName },
+                                    { label: "Component", value: reportModal.component },
+                                    { label: "Priority", value: reportModal.priority },
+                                    { label: "Responder", value: reportModal.responder },
+                                    { label: "Outcome", value: reportModal.outcome },
+                                ].map((s) => (
+                                    <div key={s.label} className="rounded-lg border border-slate-800 bg-[#0c1a2e] px-3 py-2">
+                                        <p className="text-[10px] uppercase tracking-wide text-slate-500">{s.label}</p>
+                                        <p className="mt-0.5 truncate text-sm font-medium text-slate-100" title={s.value}>{s.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div>
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Mission timeline</p>
+                                <ol className="space-y-2">
+                                    {reportModal.events.map((ev, i) => (
+                                        <li key={`${ev.step}-${ev.at}-${i}`} className="flex gap-3">
+                                            <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-[10px] font-semibold text-cyan-200">{i + 1}</span>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-medium capitalize text-slate-200">{ev.step}</p>
+                                                {ev.detail && <p className="text-[11px] text-slate-400">{ev.detail}</p>}
+                                                <p className="text-[10px] text-slate-500">{new Date(ev.at).toLocaleTimeString()}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 border-t border-slate-800 bg-[#0a1526] px-5 py-3">
+                            <button type="button" onClick={() => setReportModal(null)} className="rounded-lg border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500/60 hover:text-white">Close</button>
+                            <button type="button" onClick={handleDownloadMissionReport} className="flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500"><span aria-hidden="true">⬇️</span>Download JSON</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {detailOpen && selected && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setDetailOpen(false)}>
