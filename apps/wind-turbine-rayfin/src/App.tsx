@@ -3930,6 +3930,16 @@ function App() {
                             </div>
                             <p className="mt-1.5 text-base font-semibold text-slate-100">{narration.title}</p>
                             <p className="mt-0.5 text-sm leading-5 text-slate-300">{narration.caption}</p>
+                            {(narration.focus || narration.action) && (
+                                <div className="mt-2 flex flex-col gap-1.5 rounded-lg border border-cyan-500/20 bg-[#08182c] px-2.5 py-2 text-xs sm:flex-row sm:items-start sm:gap-4">
+                                    {narration.focus && (
+                                        <span className="flex flex-1 items-start gap-1.5 text-slate-200"><span aria-hidden="true">👁</span><span><span className="font-semibold text-cyan-200">See:</span> {narration.focus}</span></span>
+                                    )}
+                                    {narration.action && (
+                                        <span className="flex flex-1 items-start gap-1.5 text-slate-200"><span aria-hidden="true">🖱</span><span><span className="font-semibold text-cyan-200">Action:</span> {narration.action}</span></span>
+                                    )}
+                                </div>
+                            )}
                             <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
                                 <span className="rounded bg-[#0a1830] px-1.5 py-0.5 font-semibold text-cyan-100">{selected.id}</span>
                                 <span className="rounded bg-[#0a1830] px-1.5 py-0.5 text-slate-300">{suggestedComponent}</span>
