@@ -93,7 +93,43 @@ flowchart TD
       F --> G[Export mission report JSON]
 ```
 
-For a submission-focused version, see [README_HACKATHON.md](README_HACKATHON.md).
+### Use-case strength & impact
+
+When incidents spike, an operator must identify the highest-risk turbine, understand the
+probable cause, and dispatch the right response. This app prioritizes risky assets on a
+status-aware map and mission panel, exposes turbine-level context through the digital twin,
+guides triage → dispatch, and produces a mission report for handoff.
+
+- **Faster time-to-triage** for critical alarms
+- **More consistent first-response** decisions
+- **Better cross-team communication** through exportable run reports
+
+### Reusability & quality
+
+- Reusable **industry-template pattern** for Rayfin — config-driven wiring via environment variables, working both online (Fabric-connected) and offline (simulation).
+- Sibling variants prove the pattern generalizes: [refinery-worldwide-rayfin](../refinery-worldwide-rayfin/README.md) and [solar-france-rayfin](../solar-france-rayfin/README.md).
+- **Quality signals**: unit tests for mission logic and telemetry services, deterministic scoring/reporting helpers, explicit source labeling for trust, and a fallback path that prevents demo breakage.
+
+### Uniqueness
+
+- Geospatial fleet awareness **and** turbine-level twin diagnostics in one app.
+- Mission-style **guided storytelling** for operational incident scenarios.
+- Exportable, structured **run evidence** (mission report) for reproducible demos.
+- A **persistent device graph** bridging the visual twin and operational metadata.
+
+### Product feedback (Rayfin / Fabric)
+
+- **Worked well**: fast iteration with the Rayfin app structure; clean separation of host integration vs. local dev; strong composability of telemetry and AI answer surfaces.
+- **Gaps**: connection-wiring discoverability, live-data handshake diagnostics, and more mission-based UX starter patterns.
+- **Suggestions**: a first-run connection wizard, standardized telemetry-source health badges, and packaged incident-response template blocks (panel, scoring, reporting).
+
+### Submission
+
+- **Repository**: https://github.com/cyphou/Ontology-RTI
+- **App folder**: `apps/wind-turbine-rayfin` · **Final branch**: `main`
+- **Checklist**: public repo ✓ · app on `main` ✓ · problem, target user & architecture documented ✓ · implementation explained ✓
+
+> A standalone, printable submission version is also available in [README_HACKATHON.md](README_HACKATHON.md).
 
 > **Geo Wind Twin Command Center** — an ontology-grounded, 3D digital-twin command center
 > for multi-site wind turbine fleets, built on Fabric Rayfin
