@@ -2844,6 +2844,7 @@ function App() {
     }, [handleCloseLoop, selected.id, selected.siteName]);
 
     const runAskRef = useRef<(override?: string) => Promise<void>>(async () => {});
+    const missionReportRef = useRef<() => void>(() => {});
 
     // Visibly "click" a few graph nodes during the graph step: highlight the current
     // turbine, then two peers (same site when possible, else other turbines), then
@@ -2862,12 +2863,13 @@ function App() {
             const t = turbines.find((x) => x.id === id);
             if (t) {
                 setWoMessage(i === 0
-                    ? `Graph: incident node ${id} (${t.status}).`
+                    ? `Graph: drilled into incident node ${id} (${t.status}) — components & devices expanded.`
                     : `Graph: tracing related node ${id} — same site ${t.siteName}.`);
             }
             await delay(stepMs);
         }
         setSelectedId(originalId);
+        setWoMessage(`Graph: back on incident node ${originalId} — reviewing its component tree.`);
     }, [selected.id, selected.siteId, turbines]);
 
     const handleAutoRunDemo = useCallback(async () => {
@@ -2906,12 +2908,25 @@ function App() {
             setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
             logStep("locate", `Filtered map to site ${selected.siteName} and focused ${selected.id}`);
             await delay(dwellMs - preActionMs);
-            // 3 — Inspect the digital twin for the selected turbine.
+            // 3 — Inspect the digital twin: overall view first, then click the rotor to
+            // drill into its component/device content.
             setDemoScriptStep("twin");
             setDemoStepIndex(2);
             setView("twin");
-            logStep("twin", "Inspected the digital twin");
-            await delay(dwellMs);
+            setDemoFocusPart(null);
+            setFocusedTwinPart(null);
+            setFocusedTwinDevice(null);
+            setWoMessage(`Digital twin: overall view of ${selected.id}.`);
+            await delay(preActionMs);
+            setDemoFocusPart("rotor");
+            setWoMessage(`Digital twin: clicked the rotor on ${selected.id} — reading blade & pitch signals.`);
+            const twinHalf = Math.max(4000, Math.floor((dwellMs - preActionMs) / 2));
+            await delay(twinHalf);
+            setFocusedTwinPart("rotor");
+            setFocusedTwinDevice("rotor.pitch-control");
+            setWoMessage("Digital twin: drilled into rotor · pitch control device content.");
+            logStep("twin", "Overall view → clicked rotor → inspected pitch-control device");
+            await delay(dwellMs - preActionMs - twinHalf);
             // 4 — Analyze the ontology graph: show it first, then filter/traverse.
             setDemoScriptStep("graph");
             setDemoStepIndex(3);
@@ -2946,15 +2961,21 @@ function App() {
             setGraphFilter("all");
             logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
             await delay(dwellMs);
-            // 7 — Ask Fabric IQ a prioritization question.
+            // 7 — Ask Fabric IQ: click Ask, read the recommendation, then open the report.
             setDemoScriptStep("ask");
             setDemoStepIndex(6);
             setTechPopupOpen(false);
             setView("ask");
             const askPrompt = `Which turbines are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
             setQuestion(askPrompt);
-            logStep("ask", "Asked Fabric IQ for prioritization");
+            setWoMessage("Fabric IQ: submitting the prioritization question…");
             await runAskRef.current(askPrompt);
+            logStep("ask", "Asked Fabric IQ for prioritization");
+            setWoMessage("Fabric IQ answered — compiling the guided mission report.");
+            await delay(preActionMs);
+            missionReportRef.current();
+            logStep("ask", "Opened the mission report");
+            await delay(dwellMs - preActionMs);
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
         } finally {
@@ -2999,10 +3020,18 @@ function App() {
         {
             id: "twin",
             label: "3. Digital twin",
-            detail: "Open the 3D digital twin for component-level analysis.",
-            action: () => {
+            detail: "Open the twin, then click the rotor to drill into its content.",
+            action: async () => {
                 setDemoScriptStep("twin");
                 setView("twin");
+                setDemoFocusPart(null);
+                setFocusedTwinPart(null);
+                setFocusedTwinDevice(null);
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 2500));
+                setDemoFocusPart("rotor");
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 2500));
+                setFocusedTwinPart("rotor");
+                setFocusedTwinDevice("rotor.pitch-control");
             },
         },
         {
@@ -3049,7 +3078,7 @@ function App() {
         {
             id: "ask",
             label: "7. Ask Fabric IQ",
-            detail: "Open Fabric IQ and ask a prioritization question.",
+            detail: "Ask a prioritization question, then open the mission report.",
             action: async () => {
                 setDemoScriptStep("ask");
                 setTechPopupOpen(false);
@@ -3057,6 +3086,8 @@ function App() {
                 const prompt = `Which turbines are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
                 setQuestion(prompt);
                 await runAskRef.current(prompt);
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 1500));
+                missionReportRef.current();
             },
         },
     ], [demoScriptLead, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, handleRaiseWorkOrder, selected.siteName]);
@@ -3066,11 +3097,13 @@ function App() {
         void handleAutoRunDemo();
     }, [handleAutoRunDemo]);
 
-    // Drive the twin's controlled focus from the guided demo: focus the rotor while on
-    // the twin step + view, release it otherwise. Works for both the auto-run and the
-    // manual step-by-step flow since both set `view` and `demoScriptStep`.
+    // Release the twin's controlled focus whenever we leave the twin step/view. While on
+    // the twin step, the guided demo drives the focus imperatively (overall view first,
+    // then a scripted rotor click and device drill-down), so we must not override it here.
     useEffect(() => {
-        setDemoFocusPart(view === "twin" && demoScriptStep === "twin" ? "rotor" : null);
+        if (!(view === "twin" && demoScriptStep === "twin")) {
+            setDemoFocusPart(null);
+        }
     }, [view, demoScriptStep]);
 
     const runAsk = useCallback(async (override?: string) => {
@@ -3696,6 +3729,12 @@ function App() {
         URL.revokeObjectURL(url);
         setWoMessage(`Mission report exported (${report.stepCount} steps, ${(report.durationMs / 1000).toFixed(1)}s).`);
     }, [demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, recordMissionRun, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
+
+    // Keep a stable ref to the latest mission-report handler so the guided demo (declared
+    // earlier) can "click" the report button without a forward reference.
+    useEffect(() => {
+        missionReportRef.current = handleDownloadMissionReport;
+    }, [handleDownloadMissionReport]);
 
     return (
         <main className="wow-surface relative flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_12%_8%,#202833_0%,#12171f_52%,#0d1016_100%)] text-slate-100">
@@ -5065,152 +5104,185 @@ function App() {
 
                     {view === "ask" && (
                         <div className="h-full overflow-y-auto p-4">
-                            <div className="ask-wow mx-auto max-w-3xl space-y-3 rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-cyan-500/5 via-transparent to-transparent p-3 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
-                                <Panel
-                                    title="Ask Fabric IQ"
-                                    action={
-                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${isDataAgentConfigured() ? "bg-emerald-900/60 text-emerald-300" : "bg-slate-700/60 text-slate-300"}`}>
+                            <div className="ask-wow mx-auto max-w-3xl space-y-4">
+                                {/* Hero: ask box */}
+                                <div className="relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-cyan-500/10 via-[#0b1a30]/70 to-transparent p-5 shadow-[0_20px_45px_rgba(4,20,40,0.45)]">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-2xl">💬</span>
+                                            <div>
+                                                <h2 className="text-lg font-semibold leading-tight text-slate-100">Ask Fabric IQ</h2>
+                                                <p className="text-xs text-slate-400">Plain-language answers over your live wind fleet.</p>
+                                            </div>
+                                        </div>
+                                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${isDataAgentConfigured() ? "bg-emerald-500/15 text-emerald-300" : "bg-slate-600/40 text-slate-300"}`}>
                                             {isDataAgentConfigured() ? "● Live Data Agent" : "○ Local engine"}
                                         </span>
-                                    }
-                                >
-                                    <p className="text-xs text-slate-400">
-                                        {isDataAgentConfigured()
-                                            ? "Routed to the deployed Fabric Data Agent (Lakehouse/Eventhouse), with a local fallback."
-                                            : "Answered by a deterministic in-browser engine grounded in simulated telemetry, ontology sites, and dispatch-note history. Set VITE_DATA_AGENT_URL to route to a real Fabric Data Agent."}
-                                    </p>
-                                    <textarea
-                                        value={question}
-                                        onChange={(e) => setQuestion(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void runAsk(); } }}
-                                        rows={3}
-                                        placeholder="Ask about output, alarms, vibration, wind, dispatch notes…  (Ctrl+Enter to send)"
-                                        className="mt-2 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-sm shadow-inner shadow-black/30"
-                                    />
-                                    <div className="mt-2 flex flex-wrap gap-1">
-                                        {SUGGESTED.map((q) => (
-                                            <button
-                                                key={q}
-                                                type="button"
-                                                onClick={() => { setQuestion(q); void runAsk(q); }}
-                                                className="rounded-full border border-slate-700 bg-[#0a1830] px-2.5 py-1 text-[11px] text-slate-300 transition-all duration-200 hover:-translate-y-[1px] hover:border-cyan-500 hover:text-cyan-200"
-                                            >
-                                                {q}
-                                            </button>
-                                        ))}
                                     </div>
-                                    <div className="mt-2 flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => void runAsk()}
-                                            disabled={askLoading}
-                                            className="flex-1 rounded bg-cyan-600 px-3 py-2 text-sm font-medium text-white shadow-[0_10px_28px_rgba(6,182,212,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500 disabled:opacity-50"
-                                        >
-                                            {askLoading ? "Asking…" : "Ask Question"}
-                                        </button>
+
+                                    <div className="relative mt-4">
+                                        <textarea
+                                            value={question}
+                                            onChange={(e) => setQuestion(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void runAsk(); } }}
+                                            rows={3}
+                                            placeholder="Ask about output, alarms, vibration, wind, dispatch notes…"
+                                            className="w-full resize-none rounded-xl border border-slate-700 bg-[#08142a] px-3 py-2.5 text-sm shadow-inner shadow-black/30 focus:border-cyan-500/70 focus:outline-none"
+                                        />
+                                        <span className="pointer-events-none absolute bottom-2 right-3 text-[10px] text-slate-500">Ctrl+Enter</span>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => void runAsk()}
+                                        disabled={askLoading}
+                                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-3 py-2.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(6,182,212,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <span aria-hidden="true">{askLoading ? "⏳" : "✨"}</span>
+                                        {askLoading ? "Thinking…" : "Ask Fabric IQ"}
+                                    </button>
+
+                                    <div className="mt-4">
+                                        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Try asking</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {SUGGESTED.map((q) => (
+                                                <button
+                                                    key={q}
+                                                    type="button"
+                                                    onClick={() => { setQuestion(q); void runAsk(q); }}
+                                                    className="rounded-full border border-slate-700 bg-[#0a1830] px-3 py-1 text-[11px] text-slate-300 transition-all duration-200 hover:-translate-y-[1px] hover:border-cyan-500 hover:text-cyan-200"
+                                                >
+                                                    {q}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {askError && (
+                                    <div className="flex items-center gap-2 rounded-xl border border-red-800/60 bg-red-900/20 px-3 py-2 text-xs text-red-200">
+                                        <span aria-hidden="true">⚠️</span>{askError}
+                                    </div>
+                                )}
+
+                                {/* Answer */}
+                                {askResult && (
+                                    <div className="rounded-2xl border border-slate-700/70 bg-[#081226] p-4 shadow-[0_14px_36px_rgba(4,16,32,0.5)]">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-lg">🤖</span>
+                                            <span className="text-sm font-semibold text-slate-100">Answer</span>
+                                            <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${askResult.source === "fabriciq" ? "bg-emerald-500/15 text-emerald-300" : askResult.source === "ontology" ? "bg-cyan-500/15 text-cyan-300" : "bg-slate-600/40 text-slate-300"}`}>
+                                                    {sourceLabel(askResult.source)}
+                                                </span>
+                                                {typeof askResult.confidence === "number" && (
+                                                    <span className="rounded-full bg-slate-700/50 px-2 py-0.5 text-[10px] font-medium text-slate-200">{Math.round(askResult.confidence * 100)}% sure</span>
+                                                )}
+                                                {askResult.cacheHit && <span className="rounded-full bg-slate-700/50 px-2 py-0.5 text-[10px] text-slate-300">cached</span>}
+                                            </div>
+                                        </div>
+                                        <p className="mt-3 text-base leading-relaxed text-slate-100">{askResult.summary}</p>
+                                        {askResult.evidence && askResult.evidence.length > 0 && (
+                                            <ul className="mt-3 space-y-1 text-xs text-slate-400">
+                                                {askResult.evidence.slice(0, 3).map((ev, i) => (
+                                                    <li key={`${ev}-${i}`} className="flex items-start gap-1.5"><span aria-hidden="true" className="text-cyan-400">•</span>{ev}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        <p className="mt-3 text-[10px] text-slate-500">Answered {new Date(askResult.generatedAt).toLocaleTimeString()}</p>
+                                    </div>
+                                )}
+
+                                {/* Suggested next steps */}
+                                {(runHistory.length > 0 || demoRunLog.length > 0) && (
+                                    <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4">
+                                        <p className="flex items-center gap-1.5 text-sm font-semibold text-cyan-200"><span aria-hidden="true">🧭</span>Suggested next steps</p>
+                                        <p className="mt-0.5 text-xs text-slate-400">Compile this guided mission or jump back to the fleet.</p>
+                                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleDownloadMissionReport}
+                                                className="flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
+                                            >
+                                                <span aria-hidden="true">📄</span>Open mission report
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setView("map")}
+                                                className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500/60 hover:text-white"
+                                            >
+                                                <span aria-hidden="true">🗺</span>Back to fleet map
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setView("operations")}
+                                                className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500/60 hover:text-white"
+                                            >
+                                                <span aria-hidden="true">🛠</span>Open operations
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Advanced: connection test + diagnostics (tucked away) */}
+                                <details className="group rounded-2xl border border-slate-800/80 bg-[#071424]/60 px-4 py-3 text-slate-300">
+                                    <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-slate-400 marker:hidden">
+                                        <span aria-hidden="true" className="transition-transform group-open:rotate-90">▸</span>
+                                        <span aria-hidden="true">🔧</span>Advanced · connection &amp; diagnostics
+                                    </summary>
+                                    <div className="mt-3 space-y-3">
+                                        <p className="text-[11px] text-slate-500">
+                                            {isDataAgentConfigured()
+                                                ? "Routed to the deployed Fabric Data Agent (Lakehouse/Eventhouse), with a local fallback."
+                                                : "Answered by a deterministic in-browser engine grounded in simulated telemetry, ontology sites, and dispatch-note history. Set VITE_DATA_AGENT_URL to route to a real Fabric Data Agent."}
+                                        </p>
                                         <button
                                             type="button"
                                             onClick={() => void runAgentConnectionCheck()}
                                             disabled={agentCheckLoading}
-                                            className="rounded border border-slate-600 bg-[#0a1830] px-3 py-2 text-xs font-medium text-slate-200 transition-all duration-200 hover:-translate-y-[1px] hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50"
+                                            className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50"
                                         >
-                                            {agentCheckLoading ? "Testing…" : "Test Data Agent"}
+                                            <span aria-hidden="true">🔌</span>{agentCheckLoading ? "Testing…" : "Test Data Agent"}
                                         </button>
-                                    </div>
-                                    {askError && <p className="mt-2 text-xs text-red-300">{askError}</p>}
-                                    {agentCheckResult && (
-                                        <div className={`mt-2 rounded border p-2 text-xs ${agentCheckResult.ok ? "border-emerald-700/70 bg-emerald-900/20 text-emerald-200" : "border-red-800/70 bg-red-900/20 text-red-200"}`}>
-                                            <p className="font-medium">{agentCheckResult.message}</p>
-                                            <div className="mt-1 flex flex-wrap gap-3 text-[11px] opacity-90">
-                                                <span>Mode: {agentCheckResult.mode.toUpperCase()}</span>
-                                                <span>Auth: {agentCheckResult.authScheme}</span>
-                                                {agentCheckResult.transportUsed && <span>Transport: {agentCheckResult.transportUsed.toUpperCase()}</span>}
-                                                {agentCheckResult.transportTried.length > 0 && (
-                                                    <span>Tried: {agentCheckResult.transportTried.map((t) => t.toUpperCase()).join(" → ")}</span>
+                                        {agentCheckResult && (
+                                            <div className={`rounded-lg border p-2 text-xs ${agentCheckResult.ok ? "border-emerald-700/70 bg-emerald-900/20 text-emerald-200" : "border-red-800/70 bg-red-900/20 text-red-200"}`}>
+                                                <p className="font-medium">{agentCheckResult.message}</p>
+                                                <div className="mt-1 flex flex-wrap gap-3 text-[11px] opacity-90">
+                                                    <span>Mode: {agentCheckResult.mode.toUpperCase()}</span>
+                                                    <span>Auth: {agentCheckResult.authScheme}</span>
+                                                    {agentCheckResult.transportUsed && <span>Transport: {agentCheckResult.transportUsed.toUpperCase()}</span>}
+                                                    {agentCheckResult.transportTried.length > 0 && (
+                                                        <span>Tried: {agentCheckResult.transportTried.map((t) => t.toUpperCase()).join(" → ")}</span>
+                                                    )}
+                                                </div>
+                                                {agentCheckResult.url && <p className="mt-1 break-all text-[11px] opacity-90">URL: {agentCheckResult.url}</p>}
+                                                {agentCheckResult.sampleAnswer && (
+                                                    <p className="mt-1 text-[11px] opacity-90">Sample: {agentCheckResult.sampleAnswer.slice(0, 140)}</p>
                                                 )}
                                             </div>
-                                            {agentCheckResult.url && <p className="mt-1 break-all text-[11px] opacity-90">URL: {agentCheckResult.url}</p>}
-                                            {agentCheckResult.sampleAnswer && (
-                                                <p className="mt-1 text-[11px] opacity-90">Sample: {agentCheckResult.sampleAnswer.slice(0, 140)}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                    {askResult && (
-                                        <div className="mt-3 rounded border border-slate-700 bg-[#081226] p-3 text-sm text-slate-200">
-                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-                                                <span>Source: {sourceLabel(askResult.source)}</span>
-                                                <span className="flex items-center gap-2">
-                                                    {askResult.source === "fabriciq" && askResult.transport && (
-                                                        <span>Transport: {askResult.transport.toUpperCase()}</span>
-                                                    )}
-                                                    {askResult.fallbackReason && <span>Fallback: {askResult.fallbackReason}</span>}
-                                                    {typeof askResult.confidence === "number" && <span>Confidence: {Math.round(askResult.confidence * 100)}%</span>}
-                                                    {askResult.cacheHit && <span>cached</span>}
-                                                    <span>{new Date(askResult.generatedAt).toLocaleTimeString()}</span>
-                                                </span>
-                                            </div>
-                                            <p className="mt-1">{askResult.summary}</p>
-                                            {askResult.evidence && askResult.evidence.length > 0 && (
-                                                <ul className="mt-2 list-disc pl-4 text-xs text-slate-400">
-                                                    {askResult.evidence.slice(0, 3).map((ev, i) => (
-                                                        <li key={`${ev}-${i}`}>{ev}</li>
+                                        )}
+                                        {askResult?.queryText && <p className="text-[11px] text-slate-500">Trace: {askResult.queryText}</p>}
+                                        {askHistory.length > 0 && (
+                                            <div>
+                                                <p className="mb-2 text-[11px] font-medium text-slate-400">Recent questions</p>
+                                                <div className="space-y-1.5">
+                                                    {askHistory.map((h, i) => (
+                                                        <div key={`${h.at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-1 text-[11px] last:border-b-0 last:pb-0">
+                                                            <span className="truncate text-slate-400" title={h.question}>{h.question}</span>
+                                                            <span className="flex items-center gap-2 text-slate-500">
+                                                                <span>{sourceLabel(h.source)}</span>
+                                                                {h.source === "fabriciq" && h.transport && <span>{h.transport.toUpperCase()}</span>}
+                                                                {h.fallbackReason && <span>fallback:{h.fallbackReason}</span>}
+                                                                <span>{h.latencyMs}ms</span>
+                                                                {h.cacheHit && <span>cached</span>}
+                                                            </span>
+                                                        </div>
                                                     ))}
-                                                </ul>
-                                            )}
-                                            {askResult.queryText && <p className="mt-2 text-xs text-slate-400">Trace: {askResult.queryText}</p>}
-                                        </div>
-                                    )}
-                                    {(runHistory.length > 0 || demoRunLog.length > 0) && (
-                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 transition-all duration-200 hover:border-cyan-400/60">
-                                            <div className="min-w-0">
-                                                <p className="text-[11px] font-medium text-cyan-200">Fabric IQ · suggested next steps</p>
-                                                <p className="truncate text-xs text-slate-400">Compile this guided mission or jump back to the fleet.</p>
+                                                </div>
                                             </div>
-                                            <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={handleDownloadMissionReport}
-                                                    className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white shadow-[0_10px_28px_rgba(6,182,212,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-cyan-500"
-                                                >
-                                                    Open mission report
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setView("map")}
-                                                    className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500/60 hover:text-white"
-                                                >
-                                                    Back to fleet map
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setView("operations")}
-                                                    className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500/60 hover:text-white"
-                                                >
-                                                    Open operations
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {askHistory.length > 0 && (
-                                        <div className="mt-3 rounded border border-slate-700 bg-[#071424] p-3 text-xs text-slate-300">
-                                            <p className="mb-2 font-medium text-slate-200">Recent Ask Diagnostics</p>
-                                            <div className="space-y-1.5">
-                                                {askHistory.map((h, i) => (
-                                                    <div key={`${h.at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-1 last:border-b-0 last:pb-0">
-                                                        <span className="truncate text-slate-400" title={h.question}>{h.question}</span>
-                                                        <span className="flex items-center gap-2 text-slate-400">
-                                                            <span>{sourceLabel(h.source)}</span>
-                                                            {h.source === "fabriciq" && h.transport && <span>{h.transport.toUpperCase()}</span>}
-                                                            {h.fallbackReason && <span>fallback:{h.fallbackReason}</span>}
-                                                            <span>{h.latencyMs}ms</span>
-                                                            {h.cacheHit && <span>cached</span>}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </Panel>
+                                        )}
+                                    </div>
+                                </details>
                             </div>
                         </div>
                     )}
