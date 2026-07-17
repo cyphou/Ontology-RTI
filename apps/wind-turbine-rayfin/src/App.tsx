@@ -2921,13 +2921,16 @@ function App() {
             await delay(preActionMs);
             setDemoFocusPart("rotor");
             setWoMessage(`Digital twin: clicked the rotor on ${selected.id} — reading blade & pitch signals.`);
-            const twinHalf = Math.max(2000, Math.floor((dwellMs - preActionMs) / 2));
-            await delay(twinHalf);
+            // The twin has the most to show (overall → rotor → device drill), so give it a
+            // longer dwell than a standard page and split the post-action time evenly.
+            const twinDwellMs = 16000;
+            const twinRotorMs = Math.round((twinDwellMs - preActionMs) / 2);
+            await delay(twinRotorMs);
             setFocusedTwinPart("rotor");
             setFocusedTwinDevice("rotor.pitch-control");
             setWoMessage("Digital twin: drilled into rotor · pitch control device content.");
             logStep("twin", "Overall view → clicked rotor → inspected pitch-control device");
-            await delay(dwellMs - preActionMs - twinHalf);
+            await delay(twinDwellMs - preActionMs - twinRotorMs);
             // 4 — Analyze the ontology graph: show it first, then filter/traverse.
             setDemoScriptStep("graph");
             setDemoStepIndex(3);
