@@ -36,20 +36,70 @@
    🌐 <a href="https://naive-cave-f911045ee7-westcentralus.webapp.msit.fabricapps.net"><b>Live app</b></a>
 </p>
 
+<table>
+<tr><td>🏷️ <b>Stack</b></td><td>React 19 · Vite · TypeScript · Three.js · Vitest</td></tr>
+<tr><td>🧩 <b>Backend</b></td><td>Microsoft Fabric — RTI (Eventhouse/KQL) · Semantic Model · Ontology + Graph · Data Agent</td></tr>
+<tr><td>✅ <b>Tests</b></td><td>155 Vitest specs · deterministic mission/telemetry helpers</td></tr>
+<tr><td>🛟 <b>Runtime</b></td><td>Fallback-safe — live telemetry <b>or</b> synthetic simulation</td></tr>
+<tr><td>🎬 <b>Demo</b></td><td>8-step guided walkthrough (~92s) with mission-report export</td></tr>
+</table>
+
 ---
 
 ## ✨ Highlights
 
-| | Capability | What it delivers |
-|:--:|---|---|
-| 🗺️ | **Live fleet map** | Multi-site 3D geospatial map with turbine-level status and selection |
-| 🌀 | **Digital twin** | Per-turbine component → device diagnostics in an interactive 3D scene |
-| 🕸️ | **Ontology graph** | Trace asset topology and dependencies to confirm the probable cause |
-| 🛠️ | **Guided dispatch** | Match the best technician, raise a tracked work order, close the loop |
-| 🤖 | **Ask Fabric IQ** | Natural-language, ontology-grounded answers with a fleet-health visual |
-| 📊 | **Analytics** | Output trends, deltas and the wind-power curve |
-| 📄 | **Mission report** | Exportable JSON evidence with a full incident timeline |
-| 🛞 | **Fallback-safe** | Runs on synthetic telemetry offline, lights up live data when wired |
+<table>
+<tr>
+<td width="50%">
+
+### 🗺️ Live fleet map
+Multi-site **3D geospatial** map with turbine-level status, selection, and status-aware filtering across every wind corridor.
+
+</td>
+<td width="50%">
+
+### 🌀 Digital twin
+Per-turbine **component → device** diagnostics in an interactive Three.js scene, with a persisted device graph and in-app editor.
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🕸️ Ontology graph
+Trace **asset topology and dependencies** (Fleet → Site → Turbine → Component → Device) to confirm the probable cause.
+
+</td>
+<td>
+
+### 🛠️ Guided dispatch
+Match the **best technician** on skills, site and load, raise a tracked work order, and close the loop — with SLA + escalation.
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🤖 Ask Fabric IQ
+**Natural-language**, ontology-grounded answers with a fleet-health snapshot and honest source labeling.
+
+</td>
+<td>
+
+### 📊 Analytics & report
+Output **trends, deltas and the power curve**, plus an exportable **mission report** (JSON) with a full incident timeline.
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+### 🛟 Fallback-safe by design
+Runs fully on a **synthetic telemetry generator** and a local engine offline, then **lights up live data** the moment Fabric connection aliases are set — no code changes.
+
+</td>
+</tr>
+</table>
 
 ## 📚 Table of contents
 
@@ -95,19 +145,19 @@ Other industry variants already exist, showing the pattern generalizes across do
 
 ```mermaid
 flowchart LR
-      U[Operator] --> A[Geo Wind Twin Command Center]
-      A --> M[3D Fleet Map]
-      A --> T[Digital Twin]
-      A --> P[Mission Panel]
-      A --> Q[Ask Fabric IQ]
+      U["👤 Operator"] --> A["🧭 Geo Wind Twin<br/>Command Center"]
+      A --> M["🗺️ 3D Fleet Map"]
+      A --> T["🌀 Digital Twin"]
+      A --> P["🚨 Mission Panel"]
+      A --> Q["🤖 Ask Fabric IQ"]
 
-      subgraph Fabric
-         H[Host Bridge]
-         R[RTI\nEventhouse / KQL Telemetry]
-         S[Semantic Model]
-         O[Ontology + Graph\nDigital Twin]
-         D[Data Agent]
-         B[TurbineDevice Backend]
+      subgraph Fabric["☁️ Microsoft Fabric"]
+         H["🔌 Host Bridge"]
+         R["📡 RTI · Eventhouse / KQL"]
+         S["📊 Semantic Model"]
+         O["🕸️ Ontology + Graph"]
+         D["💬 Data Agent"]
+         B["🗄️ TurbineDevice"]
       end
 
       A --> H
@@ -117,26 +167,49 @@ flowchart LR
       H --> D
       H --> B
 
-      subgraph Fallback
-         G[Synthetic Telemetry]
-         L[Local Offline Engine]
+      subgraph Fallback["🛟 Fallback-safe"]
+         G["🎲 Synthetic Telemetry"]
+         L["🧮 Local Offline Engine"]
       end
 
       A --> G
       Q --> L
+
+      style U fill:#334155,color:#fff,stroke:#334155
+      style A fill:#0EA5B7,color:#fff,stroke:#0EA5B7
+      style M fill:#1E2A38,color:#E7EDF5,stroke:#22D3EE
+      style T fill:#1E2A38,color:#E7EDF5,stroke:#2DD4BF
+      style P fill:#1E2A38,color:#E7EDF5,stroke:#FB7185
+      style Q fill:#1E2A38,color:#E7EDF5,stroke:#FBBF24
+      style H fill:#742774,color:#fff,stroke:#742774
+      style R fill:#0f2230,color:#E7EDF5,stroke:#22D3EE
+      style S fill:#0f2230,color:#E7EDF5,stroke:#2DD4BF
+      style O fill:#0f2230,color:#E7EDF5,stroke:#34D399
+      style D fill:#0f2230,color:#E7EDF5,stroke:#FBBF24
+      style B fill:#0f2230,color:#E7EDF5,stroke:#FB7185
+      style G fill:#14251c,color:#E7EDF5,stroke:#34D399
+      style L fill:#14251c,color:#E7EDF5,stroke:#34D399
 ```
 
 ### Demo Flow
 
 ```mermaid
 flowchart TD
-      A[npm install] --> B[npm run dev]
-      B --> C{Fabric vars set?}
-      C -->|Yes| D[Live telemetry + agent]
-      C -->|No| E[Simulation mode]
-      D --> F[Run mission walkthrough]
+      A["📦 npm install"] --> B["▶️ npm run dev"]
+      B --> C{"🔌 Fabric vars set?"}
+      C -->|Yes| D["📡 Live telemetry + agent"]
+      C -->|No| E["🎲 Simulation mode"]
+      D --> F["🎬 Run guided demo"]
       E --> F
-      F --> G[Export mission report JSON]
+      F --> G["📄 Export mission report JSON"]
+
+      style A fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+      style B fill:#4B8BBE,color:#fff,stroke:#4B8BBE
+      style C fill:#742774,color:#fff,stroke:#742774
+      style D fill:#0EA5B7,color:#fff,stroke:#0EA5B7
+      style E fill:#3f2d14,color:#FBBF24,stroke:#FBBF24
+      style F fill:#0EA5B7,color:#fff,stroke:#0EA5B7
+      style G fill:#14251c,color:#34D399,stroke:#34D399
 ```
 
 ### Use-case strength & impact
@@ -227,6 +300,10 @@ flag telemetry as **simulated** until `VITE_LIVE_TELEMETRY_MODEL` is set.
 
 
 ## Getting started
+
+> [!TIP]
+> New here? Run `npm install && npm run dev`, open the app, then click **▶ Demo → Run all**
+> for a ~92s guided tour — **no Fabric wiring required** (it runs on synthetic telemetry).
 
 1. **Install dependencies**: `npm install`
 2. **Provision / refresh the Fabric host** (optional for local dev): `rayfin env` writes the
@@ -321,7 +398,8 @@ az account get-access-token --resource https://api.fabric.microsoft.com --query 
 
 Token note: this bearer token expires (typically around 1 hour), so renew it when Ask/Test starts returning `401`.
 
-With neither set, the app is fully functional on synthetic data — no Fabric round-trips.
+> [!NOTE]
+> With neither variable set, the app is **fully functional on synthetic data** — no Fabric round-trips.
 
 ### Quick "prepare everything" checklist
 
