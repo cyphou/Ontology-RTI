@@ -277,8 +277,6 @@ const WORLD: number[][][] = [
     [[131, -2], [137, -3], [143, -4], [149, -7], [145, -9], [138, -8], [133, -6]],
     // New Zealand
     [[173, -35], [176, -37], [178, -41], [174, -43], [169, -46], [166, -45], [169, -41], [171, -38]],
-    // Antarctica fringe (stylized cap)
-    [[-180, -62], [-160, -64], [-130, -66], [-95, -67], [-60, -68], [-20, -69], [20, -69], [60, -68], [95, -67], [130, -66], [160, -64], [180, -62], [180, -74], [-180, -74]],
 ];
 
 // Tapered, slightly twisted turbine blade (length along +Y).
@@ -947,7 +945,7 @@ function buildFarm(seedOffset: number): TurbineTelemetry[] {
         for (let i = 0; i < site.turbineCount; i += 1) {
             const idx = siteIdx * 100 + i;
             const angle = (Math.PI * 2 * i) / Math.max(site.turbineCount, 1);
-            const radius = 1.2 + (i % 3) * 0.85;
+            const radius = 0.9 + (i % 3) * 0.6;
             const x = cx + Math.cos(angle) * radius;
             const z = cz + Math.sin(angle) * radius;
 
@@ -1004,7 +1002,7 @@ function assembleLiveView(snapshot: LiveTelemetrySnapshot): { turbines: TurbineT
         const cz = projectLatToZ(farm.latitude);
         ids.forEach((turbineId, i) => {
             const angle = (Math.PI * 2 * i) / Math.max(ids.length, 1);
-            const radius = 1.2 + (i % 3) * 0.85;
+            const radius = 0.9 + (i % 3) * 0.6;
             const m = metricsById.get(turbineId);
             const nacelleTempC = +(m?.nacelleTempC ?? 0).toFixed(1);
             const vibrationMmS = +(m?.vibrationMmS ?? 0).toFixed(1);

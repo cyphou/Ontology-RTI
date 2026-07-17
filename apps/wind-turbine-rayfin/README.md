@@ -15,6 +15,44 @@
    <img src="https://img.shields.io/badge/Export-Mission%20Report%20JSON-111827?style=flat-square" alt="Mission Report"/>
 </p>
 
+<p align="center">
+   <b>Geo Wind Twin Command Center</b> — an ontology-grounded, 3D digital-twin command center for
+   multi-site wind fleets, built on <b>Microsoft Fabric</b> + <b>Rayfin</b>, and <b>fallback-safe by design</b>.
+</p>
+
+<p align="center">
+   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 19"/>
+   <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite"/>
+   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
+   <img src="https://img.shields.io/badge/Three.js-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js"/>
+   <img src="https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest"/>
+</p>
+
+---
+
+## ✨ Highlights
+
+| | Capability | What it delivers |
+|:--:|---|---|
+| 🗺️ | **Live fleet map** | Multi-site 3D geospatial map with turbine-level status and selection |
+| 🌀 | **Digital twin** | Per-turbine component → device diagnostics in an interactive 3D scene |
+| 🕸️ | **Ontology graph** | Trace asset topology and dependencies to confirm the probable cause |
+| 🛠️ | **Guided dispatch** | Match the best technician, raise a tracked work order, close the loop |
+| 🤖 | **Ask Fabric IQ** | Natural-language, ontology-grounded answers with a fleet-health visual |
+| 📊 | **Analytics** | Output trends, deltas and the wind-power curve |
+| 📄 | **Mission report** | Exportable JSON evidence with a full incident timeline |
+| 🛞 | **Fallback-safe** | Runs on synthetic telemetry offline, lights up live data when wired |
+
+## 📚 Table of contents
+
+- 🏁 [Hackathon Snapshot](#hackathon-snapshot)
+- 🔌 [Fabric connectivity](#fabric-connectivity)
+- 🧰 [Prerequisites](#prerequisites)
+- 🚀 [Getting started](#getting-started)
+- 🎬 [Guided demo script](#guided-demo-script)
+- ⚙️ [Enabling real Fabric data](#enabling-real-fabric-data)
+- 🔗 [Related](#related)
+
 ## Hackathon Snapshot
 
 ### Problem Statement
