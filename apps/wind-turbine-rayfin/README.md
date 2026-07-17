@@ -157,6 +157,52 @@ flag telemetry as **simulated** until `VITE_LIVE_TELEMETRY_MODEL` is set.
    `&devUri=http://localhost:5173` to preview local changes inside the host.
 
 
+## Guided demo script
+
+The app ships a **guided demo** that walks one live incident end to end — from detection
+to resolution — so a jury or customer can follow the full story without knowing the UI.
+
+### How to run it
+
+- Click **▶ Demo** in the header to open the demo controls, then:
+  - **Run all** — plays the whole scripted walkthrough automatically.
+  - **Run step** — runs the current step only; use **◀ / ▶** (or the **←/→** arrow keys) to move between steps, **Enter** to run.
+- It is **fallback-safe**: the script runs identically in simulation mode (no Fabric wiring),
+  driving synthetic telemetry and the local offline engine.
+
+### Pacing
+
+Each page dwells for **~10s**, with a **~5s** pause before the in-page action fires
+(e.g. applying a filter, clicking the rotor), so the audience can read the context first.
+
+### The eight steps
+
+| # | Step | 👁 See | 🖱 Action |
+|---|------|--------|-----------|
+| 1 | **Frame the incident** | Incident summary — turbine, probable component, priority, lead technician | Auto-frames the top incident on the map |
+| 2 | **Locate on the map** | The affected wind site and its turbines | Applies the site filter to zoom in |
+| 3 | **Digital twin** | The 3D turbine — rotor blades and pitch signals | Clicks the rotor, then the pitch-control device |
+| 4 | **Ontology graph** | The incident node with its component & device branches | Clicks through the related graph nodes |
+| 5 | **Dispatch** | The best-matched technician and dispatch popup | Raises and assigns the work order |
+| 6 | **Field support** | Field-support status and the closed maintenance loop | Calls field support and closes the loop |
+| 7 | **Ask Fabric IQ** | The plain-language answer and fleet-health snapshot | Submits the question to Fabric IQ |
+| 8 | **Analytics & report** | Output trends, deltas and the wind-power curve | Opens the mission report |
+
+Throughout, a **narration banner** shows the step title, an end-to-end caption on step 1,
+a progress bar, and per-step **See / Action** cues. The finale opens a **mission report
+modal** (verdict, dispatch quality, timeline of every step) with a **Download JSON** export.
+
+### Reusable & domain-agnostic
+
+The script is **data-driven** from a per-domain manifest, so the same engine powers the
+Solar and Refinery apps with their own nouns and evidence:
+
+- Step order, narration, and See/Action cues: `src/services/demo-experience.service.ts`
+  (`WIND_DEMO_MANIFEST`, `SOLAR_DEMO_MANIFEST`, `REFINERY_DEMO_MANIFEST`, `DEMO_STEP_ORDER`).
+- Auto-run + step-by-step orchestration and the mission report: `src/App.tsx`
+  (`handleAutoRunDemo`, `demoScriptSteps`, `handleOpenMissionReport`).
+
+
 ## Enabling real Fabric data
 
 Add the connection aliases to `.env.local` (they are read via `import.meta.env`):
