@@ -2962,7 +2962,7 @@ function App() {
             setGraphFilter("all");
             logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
             await delay(dwellMs);
-            // 7 — Ask Fabric IQ: click Ask, read the recommendation, then open the report.
+            // 7 — Ask Fabric IQ: click Ask and read the recommendation.
             setDemoScriptStep("ask");
             setDemoStepIndex(6);
             setTechPopupOpen(false);
@@ -2972,11 +2972,18 @@ function App() {
             setWoMessage("Fabric IQ: submitting the prioritization question…");
             await runAskRef.current(askPrompt);
             logStep("ask", "Asked Fabric IQ for prioritization");
-            setWoMessage("Fabric IQ answered — compiling the guided mission report.");
-            await delay(preActionMs);
+            setWoMessage("Fabric IQ answered — visualizing the trend in Analytics next.");
+            await delay(dwellMs);
+            // 8 — Analytics: visualize the trends behind the answer, then open the report.
+            setDemoScriptStep("analytics");
+            setDemoStepIndex(7);
+            setView("analytics");
+            setWoMessage("Analytics: output, deltas and the power curve behind the recommendation.");
+            logStep("analytics", "Reviewed performance analytics behind the answer");
+            await delay(dwellMs);
             missionReportRef.current();
-            logStep("ask", "Opened the mission report");
-            await delay(dwellMs - preActionMs);
+            logStep("analytics", "Opened the mission report");
+            await delay(preActionMs);
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
         } finally {
@@ -3079,7 +3086,7 @@ function App() {
         {
             id: "ask",
             label: "7. Ask Fabric IQ",
-            detail: "Ask a prioritization question, then open the mission report.",
+            detail: "Ask a prioritization question and read the recommendation.",
             action: async () => {
                 setDemoScriptStep("ask");
                 setTechPopupOpen(false);
@@ -3087,6 +3094,16 @@ function App() {
                 const prompt = `Which turbines are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
                 setQuestion(prompt);
                 await runAskRef.current(prompt);
+            },
+        },
+        {
+            id: "analytics",
+            label: "8. Analytics & report",
+            detail: "Visualize the trend in Analytics, then open the mission report.",
+            action: async () => {
+                setDemoScriptStep("analytics");
+                setTechPopupOpen(false);
+                setView("analytics");
                 await new Promise<void>((resolve) => window.setTimeout(resolve, 1500));
                 missionReportRef.current();
             },

@@ -10,7 +10,7 @@
 // and scripted narration). These are intentionally free of React and Wind-specific
 // state so Solar and Refinery can reuse them without copy/paste.
 
-export type DemoScriptStepId = "story" | "locate" | "twin" | "graph" | "dispatch" | "support" | "ask";
+export type DemoScriptStepId = "story" | "locate" | "twin" | "graph" | "dispatch" | "support" | "ask" | "analytics";
 
 export type EscalationStage = "none" | "manager" | "regional";
 
@@ -296,7 +296,7 @@ export interface DomainDemoManifest {
     steps: Record<DemoScriptStepId, DemoManifestStep>;
 }
 
-export const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "graph", "dispatch", "support", "ask"];
+export const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "graph", "dispatch", "support", "ask", "analytics"];
 
 export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
     domainId: "wind-turbine",
@@ -313,6 +313,7 @@ export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected energy impact from the what-if plan." },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold." },
         ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions." },
+        analytics: { title: "Visualize in Analytics", caption: "Fabric IQ's recommendation is backed by the performance analytics — output trends, deltas, and the wind-power curve — before the mission report is compiled." },
     },
 };
 
@@ -343,6 +344,7 @@ export const SOLAR_DEMO_MANIFEST: DomainDemoManifest = {
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected yield impact from the what-if plan." },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold." },
         ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions." },
+        analytics: { title: "Visualize in Analytics", caption: "Fabric IQ's recommendation is backed by the performance analytics — yield trends, deltas, and the irradiance-power curve — before the mission report is compiled." },
     },
 };
 
@@ -361,6 +363,7 @@ export const REFINERY_DEMO_MANIFEST: DomainDemoManifest = {
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected throughput impact from the what-if plan." },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold." },
         ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions." },
+        analytics: { title: "Visualize in Analytics", caption: "Fabric IQ's recommendation is backed by the performance analytics — throughput trends, deltas, and the operating curve — before the mission report is compiled." },
     },
 };
 
