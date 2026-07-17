@@ -2879,8 +2879,8 @@ function App() {
         setAutoPlayRunning(true);
         setDemoIntroOpen(false);
         setDemoPanelOpen(true);
-        const dwellMs = 20000;
-        const preActionMs = 7000;
+        const dwellMs = 10000;
+        const preActionMs = 5000;
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
         const logStep = (step: string, detail: string) =>
             setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
@@ -2920,7 +2920,7 @@ function App() {
             await delay(preActionMs);
             setDemoFocusPart("rotor");
             setWoMessage(`Digital twin: clicked the rotor on ${selected.id} — reading blade & pitch signals.`);
-            const twinHalf = Math.max(4000, Math.floor((dwellMs - preActionMs) / 2));
+            const twinHalf = Math.max(2000, Math.floor((dwellMs - preActionMs) / 2));
             await delay(twinHalf);
             setFocusedTwinPart("rotor");
             setFocusedTwinDevice("rotor.pitch-control");
