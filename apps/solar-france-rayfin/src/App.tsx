@@ -5,7 +5,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { lazyRetry } from "@/lib/lazy-retry";
 import * as THREE from "three";
 import {
     answerQuestion,
@@ -114,11 +115,11 @@ export function seededRand(seed: number) {
 // on the map of France.
 const FRANCE_BBOX = { lonMin: -5.2, lonMax: 9.6, latMin: 41.2, latMax: 51.3 };
 
-function projectLonToX(lon: number) {
+export function projectLonToX(lon: number) {
     return ((lon - FRANCE_BBOX.lonMin) / (FRANCE_BBOX.lonMax - FRANCE_BBOX.lonMin) - 0.5) * 52;
 }
 
-function projectLatToZ(lat: number) {
+export function projectLatToZ(lat: number) {
     return ((FRANCE_BBOX.latMax - lat) / (FRANCE_BBOX.latMax - FRANCE_BBOX.latMin) - 0.5) * 52;
 }
 
@@ -721,8 +722,8 @@ export function sourceLabel(source: AskResult["source"]): string {
     }
 }
 
-const LazySolarFleetScene = lazy(() => import("@/scenes/SolarFleetScene"));
-const LazyPlantTwinScene = lazy(() => import("@/scenes/PlantTwinScene"));
+const LazySolarFleetScene = lazyRetry(() => import("@/scenes/SolarFleetScene"));
+const LazyPlantTwinScene = lazyRetry(() => import("@/scenes/PlantTwinScene"));
 
 type StatusFilter = PlantStatus | "all";
 

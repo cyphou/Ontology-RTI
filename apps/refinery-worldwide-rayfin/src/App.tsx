@@ -5,20 +5,30 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { lazyRetry } from "@/lib/lazy-retry";
 import * as THREE from "three";
 import {
     answerQuestion,
     askOntology,
+    createUnitDevice,
+    deleteUnitDevice,
     ensureOntologySites,
     ensureSignalThresholds,
+    ensureUnitDevices,
     listSignalThresholds,
+    listUnitDevices,
     recentDispatchNotes,
+    recentMaintenanceOrders,
     saveDispatchNote,
+    saveMaintenanceOrder,
+    updateUnitDevice,
     type DispatchNoteRecord,
+    type MaintenanceOrderRecord,
     type SignalThresholdRecord,
+    type UnitDeviceRecord,
 } from "@/services/ontology-data.service";
-import { isDataAgentConfigured, queryDataAgent } from "@/services/data-agent.service";
+import { isDataAgentConfigured, queryDataAgent, testDataAgentConnection, type DataAgentConnectionResult } from "@/services/data-agent.service";
 import {
     fetchLiveTelemetry,
     fetchAnomalyScores,
@@ -29,6 +39,23 @@ import {
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/services/operator-role.service";
 import { HISTORY_WINDOWS, historyPointLimit, type HistoryWindow } from "@/services/history-window.service";
+import { compareScenarios, forecastVsRealised, buildScenarioPrompt, summarizeComparison, computeInsights, answerScenarioQuestion, type ScenarioSpec } from "@/services/scenario-lab.service";
+import { classifyImport, summarizeActuals, type ImportedActualsResult } from "@/services/scenario-import.service";
+import {
+    buildMissionChallenge,
+    buildMissionReport,
+    buildEscalationTimeline,
+    pushMissionRun,
+    summarizeMissionRun,
+    summarizeResponderAvailability,
+    slaUrgency,
+    narrateStep,
+    REFINERY_DEMO_MANIFEST,
+    type DemoScriptStepId,
+    type EscalationStage,
+    type MissionReport,
+    type MissionReportEvent,
+} from "@/services/demo-experience.service";
 import { SceneErrorBoundary } from "@/components/SceneErrorBoundary";
 import { isTeamsAlertConfigured, postTeamsAlert } from "@/services/teams-alert.service";
 
@@ -114,11 +141,11 @@ export function seededRand(seed: number) {
 // Worldwide equirectangular projection onto the 92 x 52 world plane: longitude
 // -180..180 maps across X, latitude 90..-90 across Z, so every refinery lands on its
 // real position on the world map.
-function projectLonToX(lon: number) {
+export function projectLonToX(lon: number) {
     return ((lon + 180) / 360) * 92 - 46;
 }
 
-function projectLatToZ(lat: number) {
+export function projectLatToZ(lat: number) {
     // Equirectangular is a 2:1 projection (360° lon × 180° lat). With the map
     // plane 92 units wide, the depth must be 46 (92 / 2) so continents keep their
     // true proportions instead of being stretched vertically.
@@ -393,6 +420,213 @@ export const TWIN_PARTS: { key: string; caption: string; pos: [number, number, n
     { key: "tracker", caption: "Flare", pos: [2.8, 0.9, 1.4] },
     { key: "output", caption: "Throughput", pos: [0, 0.7, 2.8] },
 ];
+
+// ---------------------------------------------------------------------------
+// Twin device graph: an editable component → device tree backing the digital
+// twin admin. Refinery adaptation of the wind twin-device model; the process
+// asset (column / tank / flare / throughput) fans out into child devices whose
+// layout + metadata persist to the ontology `UnitDevice` store (fallback-safe).
+// ---------------------------------------------------------------------------
+
+export type RefineryPartKey = "array" | "inverter" | "tracker" | "output";
+
+export type RefineryDeviceNode = {
+    key: string;
+    component: RefineryPartKey;
+    label: string;
+    property: string;
+    unit: string;
+    note: string;
+    anchor: [number, number, number];
+    lookAt: [number, number, number];
+    offset: [number, number, number];
+    zoom: number;
+    value: (t: PlantTelemetry) => string;
+    status: (t: PlantTelemetry) => PlantStatus;
+};
+
+type RefineryDeviceDraft = {
+    label: string;
+    property: string;
+    unit: string;
+    note: string;
+    zoom: string;
+    sortOrder: string;
+    anchor: string;
+    lookAt: string;
+    offset: string;
+};
+
+export const UNIT_COMPONENT_DEVICES: Record<RefineryPartKey, RefineryDeviceNode[]> = {
+    array: [
+        {
+            key: "array.feed-pump", component: "array", label: "Feed pump", property: "FeedPumpVibrationMmS", unit: "mm/s",
+            note: "Charge pump feeding the distillation column.",
+            anchor: [0, 4.0, -1.4], lookAt: [0, 4.0, -1.4], offset: [6.5, 1.6, 4.4], zoom: 0.55,
+            value: (t) => `${(t.inverterLoadPct * 0.06).toFixed(1)}`, status: (t) => signalState("inverterLoad", t.inverterLoadPct),
+        },
+        {
+            key: "array.reboiler", component: "array", label: "Reboiler", property: "ReboilerTempC", unit: "°C",
+            note: "Bottoms reboiler driving column separation.",
+            anchor: [0.6, 3.4, -1.0], lookAt: [0.6, 3.4, -1.0], offset: [6.0, 1.8, 5.3], zoom: 0.6,
+            value: (t) => `${t.moduleTempC.toFixed(1)}`, status: (t) => signalState("moduleTemp", t.moduleTempC),
+        },
+    ],
+    inverter: [
+        {
+            key: "inverter.level", component: "inverter", label: "Tank level", property: "TankLevelPct", unit: "%",
+            note: "Intermediate storage tank level.",
+            anchor: [-3.6, 1.5, 0], lookAt: [-3.6, 1.5, 0], offset: [5.0, 1.8, 5.7], zoom: 0.62,
+            value: (t) => `${Math.min(100, Math.round(t.inverterLoadPct))}`, status: (t) => signalState("inverterLoad", t.inverterLoadPct),
+        },
+        {
+            key: "inverter.transfer-pump", component: "inverter", label: "Transfer pump", property: "TransferPumpLoadPct", unit: "%",
+            note: "Rundown pump moving product to storage.",
+            anchor: [-3.0, 1.2, 0.4], lookAt: [-3.0, 1.2, 0.4], offset: [4.7, 2.1, 6.0], zoom: 0.66,
+            value: (t) => `${Math.min(100, Math.round((t.powerKw / 260) * 100))}`, status: (t) => signalState("power", t.powerKw),
+        },
+    ],
+    tracker: [
+        {
+            key: "tracker.pilot", component: "tracker", label: "Flare pilot", property: "FlarePilotTempC", unit: "°C",
+            note: "Flare pilot flame temperature.",
+            anchor: [2.8, 0.9, 1.4], lookAt: [2.8, 0.9, 1.4], offset: [6.1, 1.7, 6.5], zoom: 0.7,
+            value: (t) => `${(t.moduleTempC + 12).toFixed(0)}`, status: (t) => signalState("moduleTemp", t.moduleTempC),
+        },
+        {
+            key: "tracker.ko-drum", component: "tracker", label: "Knock-out drum", property: "KODrumLevelPct", unit: "%",
+            note: "Flare knock-out drum liquid level.",
+            anchor: [2.4, 0.7, 1.0], lookAt: [2.4, 0.7, 1.0], offset: [6.4, 1.4, 6.8], zoom: 0.74,
+            value: (t) => `${Math.max(0, 100 - Math.round(t.inverterLoadPct))}`, status: (t) => signalState("inverterLoad", t.inverterLoadPct),
+        },
+    ],
+    output: [
+        {
+            key: "output.metering", component: "output", label: "Custody metering", property: "MeteringKBD", unit: "kbd",
+            note: "Fiscal throughput metering skid.",
+            anchor: [0, 0.7, 2.8], lookAt: [0, 0.7, 2.8], offset: [6.9, 2.1, 7.2], zoom: 0.8,
+            value: (t) => `${t.powerKw.toLocaleString()}`, status: (t) => signalState("power", t.powerKw),
+        },
+        {
+            key: "output.control-valve", component: "output", label: "Control valve", property: "ValvePositionPct", unit: "%",
+            note: "Product rundown control valve position.",
+            anchor: [0.4, 0.6, 2.4], lookAt: [0.4, 0.6, 2.4], offset: [7.3, 2.5, 7.8], zoom: 0.86,
+            value: (t) => `${Math.min(100, Math.round(t.inverterLoadPct))}`, status: (t) => signalState("inverterLoad", t.inverterLoadPct),
+        },
+    ],
+};
+
+// Flatten the component→device graph into ordered ontology rows for idempotent seeding.
+export function unitDeviceSeeds(graph: Record<RefineryPartKey, RefineryDeviceNode[]>): UnitDeviceRecord[] {
+    let order = 0;
+    return (Object.keys(graph) as RefineryPartKey[]).flatMap((component) =>
+        graph[component].map((d) => ({
+            deviceKey: d.key,
+            component: d.component,
+            label: d.label,
+            property: d.property,
+            unit: d.unit,
+            note: d.note,
+            anchorX: d.anchor[0], anchorY: d.anchor[1], anchorZ: d.anchor[2],
+            lookAtX: d.lookAt[0], lookAtY: d.lookAt[1], lookAtZ: d.lookAt[2],
+            offsetX: d.offset[0], offsetY: d.offset[1], offsetZ: d.offset[2],
+            zoom: d.zoom,
+            sortOrder: order++,
+        })),
+    );
+}
+
+// Merge persisted ontology rows over the bundled fallback graph: rows drive the
+// editable metadata/layout; components with no rows fall back to the bundle so the
+// twin always has a complete device tree.
+export function mergeUnitDeviceGraph(
+    rows: UnitDeviceRecord[],
+    fallback: Record<RefineryPartKey, RefineryDeviceNode[]>,
+): Record<RefineryPartKey, RefineryDeviceNode[]> {
+    const fallbackByKey = new Map<string, RefineryDeviceNode>(
+        (Object.keys(fallback) as RefineryPartKey[]).flatMap((component) =>
+            fallback[component].map((d) => [d.key, d] as const),
+        ),
+    );
+    const next: Record<RefineryPartKey, RefineryDeviceNode[]> = { array: [], inverter: [], tracker: [], output: [] };
+    rows
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .forEach((r) => {
+            const component = r.component as RefineryPartKey;
+            if (!(component in next)) {
+                return;
+            }
+            const fallbackNode = fallbackByKey.get(r.deviceKey);
+            if (!fallbackNode) {
+                return;
+            }
+            next[component].push({
+                ...fallbackNode,
+                key: r.deviceKey,
+                component,
+                label: r.label,
+                property: r.property,
+                unit: r.unit,
+                note: r.note,
+                anchor: [r.anchorX, r.anchorY, r.anchorZ],
+                lookAt: [r.lookAtX, r.lookAtY, r.lookAtZ],
+                offset: [r.offsetX, r.offsetY, r.offsetZ],
+                zoom: r.zoom,
+            });
+        });
+    (Object.keys(next) as RefineryPartKey[]).forEach((component) => {
+        if (next[component].length === 0) {
+            next[component] = fallback[component];
+        }
+    });
+    return next;
+}
+
+export function formatVec(v: [number, number, number]): string {
+    return v.map((n) => Number(n.toFixed(3))).join(", ");
+}
+
+function parseVec(input: string, fallback: [number, number, number]): [number, number, number] {
+    const parts = input.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+    if (parts.length !== 3) {
+        return fallback;
+    }
+    return [parts[0], parts[1], parts[2]];
+}
+
+function draftFromUnitDevice(device: RefineryDeviceNode, sortOrder: number): RefineryDeviceDraft {
+    return {
+        label: device.label,
+        property: device.property,
+        unit: device.unit,
+        note: device.note,
+        zoom: String(device.zoom),
+        sortOrder: String(sortOrder),
+        anchor: formatVec(device.anchor),
+        lookAt: formatVec(device.lookAt),
+        offset: formatVec(device.offset),
+    };
+}
+
+export function normalizeUnitDeviceDraft(
+    draft: RefineryDeviceDraft,
+    base: { zoom: number; sortOrder: number; anchor: [number, number, number]; lookAt: [number, number, number]; offset: [number, number, number] },
+): { label: string; property: string; unit: string; note: string; zoom: number; sortOrder: number; anchor: [number, number, number]; lookAt: [number, number, number]; offset: [number, number, number] } {
+    const zoom = Number(draft.zoom);
+    const sortOrder = Number(draft.sortOrder);
+    return {
+        label: draft.label.trim() || "Device",
+        property: draft.property.trim() || "Property",
+        unit: draft.unit.trim() || "",
+        note: draft.note.trim() || "No note provided.",
+        zoom: Number.isFinite(zoom) ? Math.max(0.16, Math.min(2, zoom)) : base.zoom,
+        sortOrder: Number.isFinite(sortOrder) ? Math.max(0, Math.round(sortOrder)) : base.sortOrder,
+        anchor: parseVec(draft.anchor, base.anchor),
+        lookAt: parseVec(draft.lookAt, base.lookAt),
+        offset: parseVec(draft.offset, base.offset),
+    };
+}
 
 export function createMapTexture(sites: SolarPlantSite[]) {
     const canvas = document.createElement("canvas");
@@ -835,8 +1069,8 @@ export function sourceLabel(source: AskResult["source"]): string {
     }
 }
 
-const LazySolarFleetScene = lazy(() => import("@/scenes/SolarFleetScene"));
-const LazyPlantTwinScene = lazy(() => import("@/scenes/PlantTwinScene"));
+const LazySolarFleetScene = lazyRetry(() => import("@/scenes/GlobeFleetScene"));
+const LazyPlantTwinScene = lazyRetry(() => import("@/scenes/PlantTwinScene"));
 
 type StatusFilter = PlantStatus | "all";
 
@@ -977,16 +1211,263 @@ export function newlyAlarmed(prev: Record<string, PlantStatus>, turbines: { id: 
     return turbines.filter((t) => t.status === "alarm" && prev[t.id] !== "alarm").map((t) => t.id);
 }
 
-type ViewKey = "map" | "twin" | "sites" | "alerts" | "graph" | "analytics" | "operations" | "ask";
+// ---------------------------------------------------------------------------
+// Mission-ops: work-order dispatch, responder ranking, escalation & SLA.
+// Refinery adaptation of the wind mission-ops model — the two diagnosable
+// refinery assets are the Pump (mechanical / high utilization) and the Heat
+// Exchanger (thermal / high unit temperature).
+// ---------------------------------------------------------------------------
+
+export type WorkOrderPriority = "P1" | "P2" | "P3";
+export type WorkOrderComponent = "Pump" | "Heat Exchanger";
+
+type MockWorkIQResponder = {
+    id: string;
+    name: string;
+    role: string;
+    skills: WorkOrderComponent[];
+    confidenceBySkill: Record<WorkOrderComponent, number>;
+    siteCoverage: string[];
+    shift: "day" | "swing" | "night";
+    onCall: boolean;
+    etaMin: number;
+    photo: string;
+};
+
+type RankedResponder = MockWorkIQResponder & {
+    score: number;
+    reason: string;
+    skillConfidence: number;
+    currentLoad: number;
+};
+
+type MockRefineryEvidence = {
+    id: string;
+    label: string;
+    component: WorkOrderComponent;
+    image: string;
+    capturedAt: string;
+};
+
+type DemoScriptStep = {
+    id: DemoScriptStepId;
+    label: string;
+    detail: string;
+    action: () => void | Promise<void>;
+};
+
+function svgAvatar(name: string, seed: number, role: string, shift: "day" | "swing" | "night", onCall: boolean): string {
+    const profile = role.toLowerCase();
+    const isField = /field|maintainer|reliability|rotating/.test(profile);
+    const isOps = /operations|lead|process/.test(profile);
+    const skins = [
+        { base: "#f2c9a0", shade: "#d9a877", blush: "#e19a83" },
+        { base: "#e2ac7e", shade: "#c2894f", blush: "#d1876a" },
+        { base: "#c68a5c", shade: "#a3673c", blush: "#b56a4a" },
+        { base: "#8d5a3c", shade: "#6d4026", blush: "#7c4632" },
+        { base: "#f7d9bd", shade: "#e0b78d", blush: "#eaa98f" },
+    ];
+    const skin = skins[seed % skins.length];
+    const hair = ["#241812", "#432a19", "#6b4423", "#8a6a3a", "#12100f", "#8a8f98"][seed % 6];
+    const eyeColor = ["#5b3a29", "#3b2a1a", "#2e5d5a", "#3f5f86", "#3a3a3a"][seed % 5];
+    const jacket = isField ? "#0f766e" : isOps ? "#1d4ed8" : ["#7c3aed", "#9a3412", "#0f172a"][seed % 3];
+    const accent = onCall ? "#34d399" : ["#60a5fa", "#f59e0b", "#f472b6", "#a3e635"][seed % 4];
+    const bg = shift === "night" ? "#0b1120" : shift === "swing" ? "#14203a" : "#16273f";
+    const bg2 = shift === "night" ? "#060a14" : shift === "swing" ? "#0b1424" : "#0d1a2c";
+    const helmet = isField
+        ? `<path d='M46 50c1-19 15-30 34-30s33 11 34 30c-6-4-14-6-24-7l-2-9c-8-2-16-2-24 0l-1 9c-8 1-13 3-17 7Z' fill='#f6b73c'/><rect x='42' y='49' width='76' height='7' rx='3.5' fill='#e08a1e'/>`
+        : isOps
+        ? `<path d='M50 66c0-18 13-30 30-30s30 12 30 30' fill='none' stroke='#0f172a' stroke-width='6' stroke-linecap='round'/><rect x='44' y='64' width='12' height='20' rx='6' fill='#111827'/><rect x='104' y='64' width='12' height='20' rx='6' fill='#111827'/>`
+        : "";
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'>
+<defs>
+    <linearGradient id='bgv${seed}' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='${bg}'/><stop offset='100%' stop-color='${bg2}'/></linearGradient>
+    <radialGradient id='glow${seed}' cx='0.35' cy='0.28' r='0.7'><stop offset='0%' stop-color='${accent}' stop-opacity='0.28'/><stop offset='100%' stop-color='${accent}' stop-opacity='0'/></radialGradient>
+    <linearGradient id='skin${seed}' x1='0.2' y1='0' x2='0.85' y2='1'><stop offset='0%' stop-color='${skin.base}'/><stop offset='100%' stop-color='${skin.shade}'/></linearGradient>
+</defs>
+<rect width='160' height='160' rx='18' fill='url(#bgv${seed})'/>
+<rect width='160' height='160' rx='18' fill='url(#glow${seed})'/>
+<path d='M34 152c3-24 20-38 46-38s43 14 46 38Z' fill='${jacket}'/>
+<path d='M60 120c5 12 35 12 40 0l6 10-8 8H62l-8-8Z' fill='#f5c542'/>
+<path d='M68 108h24v14c0 7-24 7-24 0Z' fill='${skin.shade}'/>
+<path d='M48 78c0-24 14-42 32-42s32 18 32 42c0 12-3 22-7 30 2-14 1-30-6-38-6 8-32 8-38 0-7 8-8 24-6 38-4-8-7-18-7-30Z' fill='${hair}'/>
+<ellipse cx='49' cy='84' rx='7' ry='10' fill='url(#skin${seed})'/><ellipse cx='111' cy='84' rx='7' ry='10' fill='url(#skin${seed})'/>
+<ellipse cx='80' cy='80' rx='31' ry='35' fill='url(#skin${seed})'/>
+<ellipse cx='66' cy='92' rx='6' ry='4' fill='${skin.blush}' opacity='0.45'/><ellipse cx='94' cy='92' rx='6' ry='4' fill='${skin.blush}' opacity='0.45'/>
+<path d='M62 70c5-4 12-4 16-1' stroke='${hair}' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M82 69c4-3 11-3 16 1' stroke='${hair}' stroke-width='3' fill='none' stroke-linecap='round'/>
+<ellipse cx='70' cy='79' rx='8.5' ry='5.5' fill='#ffffff'/><ellipse cx='90' cy='79' rx='8.5' ry='5.5' fill='#ffffff'/>
+<circle cx='71' cy='79' r='3.6' fill='${eyeColor}'/><circle cx='71' cy='79' r='1.7' fill='#111'/><circle cx='89' cy='79' r='3.6' fill='${eyeColor}'/><circle cx='89' cy='79' r='1.7' fill='#111'/>
+<path d='M80 80c-1 6-3 10-5 12 2 2 6 2 9 0' fill='none' stroke='${skin.shade}' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/>
+<path d='M70 100c6 5 14 5 20 0' stroke='#8a4a3a' stroke-width='3' fill='none' stroke-linecap='round'/>
+${helmet}
+<circle cx='128' cy='30' r='7' fill='${onCall ? "#34d399" : "rgba(255,255,255,0.22)"}' stroke='#0b1120' stroke-width='2'/>
+</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function svgMockFieldCapture(label: string, seed: number, component: WorkOrderComponent): string {
+    const isPump = component === "Pump";
+    const subtitle = isPump ? "seal / vibration" : "tube / thermal";
+    const palette = isPump
+        ? { skyTop: "#cdeef0", skyBot: "#8fd0c9", sun: "#f4ffe9", hillFar: "#8fc99b", hillMid: "#5ea67f", hillNear: "#356b57", part: "#eafaf1", partLine: "#2c5a4a", cloud: "#f4fffb" }
+        : { skyTop: "#ffd9a8", skyBot: "#f7a072", sun: "#fff3d6", hillFar: "#e08a5c", hillMid: "#c96f4a", hillNear: "#8f4a3a", part: "#fbe8c9", partLine: "#7a3b28", cloud: "#fff1e0" };
+    const part = isPump
+        ? `<g><ellipse cx='150' cy='98' rx='34' ry='14' fill='${palette.partLine}' opacity='0.25'/><circle cx='150' cy='76' r='22' fill='${palette.part}' stroke='${palette.partLine}' stroke-width='2.5'/><circle cx='150' cy='76' r='7' fill='${palette.partLine}'/><path d='M150 50v10M150 92v10M124 76h10M166 76h10' stroke='${palette.partLine}' stroke-width='2.6' stroke-linecap='round'/></g>`
+        : `<g><ellipse cx='150' cy='96' rx='34' ry='16' fill='${palette.partLine}' opacity='0.25'/><rect x='120' y='60' width='60' height='32' rx='10' fill='${palette.part}' stroke='${palette.partLine}' stroke-width='2.5'/><path d='M126 68h48M126 76h48M126 84h48' stroke='${palette.partLine}' stroke-width='2.4' stroke-linecap='round'/></g>`;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 132'>
+<defs>
+    <linearGradient id='sky${seed}' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='${palette.skyTop}'/><stop offset='100%' stop-color='${palette.skyBot}'/></linearGradient>
+    <clipPath id='card${seed}'><rect width='220' height='132' rx='12'/></clipPath>
+</defs>
+<g clip-path='url(#card${seed})'>
+    <rect width='220' height='132' fill='url(#sky${seed})'/>
+    <circle cx='62' cy='42' r='20' fill='${palette.sun}' opacity='0.9'/>
+    <ellipse cx='150' cy='30' rx='26' ry='11' fill='${palette.cloud}' opacity='0.85'/>
+    <path d='M0 96c40-22 74-16 110 0s70 10 110-8v44H0Z' fill='${palette.hillFar}'/>
+    <path d='M0 108c46-16 82-6 120 6s64 6 100-6v24H0Z' fill='${palette.hillMid}'/>
+    <path d='M0 120c50-10 92 4 130 8s56-2 90-8v12H0Z' fill='${palette.hillNear}'/>
+    ${part}
+    <rect x='0' y='108' width='220' height='24' fill='${palette.hillNear}' opacity='0.55'/>
+    <text x='12' y='124' font-size='10' fill='#ffffff' opacity='0.95' font-family='Segoe UI, Arial, sans-serif'>${label}</text>
+    <text x='208' y='124' text-anchor='end' font-size='9' fill='#ffffff' opacity='0.8' font-family='Segoe UI, Arial, sans-serif'>${subtitle}</text>
+</g>
+</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const MOCK_WORKIQ_RESPONDERS: MockWorkIQResponder[] = [
+    { id: "wk-001", name: "Aline Laurent", role: "Rotating Equipment Engineer", skills: ["Pump"], confidenceBySkill: { Pump: 0.92, "Heat Exchanger": 0.58 }, siteCoverage: ["PORTARTHUR", "PERNIS"], shift: "day", onCall: true, etaMin: 28, photo: svgAvatar("Aline Laurent", 1, "Rotating Equipment Engineer", "day", true) },
+    { id: "wk-002", name: "Marc Delorme", role: "Heat Exchanger Specialist", skills: ["Heat Exchanger"], confidenceBySkill: { Pump: 0.42, "Heat Exchanger": 0.95 }, siteCoverage: ["RUWAIS", "PERNIS", "RASTANURA"], shift: "night", onCall: true, etaMin: 35, photo: svgAvatar("Marc Delorme", 2, "Heat Exchanger Specialist", "night", true) },
+    { id: "wk-003", name: "Nora Haddad", role: "Process Reliability Lead", skills: ["Pump", "Heat Exchanger"], confidenceBySkill: { Pump: 0.83, "Heat Exchanger": 0.8 }, siteCoverage: ["JAMNAGAR", "RASTANURA", "JURONG"], shift: "swing", onCall: true, etaMin: 18, photo: svgAvatar("Nora Haddad", 3, "Process Reliability Lead", "swing", true) },
+    { id: "wk-004", name: "Victor Klein", role: "Mechanical Maintainer", skills: ["Pump"], confidenceBySkill: { Pump: 0.86, "Heat Exchanger": 0.44 }, siteCoverage: ["RUWAIS", "PORTARTHUR"], shift: "day", onCall: false, etaMin: 41, photo: svgAvatar("Victor Klein", 4, "Mechanical Maintainer", "day", false) },
+    { id: "wk-005", name: "Sofia Ribeiro", role: "Fired Heater Engineer", skills: ["Heat Exchanger"], confidenceBySkill: { Pump: 0.52, "Heat Exchanger": 0.9 }, siteCoverage: ["PARAGUANA", "PORTARTHUR", "JAMNAGAR"], shift: "night", onCall: true, etaMin: 32, photo: svgAvatar("Sofia Ribeiro", 5, "Fired Heater Engineer", "night", true) },
+];
+
+const MOCK_REFINERY_EVIDENCE: MockRefineryEvidence[] = [
+    { id: "rf-ev-pump-01", label: "Pump seal leak trace", component: "Pump", image: svgMockFieldCapture("Pump seal leak trace", 1, "Pump"), capturedAt: "2026-07-14T07:21:00Z" },
+    { id: "rf-ev-pump-02", label: "Vibration spectrum anomaly", component: "Pump", image: svgMockFieldCapture("Vibration spectrum anomaly", 2, "Pump"), capturedAt: "2026-07-14T07:24:00Z" },
+    { id: "rf-ev-hx-01", label: "Exchanger thermal fouling", component: "Heat Exchanger", image: svgMockFieldCapture("Exchanger thermal fouling", 3, "Heat Exchanger"), capturedAt: "2026-07-14T07:26:00Z" },
+    { id: "rf-ev-hx-02", label: "Tube bundle scaling", component: "Heat Exchanger", image: svgMockFieldCapture("Tube bundle scaling", 4, "Heat Exchanger"), capturedAt: "2026-07-14T07:29:00Z" },
+];
+
+export function currentShiftByHour(hour: number): "day" | "swing" | "night" {
+    if (hour >= 7 && hour < 15) {
+        return "day";
+    }
+    if (hour >= 15 && hour < 23) {
+        return "swing";
+    }
+    return "night";
+}
+
+function rankWorkIQResponders(
+    responders: MockWorkIQResponder[],
+    siteId: string,
+    component: WorkOrderComponent,
+    priority: WorkOrderPriority,
+    opts?: {
+        shift?: "day" | "swing" | "night" | "all";
+        onCallOnly?: boolean;
+        loadByResponder?: Record<string, number>;
+    },
+): RankedResponder[] {
+    const priorityBoost = priority === "P1" ? 20 : priority === "P2" ? 10 : 0;
+    return responders
+        .filter((r) => {
+            if (opts?.onCallOnly && !r.onCall) {
+                return false;
+            }
+            if (opts?.shift && opts.shift !== "all" && r.shift !== opts.shift) {
+                return false;
+            }
+            return true;
+        })
+        .map((r) => {
+            const skillMatch = r.skills.includes(component);
+            const siteMatch = r.siteCoverage.includes(siteId);
+            const speedScore = Math.max(0, 40 - r.etaMin);
+            const skillConfidence = Math.round((r.confidenceBySkill[component] ?? 0.4) * 100);
+            const load = opts?.loadByResponder?.[r.id] ?? 0;
+            const loadPenalty = Math.min(24, load * 5);
+            const score = (skillMatch ? 38 : 10) + (siteMatch ? 22 : 8) + speedScore + Math.round(skillConfidence * 0.16) + priorityBoost - loadPenalty;
+            const reason = [
+                skillMatch ? `${component} certified (${skillConfidence}%)` : `cross-trained on ${component} (${skillConfidence}%)`,
+                siteMatch ? "site familiar" : "regional backup",
+                load > 0 ? `${load} active task${load > 1 ? "s" : ""}` : "immediately available",
+                `ETA ${r.etaMin} min`,
+            ].join(" \u00b7 ");
+            return { ...r, score, reason, skillConfidence, currentLoad: load };
+        })
+        .sort((a, b) => b.score - a.score) as RankedResponder[];
+}
+
+function prioritySlaMinutes(priority: WorkOrderPriority): number {
+    if (priority === "P1") {
+        return 30;
+    }
+    if (priority === "P2") {
+        return 90;
+    }
+    return 240;
+}
+
+function elapsedMinutesSince(iso: string): number | null {
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) {
+        return null;
+    }
+    return Math.max(0, Math.round((Date.now() - t) / 60000));
+}
+
+// Work-order priority from current severity (anomaly score 0..1) and imminence
+// (ticks-to-alarm from the escalation forecast; null when not trending up).
+// P1 = act now, P2 = schedule soon, P3 = monitor.
+export function derivePriority(anomalyScoreValue: number, etaToAlarmTicks: number | null): WorkOrderPriority {
+    if (anomalyScoreValue >= 0.75 || (etaToAlarmTicks != null && etaToAlarmTicks <= 3)) {
+        return "P1";
+    }
+    if (anomalyScoreValue >= 0.5 || (etaToAlarmTicks != null && etaToAlarmTicks <= 8)) {
+        return "P2";
+    }
+    return "P3";
+}
+
+// Suspected refinery asset from the dominant abnormal signal, each normalised
+// against its own warn->alarm band: high utilization points at the rotating
+// equipment (Pump), high unit temperature at the Heat Exchanger.
+export function recommendComponent(moduleTempC: number, inverterLoadPct: number): WorkOrderComponent {
+    const tempSeverity = (moduleTempC - SIGNAL_METADATA.moduleTemp.warn) / Math.max(1, SIGNAL_METADATA.moduleTemp.alarm - SIGNAL_METADATA.moduleTemp.warn);
+    const loadSeverity = (inverterLoadPct - SIGNAL_METADATA.inverterLoad.warn) / Math.max(1, SIGNAL_METADATA.inverterLoad.alarm - SIGNAL_METADATA.inverterLoad.warn);
+    return loadSeverity >= tempSeverity ? "Pump" : "Heat Exchanger";
+}
+
+// Hysteresis wrapper around recommendComponent: keeps the previously-shown
+// component when the two signal severities are within `margin` of each other, so
+// the probable cause stops flip-flopping on every live refresh near the boundary.
+export function recommendComponentStable(
+    moduleTempC: number,
+    inverterLoadPct: number,
+    previous: WorkOrderComponent | null | undefined,
+    margin = 0.18,
+): WorkOrderComponent {
+    const tempSeverity = (moduleTempC - SIGNAL_METADATA.moduleTemp.warn) / Math.max(1, SIGNAL_METADATA.moduleTemp.alarm - SIGNAL_METADATA.moduleTemp.warn);
+    const loadSeverity = (inverterLoadPct - SIGNAL_METADATA.inverterLoad.warn) / Math.max(1, SIGNAL_METADATA.inverterLoad.alarm - SIGNAL_METADATA.inverterLoad.warn);
+    const raw: WorkOrderComponent = loadSeverity >= tempSeverity ? "Pump" : "Heat Exchanger";
+    if (!previous) {
+        return raw;
+    }
+    return Math.abs(loadSeverity - tempSeverity) < margin ? previous : raw;
+}
+
+type ViewKey = "map" | "twin" | "alerts" | "graph" | "analytics" | "scenario" | "ask";
 
 const NAV: { key: ViewKey; label: string; icon: string }[] = [
     { key: "map", label: "Map", icon: "🗺" },
     { key: "twin", label: "Digital Twin", icon: "🌀" },
-    { key: "sites", label: "Sites", icon: "🏢" },
     { key: "alerts", label: "Alerts", icon: "🚨" },
     { key: "graph", label: "Graph", icon: "🕸" },
     { key: "analytics", label: "Analytics", icon: "📊" },
-    { key: "operations", label: "Operations", icon: "🛠" },
+    { key: "scenario", label: "Scenario Lab", icon: "🧪" },
     { key: "ask", label: "Ask IQ", icon: "💬" },
 ];
 
@@ -1418,6 +1899,8 @@ function App() {
     const [seed, setSeed] = useState(0);
     const [selectedId, setSelectedId] = useState(initialRoute.selectedId ?? "CESTAS-PV-01");
     const [view, setView] = useState<ViewKey>(initialRoute.view ?? "map");
+    // Digital Twin now hosts the merged Sites + Operations content via a sub-tab.
+    const [twinTab, setTwinTab] = useState<"overview" | "ops">("overview");
     const [detailOpen, setDetailOpen] = useState(false);
 
     const [live, setLive] = useState(true);
@@ -1431,6 +1914,8 @@ function App() {
     const [askError, setAskError] = useState<string | null>(null);
     const [askResult, setAskResult] = useState<AskResult | null>(null);
     const [askHistory, setAskHistory] = useState<AskHistoryEntry[]>([]);
+    const [agentCheckLoading, setAgentCheckLoading] = useState(false);
+    const [agentCheckResult, setAgentCheckResult] = useState<DataAgentConnectionResult | null>(null);
     const [writebackMessage, setWritebackMessage] = useState<string | null>(null);
     const [ackLog, setAckLog] = useState<Record<string, { at: string; by: string }>>(() => JSON.parse(localStorage.getItem("refinery-ack-log") ?? "{}"));
     const [ackMessage, setAckMessage] = useState<string | null>(null);
@@ -1457,16 +1942,78 @@ function App() {
     const [simCurtail, setSimCurtail] = useState(0);
     const [simDowntime, setSimDowntime] = useState(0);
     const [simHorizon, setSimHorizon] = useState(12);
+
+    // Scenario Lab: multiple editable what-if plans compared side by side.
+    const [scenarios, setScenarios] = useState<ScenarioSpec[]>([
+        { id: "asis", label: "Run as-is", curtailmentPct: 0, downtimeTicks: 0, horizonTicks: 12 },
+        { id: "trim", label: "Trim throughput 15%", curtailmentPct: 15, downtimeTicks: 0, horizonTicks: 12 },
+        { id: "maint", label: "Maintenance window", curtailmentPct: 0, downtimeTicks: 4, horizonTicks: 12 },
+    ]);
+    const [scenarioNarrative, setScenarioNarrative] = useState<string | null>(null);
+    const [scenarioNarrativeSource, setScenarioNarrativeSource] = useState<"fabriciq" | "local" | null>(null);
+    const [scenarioNarrativeLoading, setScenarioNarrativeLoading] = useState(false);
+    const [scenarioQuestion, setScenarioQuestion] = useState("");
+    const [importedActuals, setImportedActuals] = useState<ImportedActualsResult | null>(null);
+    const [importStatus, setImportStatus] = useState<string | null>(null);
+    const scenarioFileRef = useRef<HTMLInputElement | null>(null);
     const [historyWindow, setHistoryWindow] = useState<HistoryWindow>("6h");
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
     const [wbNote, setWbNote] = useState("");
+
+    // Mission-ops: work-order dispatch, responder ranking, escalation & SLA.
+    const [maintenanceOrders, setMaintenanceOrders] = useState<MaintenanceOrderRecord[]>([]);
+    const [woAssignee, setWoAssignee] = useState("");
+    const [woMessage, setWoMessage] = useState<string | null>(null);
+    const [selectedEvidenceId, setSelectedEvidenceId] = useState(MOCK_REFINERY_EVIDENCE[0]?.id ?? "");
+    const [responderShiftFilter, setResponderShiftFilter] = useState<"all" | "day" | "swing" | "night">(() => currentShiftByHour(new Date().getHours()));
+    const [onCallOnly, setOnCallOnly] = useState(true);
+    const [responderLoad, setResponderLoad] = useState<Record<string, number>>(() => JSON.parse(localStorage.getItem("refinery-responder-load") ?? "{}"));
+    const [escalationStage, setEscalationStage] = useState<EscalationStage>("none");
+    const [demoRunCount, setDemoRunCount] = useState(0);
+    const [techPopupResponderId, setTechPopupResponderId] = useState<string | null>(null);
+    const [techPopupOpen, setTechPopupOpen] = useState(false);
+    const componentStickyRef = useRef<Record<string, WorkOrderComponent>>({});
+
+    // Guided demo experience.
+    const [autoPlayRunning, setAutoPlayRunning] = useState(false);
+    const [demoScriptStep, setDemoScriptStep] = useState<DemoScriptStepId | "idle">("idle");
+    const [demoRunLog, setDemoRunLog] = useState<MissionReportEvent[]>([]);
+    const [runHistory, setRunHistory] = useState<MissionReport[]>(() => {
+        try {
+            return JSON.parse(localStorage.getItem("refinery-run-history") ?? "[]") as MissionReport[];
+        } catch {
+            return [];
+        }
+    });
+    const [demoPanelOpen, setDemoPanelOpen] = useState(false);
+    const [demoStepIndex, setDemoStepIndex] = useState(0);
+    const [demoIntroOpen, setDemoIntroOpen] = useState(false);
+    const [reportModal, setReportModal] = useState<MissionReport | null>(null);
+    const [demoFocusPart, setDemoFocusPart] = useState<string | null>(null);
+    const runAskRef = useRef<(override?: string) => Promise<void>>(async () => {});
+    const missionReportRef = useRef<() => void>(() => {});
+
+    // Twin device graph admin.
+    const [focusedTwinPart, setFocusedTwinPart] = useState<RefineryPartKey | null>(null);
+    const [focusedTwinDevice, setFocusedTwinDevice] = useState<string | null>(null);
+    const [twinDeviceGraph, setTwinDeviceGraph] = useState<Record<RefineryPartKey, RefineryDeviceNode[]>>(UNIT_COMPONENT_DEVICES);
+    const [twinDeviceRows, setTwinDeviceRows] = useState<UnitDeviceRecord[]>([]);
+    const [deviceDraft, setDeviceDraft] = useState<RefineryDeviceDraft | null>(null);
+    const [deviceDraftDirty, setDeviceDraftDirty] = useState(false);
+    const [deviceSaveMessage, setDeviceSaveMessage] = useState<string | null>(null);
+    const [deviceSaveBusy, setDeviceSaveBusy] = useState(false);
+
     const canWriteback = canManageDispatch(operatorRole);
     const historyLimit = historyPointLimit(historyWindow);
 
     useEffect(() => {
         localStorage.setItem("refinery-operator-role", operatorRole);
     }, [operatorRole]);
+
+    useEffect(() => {
+        localStorage.setItem("refinery-responder-load", JSON.stringify(responderLoad));
+    }, [responderLoad]);
 
     useEffect(() => {
         if (!live) {
@@ -1521,9 +2068,83 @@ function App() {
     const sites = liveView?.sites ?? SITES;
     const selected = turbines.find((t) => t.id === selectedId) ?? turbines[0];
 
+    // Seed + load the twin device graph from the ontology backend (fallback-safe).
+    useEffect(() => {
+        let cancelled = false;
+        const seeds = unitDeviceSeeds(UNIT_COMPONENT_DEVICES);
+        void (async () => {
+            try {
+                await ensureUnitDevices(seeds);
+                const rows = await listUnitDevices();
+                if (cancelled) {
+                    return;
+                }
+                if (rows.length > 0) {
+                    setTwinDeviceRows(rows);
+                    setTwinDeviceGraph(mergeUnitDeviceGraph(rows, UNIT_COMPONENT_DEVICES));
+                }
+            } catch {
+                /* backend unavailable — continue using the bundled device graph */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // Clear the twin focus when the inspected unit changes.
+    useEffect(() => {
+        setFocusedTwinPart(null);
+        setFocusedTwinDevice(null);
+    }, [selectedId]);
+
+    // During the guided demo's twin step, mirror the focused asset into the admin.
+    useEffect(() => {
+        if (demoFocusPart && (["array", "inverter", "tracker", "output"] as string[]).includes(demoFocusPart)) {
+            const part = demoFocusPart as RefineryPartKey;
+            setFocusedTwinPart(part);
+            setFocusedTwinDevice((prev) => prev ?? (twinDeviceGraph[part] ?? [])[0]?.key ?? null);
+        }
+    }, [demoFocusPart, twinDeviceGraph]);
+
+    // Sync the editable draft to the focused device (or clear it).
+    useEffect(() => {
+        setDeviceSaveMessage(null);
+        if (!focusedTwinPart || !focusedTwinDevice) {
+            setDeviceDraft(null);
+            setDeviceDraftDirty(false);
+            return;
+        }
+        const componentDevices = twinDeviceGraph[focusedTwinPart] ?? [];
+        const node = componentDevices.find((d) => d.key === focusedTwinDevice);
+        if (!node) {
+            setDeviceDraft(null);
+            setDeviceDraftDirty(false);
+            return;
+        }
+        const row = twinDeviceRows.find((r) => r.deviceKey === focusedTwinDevice);
+        const sortOrder = row?.sortOrder ?? componentDevices.findIndex((d) => d.key === focusedTwinDevice);
+        setDeviceDraft(draftFromUnitDevice(node, sortOrder));
+        setDeviceDraftDirty(false);
+    }, [focusedTwinDevice, focusedTwinPart, twinDeviceGraph, twinDeviceRows]);
+
     const openTurbine = useCallback((id: string) => {
         setSelectedId(id);
         setDetailOpen(true);
+    }, []);
+
+    // Merged navigation: Operations lives inside the Digital Twin as a sub-tab.
+    const goToOps = useCallback(() => {
+        setView("twin");
+        setTwinTab("ops");
+    }, []);
+    // Open the Digital Twin on its Overview (3D twin) sub-tab, optionally selecting a unit.
+    const goToTwin = useCallback((id?: string) => {
+        if (id) {
+            setSelectedId(id);
+        }
+        setView("twin");
+        setTwinTab("overview");
     }, []);
 
     const matchesFilter = useCallback(
@@ -1663,6 +2284,22 @@ function App() {
         }
     }, []);
 
+    // Load recent maintenance work orders (fallback-safe): the ontology backend
+    // is preferred, but locally-persisted orders keep the loop working offline.
+    const loadOrders = useCallback(async () => {
+        try {
+            const rows = await recentMaintenanceOrders(20);
+            setMaintenanceOrders(rows);
+        } catch {
+            try {
+                const local = JSON.parse(localStorage.getItem("refinery-workorders") ?? "[]") as MaintenanceOrderRecord[];
+                setMaintenanceOrders(local);
+            } catch {
+                setMaintenanceOrders([]);
+            }
+        }
+    }, []);
+
     const acknowledgeAlert = useCallback(async (t: PlantTelemetry) => {
         if (!canWriteback) {
             setAckMessage("Viewer mode — switch to Operator to acknowledge alarms.");
@@ -1695,6 +2332,10 @@ function App() {
     useEffect(() => {
         void loadNotes();
     }, [loadNotes]);
+
+    useEffect(() => {
+        void loadOrders();
+    }, [loadOrders]);
 
     useEffect(() => {
         window.history.replaceState(null, "", `#/${view}/${encodeURIComponent(selectedId)}`);
@@ -1802,8 +2443,926 @@ function App() {
     const healthy = visibleTurbines.length - alarms - warnings;
 
     const siteSummaries = useMemo(() => summarizeSites(turbines, sites), [turbines, sites]);
+    const siteReport = siteSummaries.find((s) => s.id === selected.siteId);
+    const siteUnits = useMemo(() => turbines.filter((t) => t.siteId === selected.siteId), [turbines, selected.siteId]);
 
     const scenario = simulateScenario({ baselineKw: selected.powerKw, curtailmentPct: simCurtail, downtimeTicks: simDowntime, horizonTicks: simHorizon });
+
+    // ---- Scenario Lab derived state --------------------------------------
+    const scenarioComparison = useMemo(
+        () => compareScenarios(selected.powerKw, scenarios),
+        [selected.powerKw, scenarios],
+    );
+    const scenarioVariance = useMemo(
+        () => forecastVsRealised(powerHistory, fc.value),
+        [powerHistory, fc.value],
+    );
+    const scenarioInsights = useMemo(() => computeInsights(scenarioComparison), [scenarioComparison]);
+    const importedSummary = useMemo(
+        () => (importedActuals ? summarizeActuals(importedActuals.points) : null),
+        [importedActuals],
+    );
+    const importedNote = useMemo(
+        () => (importedActuals && importedSummary ? `Imported "${importedActuals.name}": mean ${importedSummary.mean.toLocaleString()} kbd over ${importedSummary.n} points, ${importedSummary.trend} trend (min ${importedSummary.min.toLocaleString()}, max ${importedSummary.max.toLocaleString()}).` : undefined),
+        [importedActuals, importedSummary],
+    );
+    const updateScenario = useCallback((id: string, patch: Partial<ScenarioSpec>) => {
+        setScenarios((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+        setScenarioNarrative(null);
+    }, []);
+    const addScenario = useCallback(() => {
+        setScenarios((prev) => prev.length >= 8 ? prev : [...prev, {
+            id: `plan-${Date.now().toString(36)}`,
+            label: `Plan ${prev.length + 1}`,
+            curtailmentPct: 10,
+            downtimeTicks: 2,
+            horizonTicks: 12,
+        }]);
+    }, []);
+    const removeScenario = useCallback((id: string) => {
+        setScenarios((prev) => (prev.length <= 1 ? prev : prev.filter((s) => s.id !== id)));
+        setScenarioNarrative(null);
+    }, []);
+    // Parse an uploaded .xlsx/.csv into scenarios or an actuals series. SheetJS is
+    // lazy-loaded so it never weighs down the initial bundle.
+    const handleScenarioImport = useCallback(async (file: File) => {
+        setImportStatus(`Reading ${file.name}…`);
+        try {
+            const buffer = await file.arrayBuffer();
+            const XLSX = await import("xlsx");
+            const workbook = XLSX.read(buffer, { type: "array" });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
+            const result = classifyImport(rows, file.name);
+            if (result.kind === "scenarios") {
+                setScenarios((prev) => [...prev, ...result.scenarios].slice(0, 8));
+                setImportStatus(`Imported ${result.scenarios.length} scenario(s) from ${file.name}.`);
+            } else if (result.kind === "actuals") {
+                setImportedActuals(result);
+                setImportStatus(`Imported ${result.points.length} actual reading(s) from ${file.name}.`);
+            } else {
+                setImportStatus(result.reason);
+            }
+            setScenarioNarrative(null);
+        } catch (err) {
+            setImportStatus(`Could not read file: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }, []);
+    // Export the current comparison, insights, variance, AI summary (and any imported
+    // actuals) to a multi-sheet .xlsx. SheetJS is lazy-loaded on demand.
+    const handleScenarioExport = useCallback(async () => {
+        setImportStatus("Building workbook…");
+        try {
+            const XLSX = await import("xlsx");
+            const wb = XLSX.utils.book_new();
+            const scenarioRows = scenarioComparison.scenarios.map((s) => ({
+                Plan: s.label,
+                "Curtailment %": s.curtailmentPct,
+                Downtime: s.downtimeTicks,
+                Horizon: s.horizonTicks,
+                "Projected kbd": s.projectedKbd,
+                "Volume Delta kbd-t": s.volumeDelta,
+                "Delta %": s.deltaPct,
+                Rank: s.rank,
+                Best: s.isBest ? "yes" : "",
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(scenarioRows), "Scenarios");
+            const insightsRows = [
+                { Metric: "Unit", Value: `${selected.siteName} · ${selected.id}` },
+                { Metric: "Baseline kbd", Value: scenarioComparison.baselineKbd },
+                { Metric: "Best plan", Value: scenarioInsights.bestLabel ?? "" },
+                { Metric: "Worst plan", Value: scenarioInsights.worstLabel ?? "" },
+                { Metric: "Spread kbd-t", Value: scenarioInsights.spread },
+                { Metric: "Average delta kbd-t", Value: scenarioInsights.avgDelta },
+                { Metric: "Dispersion", Value: scenarioInsights.deltaStdDev },
+                { Metric: "Riskiest plan", Value: scenarioInsights.riskiestLabel ?? "" },
+                { Metric: "Forecast kbd", Value: scenarioVariance.forecast },
+                { Metric: "Realised mean kbd", Value: scenarioVariance.realisedMean },
+                { Metric: "Forecast accuracy %", Value: scenarioVariance.accuracyPct },
+                { Metric: "Forecast bias", Value: scenarioVariance.bias },
+                { Metric: "AI summary", Value: scenarioNarrative ?? "(not generated)" },
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(insightsRows), "Insights");
+            if (importedActuals) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(importedActuals.points), "Imported actuals");
+            }
+            XLSX.writeFile(wb, `scenario-lab-${selected.id}.xlsx`);
+            setImportStatus(`Exported scenario-lab-${selected.id}.xlsx`);
+        } catch (err) {
+            setImportStatus(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }, [scenarioComparison, scenarioInsights, scenarioVariance, scenarioNarrative, importedActuals, selected.id, selected.siteName]);
+    const runScenarioNarrative = useCallback(async (question?: string) => {
+        setScenarioNarrativeLoading(true);
+        const prompt = buildScenarioPrompt(scenarioComparison, scenarioVariance, "process unit", { insights: scenarioInsights, importedNote, question });
+        const offline = () => (question
+            ? answerScenarioQuestion(question, { comparison: scenarioComparison, variance: scenarioVariance, insights: scenarioInsights, importedNote }, "process unit")
+            : summarizeComparison(scenarioComparison, scenarioVariance, "process unit") + (importedNote ? ` ${importedNote}` : ""));
+        try {
+            if (isDataAgentConfigured()) {
+                const answer = await queryDataAgent(prompt, {
+                    selectedUnitId: selected.id,
+                    selectedSite: selected.siteName,
+                    scenarios: scenarioComparison.scenarios,
+                    variance: scenarioVariance,
+                    insights: scenarioInsights,
+                    importedActuals: importedActuals?.points,
+                });
+                setScenarioNarrative(answer.summary);
+                setScenarioNarrativeSource("fabriciq");
+            } else {
+                setScenarioNarrative(offline());
+                setScenarioNarrativeSource("local");
+            }
+        } catch {
+            setScenarioNarrative(offline());
+            setScenarioNarrativeSource("local");
+        } finally {
+            setScenarioNarrativeLoading(false);
+        }
+    }, [scenarioComparison, scenarioVariance, scenarioInsights, importedNote, importedActuals, selected.id, selected.siteName]);
+
+    // ---- Mission-ops derived state ---------------------------------------
+    const selectedForecast = forecastEscalation(anomalyHistRef.current.get(selected.id) ?? []);
+    const suggestedPriority = derivePriority(anomalyScore(selected), selectedForecast.etaToAlarmTicks);
+    const suggestedComponent = recommendComponentStable(selected.moduleTempC, selected.inverterLoadPct, componentStickyRef.current[selected.id]);
+    componentStickyRef.current[selected.id] = suggestedComponent;
+    const suggestedResponders = useMemo(
+        () => rankWorkIQResponders(MOCK_WORKIQ_RESPONDERS, selected.siteId, suggestedComponent, suggestedPriority, {
+            shift: responderShiftFilter,
+            onCallOnly,
+            loadByResponder: responderLoad,
+        }),
+        [onCallOnly, responderLoad, responderShiftFilter, selected.siteId, suggestedComponent, suggestedPriority],
+    );
+    const primaryResponder = suggestedResponders[0] ?? null;
+    const responderAvailability = useMemo(
+        () => summarizeResponderAvailability(suggestedResponders.map((r) => ({ shift: r.shift, onCall: r.onCall, currentLoad: r.currentLoad }))),
+        [suggestedResponders],
+    );
+    const techPopupResponder = useMemo(
+        () => suggestedResponders.find((r) => r.id === techPopupResponderId) ?? primaryResponder,
+        [primaryResponder, suggestedResponders, techPopupResponderId],
+    );
+    const techPopupFocusComponent = useMemo(
+        () => (techPopupResponder?.skills[0] ?? suggestedComponent) as WorkOrderComponent,
+        [suggestedComponent, techPopupResponder],
+    );
+    const matchingEvidence = useMemo(
+        () => MOCK_REFINERY_EVIDENCE.filter((ev) => ev.component === suggestedComponent),
+        [suggestedComponent],
+    );
+    const selectedEvidence = useMemo(
+        () => matchingEvidence.find((ev) => ev.id === selectedEvidenceId) ?? matchingEvidence[0] ?? null,
+        [matchingEvidence, selectedEvidenceId],
+    );
+    const techPopupEvidence = useMemo(
+        () => MOCK_REFINERY_EVIDENCE.find((ev) => ev.component === techPopupFocusComponent) ?? selectedEvidence,
+        [selectedEvidence, techPopupFocusComponent],
+    );
+    const incidentStory = useMemo(() => {
+        const lead = primaryResponder ? `${primaryResponder.name} (${primaryResponder.role})` : "No primary responder";
+        const evidence = selectedEvidence ? `${selectedEvidence.label} captured ${new Date(selectedEvidence.capturedAt).toLocaleTimeString()}` : "No evidence selected";
+        return `Incident detected on ${selected.id}: probable ${suggestedComponent}. Priority ${suggestedPriority}. Lead technician: ${lead}. Evidence: ${evidence}.`;
+    }, [primaryResponder, selected.id, selectedEvidence, suggestedComponent, suggestedPriority]);
+    const dispatchQuality = useMemo(() => {
+        const checks = [
+            { label: "Lead technician", ok: Boolean(primaryResponder) },
+            { label: "Evidence attached", ok: Boolean(selectedEvidence) },
+            { label: "Priority selected", ok: Boolean(suggestedPriority) },
+            { label: "Story content", ok: incidentStory.length >= 80 },
+        ];
+        const passed = checks.filter((c) => c.ok).length;
+        return { checks, score: Math.round((passed / checks.length) * 100) };
+    }, [incidentStory, primaryResponder, selectedEvidence, suggestedPriority]);
+    const escalationThreshold = suggestedPriority === "P1" ? 76 : suggestedPriority === "P2" ? 68 : 60;
+    const needsEscalation = suggestedResponders.length === 0 || (suggestedResponders[0]?.score ?? 0) < escalationThreshold;
+    const selectedOpenOrder = useMemo(
+        () => maintenanceOrders.find((o) => o.turbineId === selected.id && o.status.toLowerCase() !== "closed" && o.status.toLowerCase() !== "resolved"),
+        [maintenanceOrders, selected.id],
+    );
+    const orderAgeMin = selectedOpenOrder ? elapsedMinutesSince(selectedOpenOrder.createdAt) : null;
+    const orderPriority = (selectedOpenOrder?.priority as WorkOrderPriority | undefined) ?? suggestedPriority;
+    const orderSlaMin = prioritySlaMinutes(orderPriority);
+    const slaRemainingMin = orderAgeMin == null ? orderSlaMin : Math.max(0, orderSlaMin - orderAgeMin);
+    const isSlaOverdue = orderAgeMin != null && orderAgeMin > orderSlaMin;
+    const slaState = slaUrgency(orderAgeMin ?? 0, orderSlaMin);
+    const escalationTimeline = buildEscalationTimeline(escalationStage, isSlaOverdue);
+    const canEscalateRegional = escalationStage === "manager" && isSlaOverdue;
+    const missionChallenge = useMemo(
+        () => buildMissionChallenge({
+            dispatchQualityScore: dispatchQuality.score,
+            hasLeadTechnician: Boolean(primaryResponder),
+            hasEvidence: Boolean(selectedEvidence),
+            hasOpenOrder: Boolean(selectedOpenOrder),
+            escalationStage,
+            isSlaOverdue,
+            demoRuns: demoRunCount,
+        }),
+        [demoRunCount, dispatchQuality.score, escalationStage, isSlaOverdue, primaryResponder, selectedEvidence, selectedOpenOrder],
+    );
+
+    useEffect(() => {
+        if (matchingEvidence.length === 0) {
+            return;
+        }
+        if (!matchingEvidence.some((ev) => ev.id === selectedEvidenceId)) {
+            setSelectedEvidenceId(matchingEvidence[0].id);
+        }
+    }, [matchingEvidence, selectedEvidenceId]);
+
+    useEffect(() => {
+        if (!techPopupOpen || !techPopupEvidence) {
+            return;
+        }
+        if (techPopupEvidence.id !== selectedEvidenceId) {
+            setSelectedEvidenceId(techPopupEvidence.id);
+        }
+    }, [selectedEvidenceId, techPopupEvidence, techPopupOpen]);
+
+    const raiseWorkOrder = useCallback(async (assigneeOverride?: string, escalationNote?: string, demoOverride = false) => {
+        setWoMessage(null);
+        if (!canWriteback && !demoOverride) {
+            setWoMessage("Viewer mode — switch to Operator to raise work orders.");
+            return false;
+        }
+        const deltaKwt = Math.round(scenario.energyDeltaKwt);
+        const assignee = (assigneeOverride ?? woAssignee).trim() || "unassigned";
+        const evidenceNote = selectedEvidence ? `evidence ${selectedEvidence.label}` : "evidence n/a";
+        const noteBase = `${suggestedComponent} \u00b7 ${evidenceNote} \u00b7 plan turndown ${simCurtail}% / downtime ${simDowntime}t \u00b7 projected ${deltaKwt.toLocaleString()} kbd\u00b7t`;
+        const note = escalationNote ? `${noteBase} \u00b7 ${escalationNote}` : noteBase;
+        const order: MaintenanceOrderRecord = {
+            turbineId: selected.id,
+            siteId: selected.siteId,
+            component: suggestedComponent,
+            priority: suggestedPriority,
+            status: "Open",
+            curtailPct: simCurtail,
+            downtimeTicks: simDowntime,
+            projectedDeltaKwt: deltaKwt,
+            assignee,
+            note: note.slice(0, 500),
+            createdAt: new Date().toISOString(),
+        };
+        try {
+            const saved = await saveMaintenanceOrder(order);
+            const ref = saved.id ? ` (id ${saved.id.slice(0, 8)})` : "";
+            setWoMessage(`${suggestedPriority} work order raised for ${selected.id} — ${suggestedComponent} \u00b7 ${assignee}${ref}.`);
+            setWoAssignee("");
+            void loadOrders();
+            return true;
+        } catch {
+            const fallback = JSON.parse(localStorage.getItem("refinery-workorders") ?? "[]") as MaintenanceOrderRecord[];
+            fallback.unshift(order);
+            localStorage.setItem("refinery-workorders", JSON.stringify(fallback));
+            setMaintenanceOrders(fallback);
+            setWoMessage(`Backend unreachable. Work order saved locally (${fallback.length}).`);
+            return true;
+        }
+    }, [canWriteback, loadOrders, scenario.energyDeltaKwt, selected.id, selected.siteId, selectedEvidence, simCurtail, simDowntime, suggestedComponent, suggestedPriority, woAssignee]);
+
+    const handleRaiseWorkOrder = useCallback(async () => {
+        if (!canWriteback) {
+            setOperatorRole("operator");
+            setWoMessage("Demo override enabled: switched to Operator for dispatch.");
+            await raiseWorkOrder(undefined, undefined, true);
+            return;
+        }
+        await raiseWorkOrder();
+    }, [canWriteback, raiseWorkOrder]);
+
+    const handleDispatchResponder = useCallback(async (responder: { id: string; name: string }) => {
+        setWoAssignee(responder.name);
+        const demoOverride = !canWriteback;
+        if (demoOverride) {
+            setOperatorRole("operator");
+            setWoMessage("Demo override enabled: switched to Operator for responder dispatch.");
+        }
+        const ok = await raiseWorkOrder(responder.name, undefined, demoOverride);
+        if (ok) {
+            setResponderLoad((prev) => ({ ...prev, [responder.id]: (prev[responder.id] ?? 0) + 1 }));
+            setEscalationStage("none");
+        }
+    }, [canWriteback, raiseWorkOrder]);
+
+    const handleEscalateManager = useCallback(async (demoOverride = false) => {
+        const managerName = "Ops Duty Manager";
+        const internalOverride = demoOverride || !canWriteback;
+        if (internalOverride && !canWriteback) {
+            setOperatorRole("operator");
+            setWoMessage("Demo override enabled: switched to Operator for manager escalation.");
+        }
+        const ok = await raiseWorkOrder(managerName, `Escalation L1: below match threshold / SLA risk for ${selected.id}`, internalOverride);
+        if (ok) {
+            setEscalationStage("manager");
+            setWoMessage((prev) => `${prev ?? ""} Escalated to ${managerName}.`.trim());
+        }
+    }, [canWriteback, raiseWorkOrder, selected.id]);
+
+    const handleEscalateRegional = useCallback(async (demoOverride = false) => {
+        const regionalLead = "Regional Reliability Lead";
+        const internalOverride = demoOverride || !canWriteback;
+        if (internalOverride && !canWriteback) {
+            setOperatorRole("operator");
+            setWoMessage("Demo override enabled: switched to Operator for regional escalation.");
+        }
+        const ok = await raiseWorkOrder(regionalLead, `Escalation L2: unresolved after manager handoff for ${selected.id}`, internalOverride);
+        if (ok) {
+            setEscalationStage("regional");
+            setWoMessage((prev) => `${prev ?? ""} Escalated to ${regionalLead}.`.trim());
+        }
+    }, [canWriteback, raiseWorkOrder, selected.id]);
+
+    // Close the loop: confirm resolution of the current open order (distinct from
+    // dispatch). If nothing was dispatched yet, there is no loop to close, so we
+    // escalate for review instead of silently doing nothing.
+    const handleCloseLoop = useCallback(async () => {
+        if (!selectedOpenOrder) {
+            setWoMessage("Close the loop: no open order to resolve — escalating for review.");
+            await handleEscalateManager(!canWriteback);
+            return false;
+        }
+        if (!canWriteback) {
+            setOperatorRole("operator");
+            setWoMessage("Close the loop demo override: switched to Operator.");
+        }
+        const resolution: MaintenanceOrderRecord = {
+            turbineId: selectedOpenOrder.turbineId,
+            siteId: selectedOpenOrder.siteId,
+            component: selectedOpenOrder.component,
+            priority: selectedOpenOrder.priority,
+            status: "Resolved",
+            curtailPct: selectedOpenOrder.curtailPct ?? simCurtail,
+            downtimeTicks: selectedOpenOrder.downtimeTicks ?? simDowntime,
+            projectedDeltaKwt: selectedOpenOrder.projectedDeltaKwt ?? 0,
+            assignee: selectedOpenOrder.assignee ?? "unassigned",
+            note: `Resolution confirmed — recovery verified for ${selectedOpenOrder.turbineId}.`,
+            createdAt: new Date().toISOString(),
+        };
+        try {
+            await saveMaintenanceOrder(resolution);
+            setEscalationStage("none");
+            setWoMessage(`Loop closed — ${selectedOpenOrder.turbineId} order marked Resolved.`);
+            void loadOrders();
+            return true;
+        } catch {
+            setWoMessage("Close the loop: backend unreachable, resolution not persisted.");
+            return false;
+        }
+    }, [canWriteback, handleEscalateManager, loadOrders, selectedOpenOrder, simCurtail, simDowntime]);
+
+    const handleRunDispatchQualityCheck = useCallback(() => {
+        const missing = dispatchQuality.checks.filter((c) => !c.ok).map((c) => c.label);
+        if (missing.length === 0) {
+            setWoMessage(`Dispatch Quality Tool: READY (${dispatchQuality.score}%).`);
+            return;
+        }
+        setWoMessage(`Dispatch Quality Tool: MISSING -> ${missing.join(", ")} (${dispatchQuality.score}%).`);
+    }, [dispatchQuality]);
+
+    // ---- Guided demo orchestration ---------------------------------------
+    const handlePrimeDemoStory = useCallback(() => {
+        const targetCurtail = suggestedPriority === "P1" ? 22 : suggestedPriority === "P2" ? 14 : 8;
+        const targetDowntime = suggestedPriority === "P1" ? 6 : suggestedPriority === "P2" ? 4 : 2;
+        setSimCurtail(targetCurtail);
+        setSimDowntime(targetDowntime);
+        if (simHorizon < 12) {
+            setSimHorizon(12);
+        }
+        setResponderShiftFilter("all");
+        setOnCallOnly(true);
+        setEscalationStage("none");
+        if (matchingEvidence[0]) {
+            setSelectedEvidenceId(matchingEvidence[0].id);
+        }
+        const lead = suggestedResponders[0] ?? null;
+        if (lead) {
+            setWoAssignee(lead.name);
+            setTechPopupResponderId(lead.id);
+            setTechPopupOpen(true);
+        }
+        setWoMessage(`Demo story primed for ${selected.id}: ${suggestedComponent}, ${suggestedPriority}, ${lead ? lead.name : "no lead"}.`);
+    }, [matchingEvidence, selected.id, simHorizon, suggestedComponent, suggestedPriority, suggestedResponders]);
+
+    const handleAutoHealNow = useCallback(async () => {
+        const lead = suggestedResponders[0] ?? null;
+        if (!lead) {
+            setWoMessage("AutoHeal: no responder available in current roster.");
+            return false;
+        }
+        if (!canWriteback) {
+            setOperatorRole("operator");
+            setWoMessage("AutoHeal demo override: switched to Operator.");
+        }
+        if ((lead.score ?? 0) < escalationThreshold) {
+            await handleEscalateManager(!canWriteback);
+            return true;
+        }
+        await handleDispatchResponder(lead);
+        return true;
+    }, [canWriteback, escalationThreshold, handleDispatchResponder, handleEscalateManager, suggestedResponders]);
+
+    const handleCallFieldSupport = useCallback(async () => {
+        setWoMessage(`Field support contacted — on-site crew dispatched to ${selected.id} (${selected.siteName}).`);
+        return handleCloseLoop();
+    }, [handleCloseLoop, selected.id, selected.siteName]);
+
+    // Visibly "click" a few graph nodes during the graph step: highlight the current
+    // unit, then two peers (same site when possible, else other units), then restore
+    // the original selection so downstream steps act on the right unit.
+    const cycleGraphSelection = useCallback(async (dwellMs: number) => {
+        const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+        const originalId = selected.id;
+        const others = turbines.filter((t) => t.id !== originalId);
+        const sameSite = others.filter((t) => t.siteId === selected.siteId);
+        const peers = (sameSite.length >= 2 ? sameSite : others).slice(0, 2);
+        const cycleIds = [originalId, ...peers.map((t) => t.id), originalId];
+        const stepMs = Math.max(1200, Math.floor(dwellMs / cycleIds.length));
+        for (let i = 0; i < cycleIds.length; i += 1) {
+            const id = cycleIds[i];
+            setSelectedId(id);
+            const t = turbines.find((x) => x.id === id);
+            if (t) {
+                setWoMessage(i === 0
+                    ? `Graph: drilled into incident node ${id} (${t.status}) — assets & sensors expanded.`
+                    : `Graph: tracing related node ${id} — same refinery ${t.siteName}.`);
+            }
+            await delay(stepMs);
+        }
+        setSelectedId(originalId);
+        setWoMessage(`Graph: back on incident node ${originalId} — reviewing its asset tree.`);
+    }, [selected.id, selected.siteId, turbines]);
+
+    const handleAutoRunDemo = useCallback(async () => {
+        if (autoPlayRunning) {
+            return;
+        }
+        setAutoPlayRunning(true);
+        setDemoIntroOpen(false);
+        setDemoPanelOpen(false);
+        const dwellMs = 10000;
+        const preActionMs = 5000;
+        const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+        const logStep = (step: string, detail: string) =>
+            setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
+        try {
+            // 1 — Frame the incident on the fleet map (reset any active filters).
+            setDemoScriptStep("story");
+            setDemoStepIndex(0);
+            setDemoRunLog([{ step: "story", at: new Date().toISOString(), detail: "Framed the incident" }]);
+            setSiteFilter("all");
+            setStatusFilter("all");
+            setGraphFilter("all");
+            setView("map");
+            handlePrimeDemoStory();
+            setTechPopupOpen(false);
+            await delay(dwellMs);
+            // 2 — Locate: show the map first, then filter down to the affected site.
+            setDemoScriptStep("locate");
+            setDemoStepIndex(1);
+            setView("map");
+            setTechPopupOpen(false);
+            await delay(preActionMs);
+            setSiteFilter(selected.siteId);
+            setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
+            logStep("locate", `Filtered map to refinery ${selected.siteName} and focused ${selected.id}`);
+            await delay(dwellMs - preActionMs);
+            // 3 — Inspect the digital twin: overall view first, then focus a process asset.
+            setDemoScriptStep("twin");
+            setDemoStepIndex(2);
+            setView("twin");
+            setTwinTab("overview");
+            setDemoFocusPart(null);
+            setWoMessage(`Digital twin: overall view of ${selected.id}.`);
+            await delay(preActionMs);
+            setDemoFocusPart("array");
+            setWoMessage(`Digital twin: inspecting the column on ${selected.id} — reading asset & sensor signals.`);
+            logStep("twin", "Overall view → focused the column asset and its sensors");
+            await delay(dwellMs - preActionMs);
+            // 4 — Analyze the ontology graph: show it first, then filter/traverse.
+            setDemoScriptStep("graph");
+            setDemoStepIndex(3);
+            setView("graph");
+            logStep("graph", `Analyzed the ontology graph (filter: ${selected.status})`);
+            await delay(preActionMs);
+            setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
+            await cycleGraphSelection(dwellMs - preActionMs);
+            // 5 — Take action: show operations first, then launch the dispatch popup.
+            setDemoScriptStep("dispatch");
+            setDemoStepIndex(4);
+            goToOps();
+            setTechPopupOpen(false);
+            await delay(preActionMs);
+            setTechPopupOpen(true);
+            const dispatched = await handleAutoHealNow();
+            if (!dispatched) {
+                await handleRaiseWorkOrder();
+            }
+            logStep("dispatch", "Opened dispatch popup and raised the work order");
+            await delay(dwellMs - preActionMs);
+            // 6 — Call field support, close the loop, and reset filters.
+            setDemoScriptStep("support");
+            setDemoStepIndex(5);
+            setTechPopupOpen(false);
+            goToOps();
+            const closed = await handleCallFieldSupport();
+            setSiteFilter("all");
+            setGraphFilter("all");
+            logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
+            await delay(dwellMs);
+            // 7 — Ask Fabric IQ: click Ask and read the recommendation.
+            setDemoScriptStep("ask");
+            setDemoStepIndex(6);
+            setTechPopupOpen(false);
+            setView("ask");
+            const askPrompt = `Which units are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
+            setQuestion(askPrompt);
+            setWoMessage("Fabric IQ: submitting the prioritization question…");
+            await runAskRef.current(askPrompt);
+            logStep("ask", "Asked Fabric IQ for prioritization");
+            setWoMessage("Fabric IQ answered — visualizing the trend in Analytics next.");
+            await delay(dwellMs);
+            // 8 — Analytics: visualize the trends behind the answer, then open the report.
+            setDemoScriptStep("analytics");
+            setDemoStepIndex(7);
+            setView("analytics");
+            setWoMessage("Analytics: throughput, deltas and the operating curve behind the recommendation.");
+            logStep("analytics", "Reviewed performance analytics behind the answer");
+            await delay(dwellMs);
+            missionReportRef.current();
+            logStep("analytics", "Opened the mission report");
+            await delay(preActionMs);
+            setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
+            setDemoRunCount((count) => count + 1);
+        } finally {
+            await delay(1500);
+            setAutoPlayRunning(false);
+            setDemoScriptStep("idle");
+            setDemoFocusPart(null);
+        }
+    }, [autoPlayRunning, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, handleRaiseWorkOrder, selected.id, selected.siteId, selected.siteName, selected.status]);
+
+    const demoScriptLead = techPopupResponder ?? primaryResponder ?? suggestedResponders[0] ?? null;
+    const demoScriptSteps = useMemo<DemoScriptStep[]>(() => [
+        {
+            id: "story",
+            label: "1. Frame incident",
+            detail: "Prime the incident narrative and choose the lead engineer.",
+            action: () => {
+                setDemoScriptStep("story");
+                setView("map");
+                handlePrimeDemoStory();
+            },
+        },
+        {
+            id: "locate",
+            label: "2. Locate on map",
+            detail: "Filter the fleet map to the affected refinery.",
+            action: () => {
+                setDemoScriptStep("locate");
+                setView("map");
+                setSiteFilter(selected.siteId);
+                setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
+            },
+        },
+        {
+            id: "twin",
+            label: "3. Digital twin",
+            detail: "Open the twin, then focus the column asset.",
+            action: async () => {
+                setDemoScriptStep("twin");
+                setView("twin");
+                setTwinTab("overview");
+                setDemoFocusPart(null);
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 2500));
+                setDemoFocusPart("array");
+            },
+        },
+        {
+            id: "graph",
+            label: "4. Ontology graph",
+            detail: "Filter the ontology graph to the unit's severity.",
+            action: async () => {
+                setDemoScriptStep("graph");
+                setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
+                setView("graph");
+                await cycleGraphSelection(8000);
+            },
+        },
+        {
+            id: "dispatch",
+            label: "5. Dispatch lead",
+            detail: "Open the dispatch popup and send the selected responder.",
+            action: async () => {
+                setDemoScriptStep("dispatch");
+                goToOps();
+                setTechPopupOpen(true);
+                if (!demoScriptLead) {
+                    const ok = await handleAutoHealNow();
+                    if (!ok) {
+                        await handleRaiseWorkOrder();
+                    }
+                    return;
+                }
+                await handleDispatchResponder(demoScriptLead);
+            },
+        },
+        {
+            id: "support",
+            label: "6. Field support",
+            detail: "Call on-site field support and close the loop.",
+            action: async () => {
+                setDemoScriptStep("support");
+                goToOps();
+                setTechPopupOpen(false);
+                await handleCallFieldSupport();
+            },
+        },
+        {
+            id: "ask",
+            label: "7. Ask Fabric IQ",
+            detail: "Ask a prioritization question and read the recommendation.",
+            action: async () => {
+                setDemoScriptStep("ask");
+                setTechPopupOpen(false);
+                setView("ask");
+                const prompt = `Which units are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
+                setQuestion(prompt);
+                await runAskRef.current(prompt);
+            },
+        },
+        {
+            id: "analytics",
+            label: "8. Analytics & report",
+            detail: "Visualize the trend in Analytics, then open the mission report.",
+            action: async () => {
+                setDemoScriptStep("analytics");
+                setTechPopupOpen(false);
+                setView("analytics");
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 1500));
+                missionReportRef.current();
+            },
+        },
+    ], [demoScriptLead, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, handleRaiseWorkOrder, selected.id, selected.siteId, selected.siteName, selected.status]);
+
+    const handleStartDemoFromIntro = useCallback(() => {
+        setDemoIntroOpen(false);
+        void handleAutoRunDemo();
+    }, [handleAutoRunDemo]);
+
+    const recordMissionRun = useCallback((report: MissionReport) => {
+        setRunHistory((history) => pushMissionRun(history, report, 10));
+    }, []);
+
+    const buildDemoReport = useCallback((): MissionReport => buildMissionReport({
+        turbineId: selected.id,
+        siteName: selected.siteName,
+        component: suggestedComponent,
+        priority: suggestedPriority,
+        responder: primaryResponder?.name ?? null,
+        dispatchQualityScore: dispatchQuality.score,
+        challengeScore: missionChallenge.score,
+        challengeVerdict: missionChallenge.verdict,
+        events: demoRunLog.length > 0 ? demoRunLog : [{ step: "manual", at: new Date().toISOString(), detail: "No scripted run recorded yet" }],
+        outcome: selectedOpenOrder ? `Open order (${selectedOpenOrder.priority})` : "No open order",
+    }), [demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
+
+    const handleOpenMissionReport = useCallback(() => {
+        const report = buildDemoReport();
+        recordMissionRun(report);
+        setReportModal(report);
+        setWoMessage(`Mission report ready (${report.stepCount} steps, ${(report.durationMs / 1000).toFixed(1)}s).`);
+    }, [buildDemoReport, recordMissionRun]);
+
+    const handleDownloadMissionReport = useCallback(() => {
+        const report = buildDemoReport();
+        recordMissionRun(report);
+        const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `mission-report-${selected.id}-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setWoMessage(`Mission report exported (${report.stepCount} steps, ${(report.durationMs / 1000).toFixed(1)}s).`);
+    }, [buildDemoReport, recordMissionRun, selected.id]);
+
+    // Persist run history and keep the report/ask refs current for the orchestrator.
+    useEffect(() => {
+        localStorage.setItem("refinery-run-history", JSON.stringify(runHistory.slice(0, 10)));
+    }, [runHistory]);
+
+    useEffect(() => {
+        missionReportRef.current = handleOpenMissionReport;
+    }, [handleOpenMissionReport]);
+
+    // Compile a mission report automatically once an auto-run finishes.
+    const autoPlayPrevRef = useRef(false);
+    useEffect(() => {
+        const finished = autoPlayPrevRef.current && !autoPlayRunning;
+        autoPlayPrevRef.current = autoPlayRunning;
+        if (!finished || demoRunLog.length === 0) {
+            return;
+        }
+        const report = buildMissionReport({
+            turbineId: selected.id,
+            siteName: selected.siteName,
+            component: suggestedComponent,
+            priority: suggestedPriority,
+            responder: primaryResponder?.name ?? null,
+            dispatchQualityScore: dispatchQuality.score,
+            challengeScore: missionChallenge.score,
+            challengeVerdict: missionChallenge.verdict,
+            events: demoRunLog,
+            outcome: selectedOpenOrder ? `Open order (${selectedOpenOrder.priority})` : "No open order",
+        });
+        recordMissionRun(report);
+    }, [autoPlayRunning, demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, recordMissionRun, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
+
+    // Demo keyboard shortcuts: ← / → step, Enter run step, Esc close — gated on the panel.
+    useEffect(() => {
+        if (!demoPanelOpen) {
+            return;
+        }
+        const onKey = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            const typing = !!target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+            if (e.key === "Escape") {
+                setDemoPanelOpen(false);
+                return;
+            }
+            if (typing || autoPlayRunning) {
+                return;
+            }
+            if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                setDemoStepIndex((i) => Math.max(0, i - 1));
+            } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                setDemoStepIndex((i) => Math.min(demoScriptSteps.length - 1, i + 1));
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                void demoScriptSteps[demoStepIndex]?.action();
+            }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [autoPlayRunning, demoPanelOpen, demoScriptSteps, demoStepIndex]);
+
+    const demoNarration = demoScriptStep !== "idle" ? narrateStep(REFINERY_DEMO_MANIFEST, demoScriptStep) : null;
+    const runHistorySummaries = useMemo(() => runHistory.map((r) => summarizeMissionRun(r)), [runHistory]);
+
+    // ---- Twin device graph admin -----------------------------------------
+    const twinDeviceDefinitions = useMemo(() => (focusedTwinPart ? twinDeviceGraph[focusedTwinPart] : []), [focusedTwinPart, twinDeviceGraph]);
+    const twinDeviceLayer = useMemo(() => {
+        if (!focusedTwinPart || !focusedTwinDevice) {
+            return null;
+        }
+        const def = twinDeviceDefinitions.find((d) => d.key === focusedTwinDevice) ?? null;
+        if (!def) {
+            return null;
+        }
+        return { ...def, status: def.status(selected), value: def.value(selected) };
+    }, [focusedTwinDevice, focusedTwinPart, selected, twinDeviceDefinitions]);
+
+    const handleTwinDraftChange = useCallback((patch: Partial<RefineryDeviceDraft>) => {
+        setDeviceDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+        setDeviceDraftDirty(true);
+    }, []);
+
+    const handleTwinDraftReset = useCallback(() => {
+        if (!focusedTwinPart || !focusedTwinDevice) {
+            return;
+        }
+        const componentDevices = twinDeviceGraph[focusedTwinPart] ?? [];
+        const node = componentDevices.find((d) => d.key === focusedTwinDevice);
+        if (!node) {
+            return;
+        }
+        const row = twinDeviceRows.find((r) => r.deviceKey === focusedTwinDevice);
+        const sortOrder = row?.sortOrder ?? componentDevices.findIndex((d) => d.key === focusedTwinDevice);
+        setDeviceDraft(draftFromUnitDevice(node, sortOrder));
+        setDeviceDraftDirty(false);
+        setDeviceSaveMessage("Editor reset to persisted values.");
+    }, [focusedTwinDevice, focusedTwinPart, twinDeviceGraph, twinDeviceRows]);
+
+    const persistTwinRows = useCallback((rows: UnitDeviceRecord[]) => {
+        setTwinDeviceRows(rows);
+        setTwinDeviceGraph(mergeUnitDeviceGraph(rows, UNIT_COMPONENT_DEVICES));
+    }, []);
+
+    const handleTwinDraftSave = useCallback(async () => {
+        if (!focusedTwinPart || !focusedTwinDevice || !deviceDraft) {
+            return;
+        }
+        const componentDevices = twinDeviceGraph[focusedTwinPart] ?? [];
+        const node = componentDevices.find((d) => d.key === focusedTwinDevice);
+        if (!node) {
+            return;
+        }
+        const row = twinDeviceRows.find((r) => r.deviceKey === focusedTwinDevice);
+        setDeviceSaveBusy(true);
+        setDeviceSaveMessage(null);
+        try {
+            const normalized = normalizeUnitDeviceDraft(deviceDraft, {
+                zoom: node.zoom,
+                sortOrder: row?.sortOrder ?? componentDevices.findIndex((d) => d.key === focusedTwinDevice),
+                anchor: node.anchor,
+                lookAt: node.lookAt,
+                offset: node.offset,
+            });
+            const patch: Partial<Omit<UnitDeviceRecord, "id" | "deviceKey">> = {
+                label: normalized.label,
+                property: normalized.property,
+                unit: normalized.unit,
+                note: normalized.note,
+                zoom: normalized.zoom,
+                sortOrder: normalized.sortOrder,
+                anchorX: normalized.anchor[0], anchorY: normalized.anchor[1], anchorZ: normalized.anchor[2],
+                lookAtX: normalized.lookAt[0], lookAtY: normalized.lookAt[1], lookAtZ: normalized.lookAt[2],
+                offsetX: normalized.offset[0], offsetY: normalized.offset[1], offsetZ: normalized.offset[2],
+            };
+            await updateUnitDevice({ id: row?.id, deviceKey: focusedTwinDevice }, patch);
+            const rows = await listUnitDevices();
+            if (rows.length > 0) {
+                persistTwinRows(rows);
+            }
+            setDeviceDraftDirty(false);
+            setDeviceSaveMessage("Twin graph device saved to backend.");
+        } catch {
+            setDeviceSaveMessage("Backend unreachable — device changes not persisted.");
+        } finally {
+            setDeviceSaveBusy(false);
+        }
+    }, [deviceDraft, focusedTwinDevice, focusedTwinPart, persistTwinRows, twinDeviceGraph, twinDeviceRows]);
+
+    const handleTwinAddSibling = useCallback(async () => {
+        if (!focusedTwinPart || !focusedTwinDevice) {
+            return;
+        }
+        const base = twinDeviceDefinitions.find((d) => d.key === focusedTwinDevice);
+        if (!base) {
+            return;
+        }
+        const suffix = Math.floor(Date.now() / 1000).toString(36);
+        const newKey = `${focusedTwinPart}.${suffix}`;
+        const maxSort = twinDeviceRows.reduce((m, r) => Math.max(m, r.sortOrder), 0);
+        setDeviceSaveBusy(true);
+        setDeviceSaveMessage(null);
+        try {
+            await createUnitDevice({
+                deviceKey: newKey,
+                component: focusedTwinPart,
+                label: `${base.label} copy`,
+                property: base.property,
+                unit: base.unit,
+                note: `${base.note} (new)`,
+                anchorX: base.anchor[0], anchorY: base.anchor[1], anchorZ: base.anchor[2],
+                lookAtX: base.lookAt[0], lookAtY: base.lookAt[1], lookAtZ: base.lookAt[2],
+                offsetX: base.offset[0], offsetY: base.offset[1], offsetZ: base.offset[2],
+                zoom: base.zoom,
+                sortOrder: maxSort + 1,
+            });
+            const rows = await listUnitDevices();
+            if (rows.length > 0) {
+                persistTwinRows(rows);
+            }
+            setFocusedTwinDevice(newKey);
+            setDeviceSaveMessage("Sibling device created.");
+        } catch {
+            setDeviceSaveMessage("Backend unreachable — sibling device not created.");
+        } finally {
+            setDeviceSaveBusy(false);
+        }
+    }, [focusedTwinDevice, focusedTwinPart, persistTwinRows, twinDeviceDefinitions, twinDeviceRows]);
+
+    const handleTwinDeleteDevice = useCallback(async () => {
+        if (!focusedTwinPart || !focusedTwinDevice) {
+            return;
+        }
+        const componentCount = twinDeviceGraph[focusedTwinPart]?.length ?? 0;
+        if (componentCount <= 1) {
+            setDeviceSaveMessage("At least one child device must remain for this asset.");
+            return;
+        }
+        const row = twinDeviceRows.find((r) => r.deviceKey === focusedTwinDevice);
+        setDeviceSaveBusy(true);
+        setDeviceSaveMessage(null);
+        try {
+            await deleteUnitDevice({ id: row?.id, deviceKey: focusedTwinDevice });
+            const rows = await listUnitDevices();
+            if (rows.length > 0) {
+                persistTwinRows(rows);
+            }
+            const nextDevice = rows.find((r) => r.component === focusedTwinPart)?.deviceKey ?? null;
+            setFocusedTwinDevice(nextDevice);
+            setDeviceSaveMessage("Device deleted from backend graph.");
+        } catch {
+            setDeviceSaveMessage("Backend unreachable — device not deleted.");
+        } finally {
+            setDeviceSaveBusy(false);
+        }
+    }, [focusedTwinDevice, focusedTwinPart, persistTwinRows, twinDeviceGraph, twinDeviceRows]);
 
     const runAsk = useCallback(async (override?: string) => {
         setAskLoading(true);
@@ -1900,6 +3459,26 @@ function App() {
             setAskLoading(false);
         }
     }, [question, selected.id, selected.siteName, turbines]);
+
+    useEffect(() => {
+        runAskRef.current = runAsk;
+    }, [runAsk]);
+
+    const runAgentConnectionCheck = useCallback(async () => {
+        setAgentCheckLoading(true);
+        try {
+            const result = await testDataAgentConnection({
+                selectedUnitId: selected.id,
+                selectedSite: selected.siteName,
+            });
+            setAgentCheckResult(result);
+            if (!result.ok) {
+                setAskError(result.message);
+            }
+        } finally {
+            setAgentCheckLoading(false);
+        }
+    }, [selected.id, selected.siteName]);
 
     const handleWriteback = useCallback(async () => {
         setWritebackMessage(null);
@@ -2029,7 +3608,7 @@ function App() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
-                    placeholder="Find array…"
+                    placeholder="Find unit…"
                     aria-label="Find unit by id"
                     className="w-32 rounded border border-slate-700 bg-[#08142a] px-2 py-1"
                 />
@@ -2070,6 +3649,49 @@ function App() {
                 </div>
 
                 <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 text-xs text-slate-300 sm:w-auto">
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setDemoPanelOpen((v) => !v)}
+                            className={`flex items-center gap-1.5 rounded border px-2.5 py-1.5 font-semibold ${demoPanelOpen || autoPlayRunning ? "border-cyan-400 bg-cyan-600/25 text-cyan-100" : "border-cyan-700/50 bg-[#08182c] text-cyan-200 hover:bg-cyan-900/30"}`}
+                            aria-expanded={demoPanelOpen}
+                            title="Guided demo walkthrough"
+                        >
+                            🎬 {autoPlayRunning ? "Running…" : "Guided demo"}
+                        </button>
+                        {demoPanelOpen && (
+                            <div className="absolute right-0 top-full z-40 mt-2 w-80 rounded-lg border border-slate-700 bg-[#07142a] p-3 text-left shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-semibold text-cyan-200">Guided demo</p>
+                                    <button type="button" onClick={() => setDemoPanelOpen(false)} className="rounded p-0.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100">✕</button>
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-400">Detection → resolution on one live refinery incident. Use ← / → to step, Enter to run a step, Esc to close.</p>
+                                <div className="mt-2 flex gap-2">
+                                    <button type="button" onClick={() => setDemoIntroOpen(true)} className="flex-1 rounded bg-slate-700 px-2 py-1.5 text-xs font-medium text-white hover:bg-slate-600">Intro</button>
+                                    <button type="button" onClick={() => void handleAutoRunDemo()} disabled={autoPlayRunning} className="flex-1 rounded bg-cyan-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50">▶ Run all</button>
+                                </div>
+                                <ol className="mt-2 max-h-56 space-y-1 overflow-y-auto">
+                                    {demoScriptSteps.map((step, i) => (
+                                        <li key={step.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setDemoStepIndex(i); void step.action(); }}
+                                                disabled={autoPlayRunning}
+                                                className={`w-full rounded px-2 py-1 text-left text-[11px] ${i === demoStepIndex ? "bg-cyan-900/40 text-cyan-100" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"} disabled:opacity-60`}
+                                            >
+                                                <span className="font-semibold">{step.label}</span>
+                                                <span className="block text-[10px] text-slate-500">{step.detail}</span>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ol>
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                    <button type="button" onClick={handleOpenMissionReport} className="flex-1 rounded bg-emerald-700 px-2 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-600">Mission report</button>
+                                    <span className="text-[10px] text-slate-500">{runHistorySummaries.length} run{runHistorySummaries.length === 1 ? "" : "s"}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <button
                         type="button"
                         onClick={() => setLive((v) => !v)}
@@ -2092,6 +3714,18 @@ function App() {
                     </div>
                 </div>
             </header>
+
+            {demoNarration && (
+                <div className="border-b border-cyan-800/50 bg-[#06182fee] px-3 py-2 sm:px-5">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="rounded-full bg-cyan-600/30 px-2 py-0.5 text-[10px] font-semibold text-cyan-100">Step {demoNarration.index}/{demoNarration.total}</span>
+                        <span className="text-sm font-semibold text-cyan-100">{demoNarration.title}</span>
+                        {autoPlayRunning && <span className="text-[10px] text-cyan-300">● auto-running</span>}
+                        <p className="w-full text-[11px] leading-snug text-slate-300">{demoNarration.caption}</p>
+                        {demoNarration.focus && <span className="text-[10px] text-slate-400">Look at: {demoNarration.focus}</span>}
+                    </div>
+                </div>
+            )}
 
             <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                 <NavRail view={view} onChange={setView} badges={{ alerts: unackedAlerts.length }} />
@@ -2119,7 +3753,7 @@ function App() {
                                 <div className="mt-2"><Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} /></div>
                                 <div className="mt-2 flex gap-1">
                                     <button type="button" onClick={() => setDetailOpen(true)} className="flex-1 rounded bg-cyan-600 px-2 py-1 text-xs font-medium text-white">Details</button>
-                                    <button type="button" onClick={() => setView("operations")} className="flex-1 rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white">Dispatch</button>
+                                    <button type="button" onClick={goToOps} className="flex-1 rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white">Dispatch</button>
                                 </div>
                             </div>
 
@@ -2129,8 +3763,15 @@ function App() {
                         </div>
                     )}
 
-                    {view === "twin" && (
+                    {view === "twin" && twinTab === "overview" && (
                         <div className="h-full overflow-y-auto p-4">
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                                <div className="flex overflow-hidden rounded-lg border border-slate-700 text-xs">
+                                    <button type="button" onClick={() => setTwinTab("overview")} className={`px-3 py-1.5 font-medium ${twinTab === "overview" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Overview</button>
+                                    <button type="button" onClick={() => setTwinTab("ops")} className={`px-3 py-1.5 font-medium ${twinTab === "ops" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Operations &amp; Orders</button>
+                                </div>
+                                <span className="text-xs text-slate-400">{selected.id} · {selected.siteName}</span>
+                            </div>
                             <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
                                 <div className="flex flex-col gap-3 xl:col-span-2">
                                     <div className="flex flex-wrap items-center gap-2">
@@ -2176,6 +3817,11 @@ function App() {
                                             <p className="text-sm font-semibold">{selected.id}</p>
                                             <p className="text-xs text-slate-400">{selected.siteName} · {selected.latitude.toFixed(2)}, {selected.longitude.toFixed(2)}</p>
                                         </div>
+                                        {demoFocusPart && (
+                                            <div className="absolute bottom-3 left-3 right-3 rounded-lg border border-cyan-500/50 bg-[#06182fdd] px-3 py-2 text-xs text-cyan-100 backdrop-blur">
+                                                Guided focus · {(TWIN_PARTS.find((p) => p.key === demoFocusPart)?.caption ?? demoFocusPart)} — reading asset &amp; sensor signals for {selected.id}.
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -2189,6 +3835,88 @@ function App() {
                                             <div className="flex justify-between"><dt className="text-slate-400">Coordinates</dt><dd>{selected.latitude.toFixed(3)}, {selected.longitude.toFixed(3)}</dd></div>
                                             <div className="flex justify-between"><dt className="text-slate-400">Rated capacity</dt><dd>{selectedSite ? `${selectedSite.capacityMw} kbd` : "—"}</dd></div>
                                         </dl>
+                                    </Panel>
+
+                                    <Panel
+                                        title="Twin device graph (admin)"
+                                        action={<span className="text-[10px] text-slate-500">{twinDeviceRows.length > 0 ? `${twinDeviceRows.length} rows` : "bundled"}</span>}
+                                    >
+                                        <p className="mb-2 text-[11px] text-slate-400">Edit the asset → device tree behind the twin. Changes persist to the ontology <span className="text-cyan-200">UnitDevice</span> store (fallback-safe).</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {TWIN_PARTS.map((p) => (
+                                                <button
+                                                    key={p.key}
+                                                    type="button"
+                                                    onClick={() => { setFocusedTwinPart(p.key as RefineryPartKey); setFocusedTwinDevice((twinDeviceGraph[p.key as RefineryPartKey] ?? [])[0]?.key ?? null); }}
+                                                    className={`rounded px-2 py-0.5 text-[11px] ${focusedTwinPart === p.key ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}
+                                                >
+                                                    {p.caption}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {!focusedTwinPart ? (
+                                            <p className="mt-2 text-[11px] text-slate-500">Select an asset above to inspect and edit its devices.</p>
+                                        ) : (
+                                            <>
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                    {twinDeviceDefinitions.map((d) => (
+                                                        <button
+                                                            key={d.key}
+                                                            type="button"
+                                                            onClick={() => setFocusedTwinDevice(d.key)}
+                                                            className={`rounded px-2 py-0.5 text-[11px] ${focusedTwinDevice === d.key ? "bg-emerald-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}
+                                                        >
+                                                            {d.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {twinDeviceLayer && (
+                                                    <p className="mt-2 rounded bg-[#06101f] px-2 py-1 text-[11px]">
+                                                        <span className="text-slate-400">Live · {twinDeviceLayer.property}:</span>{" "}
+                                                        <span style={{ color: STATUS_COLORS[twinDeviceLayer.status] }}>{twinDeviceLayer.value} {twinDeviceLayer.unit} · {twinDeviceLayer.status}</span>
+                                                    </p>
+                                                )}
+
+                                                {deviceDraft && (
+                                                    <div className="mt-2 space-y-1.5">
+                                                        <label className="block text-[10px] text-slate-400">Label
+                                                            <input value={deviceDraft.label} onChange={(e) => handleTwinDraftChange({ label: e.target.value })} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                        </label>
+                                                        <div className="grid grid-cols-2 gap-1.5">
+                                                            <label className="block text-[10px] text-slate-400">Property
+                                                                <input value={deviceDraft.property} onChange={(e) => handleTwinDraftChange({ property: e.target.value })} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                            </label>
+                                                            <label className="block text-[10px] text-slate-400">Unit
+                                                                <input value={deviceDraft.unit} onChange={(e) => handleTwinDraftChange({ unit: e.target.value })} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                            </label>
+                                                        </div>
+                                                        <label className="block text-[10px] text-slate-400">Note
+                                                            <textarea value={deviceDraft.note} onChange={(e) => handleTwinDraftChange({ note: e.target.value })} rows={2} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                        </label>
+                                                        <div className="grid grid-cols-2 gap-1.5">
+                                                            <label className="block text-[10px] text-slate-400">Zoom
+                                                                <input value={deviceDraft.zoom} onChange={(e) => handleTwinDraftChange({ zoom: e.target.value })} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                            </label>
+                                                            <label className="block text-[10px] text-slate-400">Sort order
+                                                                <input value={deviceDraft.sortOrder} onChange={(e) => handleTwinDraftChange({ sortOrder: e.target.value })} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                            </label>
+                                                        </div>
+                                                        <label className="block text-[10px] text-slate-400">Anchor (x, y, z)
+                                                            <input value={deviceDraft.anchor} onChange={(e) => handleTwinDraftChange({ anchor: e.target.value })} className="mt-0.5 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-[11px] text-slate-100" />
+                                                        </label>
+                                                        <div className="flex flex-wrap gap-1 pt-1">
+                                                            <button type="button" onClick={handleTwinDraftSave} disabled={deviceSaveBusy || !deviceDraftDirty} className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-emerald-500 disabled:opacity-40">Save</button>
+                                                            <button type="button" onClick={handleTwinDraftReset} disabled={deviceSaveBusy} className="rounded bg-slate-700 px-2 py-1 text-[10px] text-white hover:bg-slate-600 disabled:opacity-40">Reset</button>
+                                                            <button type="button" onClick={handleTwinAddSibling} disabled={deviceSaveBusy} className="rounded bg-cyan-700 px-2 py-1 text-[10px] text-white hover:bg-cyan-600 disabled:opacity-40">Add sibling</button>
+                                                            <button type="button" onClick={handleTwinDeleteDevice} disabled={deviceSaveBusy} className="rounded bg-rose-700 px-2 py-1 text-[10px] text-white hover:bg-rose-600 disabled:opacity-40">Delete</button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {deviceSaveMessage && <p className="mt-1.5 text-[10px] text-cyan-300">{deviceSaveMessage}</p>}
+                                            </>
+                                        )}
                                     </Panel>
 
                                     <Panel title="Live signals (timeseries)">
@@ -2229,7 +3957,30 @@ function App() {
                                                 ))}
                                             </ul>
                                         )}
-                                        <button type="button" onClick={() => setView("operations")} className="mt-2 w-full rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Dispatch / writeback →</button>
+                                        <button type="button" onClick={goToOps} className="mt-2 w-full rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Dispatch / writeback →</button>
+                                    </Panel>
+
+                                    <Panel title="Site report" action={siteReport ? <span className="text-[10px] text-slate-500">{siteReport.unitCount} units</span> : undefined}>
+                                        {siteReport ? (
+                                            <>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <MetricCard label="Throughput" value={`${siteReport.totalKbd.toLocaleString()} kbd`} sub={`${siteReport.unitCount} units`} />
+                                                    <MetricCard label="Utilization" value={`${siteReport.utilization.toFixed(0)}%`} sub={`of ${siteReport.ratedKbd.toLocaleString()} kbd`} accent="text-emerald-300" />
+                                                    <MetricCard label="Avg unit temp" value={`${siteReport.avgUnitTempC.toFixed(0)} °C`} sub={`util ${siteReport.avgUtilizationPct.toFixed(0)}%`} accent="text-amber-300" />
+                                                </div>
+                                                <div className="mt-2"><HealthBar healthy={siteReport.healthy} warning={siteReport.warnings} alarm={siteReport.alarms} /></div>
+                                                <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1">
+                                                    {siteUnits.map((t) => (
+                                                        <li key={t.id}>
+                                                            <button type="button" onClick={() => setSelectedId(t.id)} className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs ${t.id === selected.id ? "bg-cyan-900/40" : "bg-[#0a1830] hover:bg-slate-800"}`}>
+                                                                <span className="flex items-center gap-2"><span className="inline-block h-2 w-2 rounded-full" style={{ background: STATUS_COLORS[t.status] }} /><span className="text-slate-200">{t.id}</span></span>
+                                                                <span className="text-slate-400">{t.powerKw.toLocaleString()} kbd · {t.inverterLoadPct}%</span>
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        ) : <p className="text-xs text-slate-400">No site summary available.</p>}
                                     </Panel>
                                 </div>
                             </div>
@@ -2271,7 +4022,7 @@ function App() {
                                                         <span>Throughput {t.powerKw.toLocaleString()} kbd</span>
                                                     </div>
                                                     <div className="mt-2 flex gap-2">
-                                                        <button type="button" onClick={() => { setSelectedId(t.id); setView("twin"); }} className="rounded bg-slate-700 px-2 py-1 text-xs text-white">Inspect</button>
+                                                        <button type="button" onClick={() => goToTwin(t.id)} className="rounded bg-slate-700 px-2 py-1 text-xs text-white">Inspect</button>
                                                         {ackLog[t.id] ? (
                                                             <span className="rounded bg-emerald-900/60 px-2 py-1 text-xs text-emerald-300">✓ Ack {new Date(ackLog[t.id].at).toLocaleTimeString()} · {ackLog[t.id].by}</span>
                                                         ) : (
@@ -2292,7 +4043,7 @@ function App() {
                                         {anomalyWatch.map((a) => (
                                             <li key={a.t.id}>
                                                 <div className="flex justify-between text-xs">
-                                                    <button type="button" onClick={() => { setSelectedId(a.t.id); setView("twin"); }} className="text-slate-200 hover:text-cyan-200">{a.t.id} · {a.t.siteName}</button>
+                                                    <button type="button" onClick={() => goToTwin(a.t.id)} className="text-slate-200 hover:text-cyan-200">{a.t.id} · {a.t.siteName}</button>
                                                     <span className="flex items-center gap-2">
                                                         <span className={a.forecast.direction === "rising" ? "text-amber-300" : a.forecast.direction === "falling" ? "text-emerald-300" : "text-slate-500"}>
                                                             {a.forecast.direction === "rising" ? "↑" : a.forecast.direction === "falling" ? "↓" : "→"}
@@ -2387,54 +4138,190 @@ function App() {
                         </div>
                     )}
 
-                    {view === "sites" && (
+                    {view === "scenario" && (
                         <div className="h-full overflow-y-auto p-4">
                             <div className="mb-3">{toolbar}</div>
-                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-                                {siteSummaries.map((s) => {
-                                    const local = turbines.filter((t) => t.siteId === s.id);
-                                    return (
-                                        <Panel
-                                            key={s.id}
-                                            title={s.name}
-                                            action={
-                                                <span className="flex gap-1.5 text-[10px]">
-                                                    {s.alarms > 0 && <span className="rounded-full bg-red-600/80 px-1.5 font-semibold text-white">{s.alarms} alarm</span>}
-                                                    {s.warnings > 0 && <span className="rounded-full bg-amber-500/80 px-1.5 font-semibold text-black">{s.warnings} warn</span>}
-                                                </span>
-                                            }
-                                        >
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <MetricCard label="Throughput" value={`${s.totalKbd.toLocaleString()} kbd`} sub={`${s.unitCount} units`} />
-                                                <MetricCard label="Utilization" value={`${s.utilization.toFixed(0)}%`} sub={`of ${s.ratedKbd.toLocaleString()} kbd`} accent="text-emerald-300" />
-                                                <MetricCard label="Avg unit temp" value={`${s.avgUnitTempC.toFixed(0)} °C`} sub={`util ${s.avgUtilizationPct.toFixed(0)}%`} accent="text-amber-300" />
+                            <div className="mx-auto max-w-5xl space-y-3">
+                                <Panel
+                                    title={`Scenario Lab · ${selected.siteName} · ${selected.id}`}
+                                    action={<span className="text-[11px] text-slate-400">Baseline {selected.powerKw.toLocaleString()} kbd</span>}
+                                >
+                                    <p className="text-xs text-slate-400">
+                                        Compare operating plans (throughput curtailment + maintenance downtime), import your own plans or actuals from Excel/CSV, weigh them against forecast-vs-realised throughput, then ask GenAI for a full read.
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <input
+                                            ref={scenarioFileRef}
+                                            type="file"
+                                            accept=".xlsx,.xls,.csv"
+                                            className="hidden"
+                                            onChange={(e) => { const f = e.target.files?.[0]; if (f) { void handleScenarioImport(f); } e.target.value = ""; }}
+                                        />
+                                        <button type="button" onClick={() => scenarioFileRef.current?.click()} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200">
+                                            ⬆ Import Excel / CSV
+                                        </button>
+                                        <button type="button" onClick={() => void handleScenarioExport()} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200">
+                                            ⬇ Export to Excel
+                                        </button>
+                                        {importedActuals && (
+                                            <button type="button" onClick={() => { setImportedActuals(null); setImportStatus(null); }} className="rounded border border-slate-700 px-2 py-1.5 text-[11px] text-slate-400 hover:text-rose-300">Clear import</button>
+                                        )}
+                                        {importStatus && <span className="text-[11px] text-slate-400">{importStatus}</span>}
+                                    </div>
+                                    <p className="mt-1 text-[10px] text-slate-500">
+                                        Recognised columns — scenarios: label, curtailment %, downtime, horizon · actuals: period, actual, forecast.
+                                    </p>
+                                </Panel>
+
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                    {scenarioComparison.scenarios.map((s) => (
+                                        <div key={s.id} className={`rounded-xl border p-3 ${s.isBest ? "border-emerald-500/70 bg-emerald-950/20" : "border-slate-700/70 bg-[#08142a]"}`}>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <input
+                                                    value={s.label}
+                                                    onChange={(e) => updateScenario(s.id, { label: e.target.value })}
+                                                    className="min-w-0 flex-1 rounded bg-transparent text-sm font-semibold text-slate-100 outline-none focus:bg-[#0a1830] focus:px-1"
+                                                    aria-label="Scenario label"
+                                                />
+                                                {s.isBest && <span className="rounded-full bg-emerald-900/70 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">BEST</span>}
+                                                {scenarios.length > 1 && (
+                                                    <button type="button" onClick={() => removeScenario(s.id)} aria-label="Remove scenario" className="rounded p-0.5 text-slate-500 hover:bg-slate-800 hover:text-rose-300">✕</button>
+                                                )}
                                             </div>
-                                            <div className="mt-2">
-                                                <HealthBar healthy={s.healthy} warning={s.warnings} alarm={s.alarms} />
+                                            <div className="mt-2 space-y-2 text-[11px] text-slate-300">
+                                                <label className="block">
+                                                    <span className="flex justify-between"><span>Curtailment</span><span className="font-semibold text-cyan-200">{s.curtailmentPct}%</span></span>
+                                                    <input type="range" min={0} max={100} value={s.curtailmentPct} onChange={(e) => updateScenario(s.id, { curtailmentPct: Number(e.target.value) })} className="w-full" aria-label="Curtailment percent" />
+                                                </label>
+                                                <label className="block">
+                                                    <span className="flex justify-between"><span>Downtime</span><span className="font-semibold text-cyan-200">{s.downtimeTicks} t</span></span>
+                                                    <input type="range" min={0} max={s.horizonTicks} value={s.downtimeTicks} onChange={(e) => updateScenario(s.id, { downtimeTicks: Number(e.target.value) })} className="w-full" aria-label="Downtime ticks" />
+                                                </label>
+                                                <label className="block">
+                                                    <span className="flex justify-between"><span>Horizon</span><span className="font-semibold text-cyan-200">{s.horizonTicks} t</span></span>
+                                                    <input type="range" min={1} max={48} value={s.horizonTicks} onChange={(e) => updateScenario(s.id, { horizonTicks: Number(e.target.value) })} className="w-full" aria-label="Horizon ticks" />
+                                                </label>
                                             </div>
-                                            <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto pr-1">
-                                                {local.map((t) => (
-                                                    <li key={t.id}>
-                                                        <button type="button" onClick={() => { setSelectedId(t.id); setView("twin"); }} className="flex w-full items-center justify-between rounded bg-[#0a1830] px-2 py-1 text-left text-xs hover:bg-slate-800">
-                                                            <span className="flex items-center gap-2">
-                                                                <span className="inline-block h-2 w-2 rounded-full" style={{ background: STATUS_COLORS[t.status] }} />
-                                                                <span className="text-slate-200">{t.id}</span>
-                                                            </span>
-                                                            <span className="text-slate-400">{t.powerKw.toLocaleString()} kbd · {t.inverterLoadPct}%</span>
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                                {local.length === 0 && <li className="text-xs text-slate-500">No units at this site.</li>}
-                                            </ul>
-                                        </Panel>
-                                    );
-                                })}
+                                            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-700/60 pt-2 text-[11px]">
+                                                <dt className="text-slate-400">Projected</dt><dd className="text-right text-slate-100">{s.projectedKbd.toLocaleString()} kbd</dd>
+                                                <dt className="text-slate-400">Volume Δ</dt><dd className={`text-right ${s.volumeDelta < 0 ? "text-rose-300" : "text-emerald-300"}`}>{s.volumeDelta >= 0 ? "+" : ""}{s.volumeDelta.toLocaleString()} kbd·t</dd>
+                                                <dt className="text-slate-400">vs baseline</dt><dd className={`text-right ${s.deltaPct < 0 ? "text-rose-300" : "text-emerald-300"}`}>{s.deltaPct >= 0 ? "+" : ""}{s.deltaPct}%</dd>
+                                                <dt className="text-slate-400">Rank</dt><dd className="text-right text-slate-100">#{s.rank}</dd>
+                                            </dl>
+                                        </div>
+                                    ))}
+                                    {scenarios.length < 8 && (
+                                        <button type="button" onClick={addScenario} className="flex min-h-[8rem] items-center justify-center rounded-xl border border-dashed border-slate-600 text-sm text-slate-400 hover:border-cyan-500 hover:text-cyan-200">+ Add scenario</button>
+                                    )}
+                                </div>
+
+                                <Panel title="Insights">
+                                    <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-6">
+                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Plans</p><p className="text-sm font-semibold text-slate-100">{scenarioInsights.planCount}</p></div>
+                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Best</p><p className="truncate text-sm font-semibold text-emerald-300" title={scenarioInsights.bestLabel ?? ""}>{scenarioInsights.bestLabel ?? "—"}</p></div>
+                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Spread</p><p className="text-sm font-semibold text-slate-100">{scenarioInsights.spread.toLocaleString()}</p></div>
+                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Avg Δ</p><p className={`text-sm font-semibold ${scenarioInsights.avgDelta < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenarioInsights.avgDelta >= 0 ? "+" : ""}{scenarioInsights.avgDelta.toLocaleString()}</p></div>
+                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Dispersion</p><p className="text-sm font-semibold text-slate-100">{scenarioInsights.deltaStdDev.toLocaleString()}</p></div>
+                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Riskiest</p><p className="truncate text-sm font-semibold text-amber-300" title={scenarioInsights.riskiestLabel ?? ""}>{scenarioInsights.riskiestLabel ?? "—"}</p></div>
+                                    </div>
+                                </Panel>
+
+                                {importedActuals && importedSummary && (
+                                    <Panel
+                                        title={`Imported actuals · ${importedActuals.name}`}
+                                        action={<span className="text-[11px] text-slate-400">{importedSummary.n} pts · {importedSummary.trend}</span>}
+                                    >
+                                        <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                                            <div><dt className="text-slate-400">Mean</dt><dd className="font-semibold text-slate-100">{importedSummary.mean.toLocaleString()} kbd</dd></div>
+                                            <div><dt className="text-slate-400">Min</dt><dd className="font-semibold text-slate-100">{importedSummary.min.toLocaleString()}</dd></div>
+                                            <div><dt className="text-slate-400">Max</dt><dd className="font-semibold text-slate-100">{importedSummary.max.toLocaleString()}</dd></div>
+                                        </div>
+                                        <div className="mt-2 max-h-40 overflow-y-auto">
+                                            <table className="w-full text-left text-[11px]">
+                                                <thead className="text-slate-400"><tr><th className="py-1">Period</th><th className="py-1 text-right">Actual</th><th className="py-1 text-right">Forecast</th></tr></thead>
+                                                <tbody>
+                                                    {importedActuals.points.slice(0, 24).map((p, i) => (
+                                                        <tr key={`${p.label}-${i}`} className="border-t border-slate-800/60">
+                                                            <td className="py-1 text-slate-300">{p.label}</td>
+                                                            <td className="py-1 text-right text-slate-100">{p.actual.toLocaleString()}</td>
+                                                            <td className="py-1 text-right text-slate-400">{p.forecast != null ? p.forecast.toLocaleString() : "—"}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Panel>
+                                )}
+
+                                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                                    <Panel title="Forecast vs realised · selected unit">
+                                        <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
+                                        <dl className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
+                                            <div><dt className="text-slate-400">Realised</dt><dd className="font-semibold text-slate-100">{scenarioVariance.realisedMean.toLocaleString()} kbd</dd></div>
+                                            <div><dt className="text-slate-400">Forecast</dt><dd className="font-semibold text-cyan-200">{scenarioVariance.forecast.toLocaleString()} kbd</dd></div>
+                                            <div><dt className="text-slate-400">Accuracy</dt><dd className={`font-semibold ${scenarioVariance.accuracyPct >= 90 ? "text-emerald-300" : scenarioVariance.accuracyPct >= 75 ? "text-amber-300" : "text-rose-300"}`}>{scenarioVariance.accuracyPct}%</dd></div>
+                                        </dl>
+                                        <p className="mt-1 text-[10px] leading-tight text-slate-500">
+                                            Forecast is running {scenarioVariance.bias === "on-track" ? "on track with" : `${scenarioVariance.absErrorPct}% ${scenarioVariance.bias}`} realised throughput.
+                                        </p>
+                                    </Panel>
+                                    <Panel title="Volume delta vs baseline">
+                                        <div className="space-y-2">
+                                            {scenarioComparison.scenarios.map((s) => {
+                                                const maxAbs = Math.max(1, ...scenarioComparison.scenarios.map((x) => Math.abs(x.volumeDelta)));
+                                                const pct = Math.round((Math.abs(s.volumeDelta) / maxAbs) * 100);
+                                                return (
+                                                    <div key={s.id} className="text-[11px]">
+                                                        <div className="flex justify-between"><span className="text-slate-300">{s.label}</span><span className={s.volumeDelta < 0 ? "text-rose-300" : "text-emerald-300"}>{s.volumeDelta >= 0 ? "+" : ""}{s.volumeDelta.toLocaleString()} kbd·t</span></div>
+                                                        <div className="mt-0.5 h-2 rounded bg-[#0a1830]"><div className={`h-2 rounded ${s.volumeDelta < 0 ? "bg-rose-500/70" : "bg-emerald-500/70"} ${s.isBest ? "ring-1 ring-emerald-300" : ""}`} style={{ width: `${pct}%` }} /></div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </Panel>
+                                </div>
+
+                                <Panel
+                                    title="GenAI analysis"
+                                    action={scenarioNarrativeSource ? (
+                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${scenarioNarrativeSource === "fabriciq" ? "bg-emerald-900/60 text-emerald-300" : "bg-slate-700/60 text-slate-300"}`}>
+                                            {scenarioNarrativeSource === "fabriciq" ? "● Fabric Data Agent (live)" : "○ Local engine (offline)"}
+                                        </span>
+                                    ) : undefined}
+                                >
+                                    <div className="flex flex-wrap gap-2">
+                                        <button type="button" onClick={() => void runScenarioNarrative()} disabled={scenarioNarrativeLoading} className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50">{scenarioNarrativeLoading ? "Analyzing…" : "✨ Recommend best plan"}</button>
+                                        <button type="button" onClick={() => void runScenarioNarrative("Explain the forecast vs realised variance and what is driving it")} disabled={scenarioNarrativeLoading} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Explain variance</button>
+                                        <button type="button" onClick={() => void runScenarioNarrative("Assess the downtime and operational risk across the plans")} disabled={scenarioNarrativeLoading} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Assess risk</button>
+                                        <button type="button" onClick={() => void runScenarioNarrative("Give a full side-by-side comparison of all plans")} disabled={scenarioNarrativeLoading} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Full comparison</button>
+                                    </div>
+                                    <div className="mt-2 flex gap-2">
+                                        <input
+                                            value={scenarioQuestion}
+                                            onChange={(e) => setScenarioQuestion(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === "Enter" && scenarioQuestion.trim()) { e.preventDefault(); void runScenarioNarrative(scenarioQuestion.trim()); } }}
+                                            placeholder="Ask anything about these scenarios or the imported data…"
+                                            className="flex-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-sm"
+                                        />
+                                        <button type="button" onClick={() => { if (scenarioQuestion.trim()) { void runScenarioNarrative(scenarioQuestion.trim()); } }} disabled={scenarioNarrativeLoading || !scenarioQuestion.trim()} className="rounded bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50">Ask</button>
+                                    </div>
+                                    {scenarioNarrative
+                                        ? <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-200">{scenarioNarrative}</p>
+                                        : <p className="mt-2 text-xs text-slate-500">Ask across the {scenarioComparison.scenarios.length} plans{importedActuals ? " and your imported data" : ""} using the Data Agent when configured, or an offline engine grounded in the comparison.</p>}
+                                </Panel>
                             </div>
                         </div>
                     )}
 
-                    {view === "operations" && (
+                    {view === "twin" && twinTab === "ops" && (
                         <div className="h-full overflow-y-auto p-4">
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                                <div className="flex overflow-hidden rounded-lg border border-slate-700 text-xs">
+                                    <button type="button" onClick={() => setTwinTab("overview")} className={`px-3 py-1.5 font-medium ${twinTab === "overview" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Overview</button>
+                                    <button type="button" onClick={() => setTwinTab("ops")} className={`px-3 py-1.5 font-medium ${twinTab === "ops" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Operations &amp; Orders</button>
+                                </div>
+                                <span className="text-xs text-slate-400">{selected.id} · {selected.siteName}</span>
+                            </div>
                             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                                 <Panel title="Selected unit">
                                     <p className="text-lg font-semibold">{selected.id}</p>
@@ -2577,6 +4464,143 @@ function App() {
                                     </dl>
                                 </Panel>
 
+                                <div className="lg:col-span-2">
+                                    <Panel
+                                        title="Predictive dispatch & mission ops"
+                                        action={
+                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${missionChallenge.verdict === "ready" ? "bg-emerald-900/60 text-emerald-200" : missionChallenge.verdict === "watch" ? "bg-amber-900/60 text-amber-200" : "bg-rose-900/60 text-rose-200"}`}>
+                                                {missionChallenge.verdict.toUpperCase()} · {missionChallenge.score}%
+                                            </span>
+                                        }
+                                    >
+                                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+                                            {/* Incident triage */}
+                                            <div className="space-y-2 rounded border border-slate-700/60 bg-[#08142a] p-2">
+                                                <p className="text-[10px] uppercase tracking-wide text-slate-400">Incident triage · {selected.id}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="rounded bg-cyan-900/50 px-2 py-0.5 text-xs font-semibold text-cyan-200">{suggestedComponent}</span>
+                                                    <span className={`rounded px-2 py-0.5 text-xs font-semibold ${suggestedPriority === "P1" ? "bg-rose-900/60 text-rose-200" : suggestedPriority === "P2" ? "bg-amber-900/60 text-amber-200" : "bg-slate-700/60 text-slate-200"}`}>{suggestedPriority}</span>
+                                                    {selectedForecast.etaToAlarmTicks != null && <span className="text-[11px] text-amber-300">ETA alarm ~{selectedForecast.etaToAlarmTicks}t</span>}
+                                                </div>
+                                                <p className="text-[11px] leading-relaxed text-slate-300">{incidentStory}</p>
+                                                {selectedEvidence && (
+                                                    <div className="flex items-center gap-2">
+                                                        <img src={selectedEvidence.image} alt={selectedEvidence.label} className="h-12 w-20 rounded border border-slate-700 object-cover" />
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-[11px] text-slate-200">{selectedEvidence.label}</p>
+                                                            <div className="mt-1 flex flex-wrap gap-1">
+                                                                {matchingEvidence.map((ev) => (
+                                                                    <button key={ev.id} type="button" onClick={() => setSelectedEvidenceId(ev.id)} className={`rounded px-1.5 py-0.5 text-[10px] ${ev.id === selectedEvidence.id ? "bg-cyan-600 text-white" : "bg-slate-700 text-slate-300"}`}>{ev.label.split(" ")[0]}</button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="rounded bg-[#06101f] p-2">
+                                                    <p className="text-[11px] text-slate-300">Dispatch quality: <span className="font-semibold text-slate-100">{dispatchQuality.score}%</span></p>
+                                                    <ul className="mt-1 space-y-0.5">
+                                                        {dispatchQuality.checks.map((check) => (
+                                                            <li key={check.label} className="flex items-center gap-1 text-[10px]">
+                                                                <span className={check.ok ? "text-emerald-300" : "text-rose-300"}>{check.ok ? "✓" : "✗"}</span>
+                                                                <span className="text-slate-400">{check.label}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                    <button type="button" onClick={handleRunDispatchQualityCheck} className="mt-1 rounded bg-slate-700 px-2 py-1 text-[10px] text-white hover:bg-slate-600">Run dispatch quality check</button>
+                                                </div>
+                                            </div>
+
+                                            {/* Responder ranking */}
+                                            <div className="space-y-2 rounded border border-slate-700/60 bg-[#08142a] p-2">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-[10px] uppercase tracking-wide text-slate-400">WorkIQ responders</p>
+                                                    <span className="text-[10px] text-slate-500">{responderAvailability.free} free · {responderAvailability.onCall} on-call</span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-1">
+                                                    <div className="flex overflow-hidden rounded border border-slate-700 text-[10px]">
+                                                        {(["all", "day", "swing", "night"] as const).map((s) => (
+                                                            <button key={s} type="button" onClick={() => setResponderShiftFilter(s)} className={`px-1.5 py-0.5 capitalize ${responderShiftFilter === s ? "bg-cyan-600 text-white" : "bg-[#06101f] text-slate-300"}`}>{s}</button>
+                                                        ))}
+                                                    </div>
+                                                    <label className="flex items-center gap-1 text-[10px] text-slate-400">
+                                                        <input type="checkbox" checked={onCallOnly} onChange={(e) => setOnCallOnly(e.target.checked)} /> on-call
+                                                    </label>
+                                                </div>
+                                                {suggestedResponders.length === 0 ? (
+                                                    <p className="text-[11px] text-amber-300">No responders match the current filters — escalate for cover.</p>
+                                                ) : (
+                                                    <ul className="space-y-1">
+                                                        {suggestedResponders.slice(0, 4).map((r, i) => (
+                                                            <li key={r.id} className={`rounded p-1.5 ${i === 0 ? "border border-emerald-800/60 bg-emerald-950/30" : "bg-[#06101f]"}`}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <img src={r.photo} alt={r.name} className="h-8 w-8 rounded-full border border-slate-700" />
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="truncate text-[11px] font-semibold text-slate-100">{r.name} <span className="font-normal text-slate-500">· score {r.score}</span></p>
+                                                                        <p className="truncate text-[10px] text-slate-400">{r.role}</p>
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <button type="button" onClick={() => handleDispatchResponder(r)} className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-medium text-white hover:bg-emerald-500">Dispatch</button>
+                                                                        <button type="button" onClick={() => { setTechPopupResponderId(r.id); setTechPopupOpen(true); }} className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-600">View</button>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="mt-0.5 truncate text-[10px] text-slate-500" title={r.reason}>{r.reason}</p>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                <button type="button" onClick={handleRaiseWorkOrder} className="w-full rounded bg-cyan-600 px-2 py-1 text-xs font-medium text-white hover:bg-cyan-500">Raise {suggestedPriority} work order</button>
+                                            </div>
+
+                                            {/* Escalation + SLA + close loop */}
+                                            <div className="space-y-2 rounded border border-slate-700/60 bg-[#08142a] p-2">
+                                                <p className="text-[10px] uppercase tracking-wide text-slate-400">Escalation & SLA</p>
+                                                <div className="rounded bg-[#06101f] p-2">
+                                                    <div className="flex items-center justify-between text-[11px]">
+                                                        <span className="text-slate-400">SLA ({orderPriority})</span>
+                                                        <span style={{ color: slaState.color }}>{slaState.label}</span>
+                                                    </div>
+                                                    <div className="mt-1 h-1.5 overflow-hidden rounded bg-slate-800">
+                                                        <div className="h-full rounded" style={{ width: `${Math.round(slaState.fraction * 100)}%`, background: slaState.color }} />
+                                                    </div>
+                                                    <p className="mt-1 text-[10px] text-slate-500">
+                                                        {selectedOpenOrder ? `Age ${orderAgeMin ?? 0}m of ${orderSlaMin}m · ${isSlaOverdue ? "overdue" : `${slaRemainingMin}m left`}` : `No open order · SLA budget ${orderSlaMin}m`}
+                                                    </p>
+                                                </div>
+                                                <ol className="space-y-1">
+                                                    {escalationTimeline.map((entry) => (
+                                                        <li key={entry.id} className="flex items-center gap-2 text-[10px]">
+                                                            <span className={entry.state === "done" ? "text-emerald-300" : entry.state === "current" ? "text-amber-300" : "text-slate-600"}>
+                                                                {entry.state === "done" ? "●" : entry.state === "current" ? "◉" : "○"}
+                                                            </span>
+                                                            <span className="text-slate-300">{entry.label}</span>
+                                                            <span className="ml-auto text-slate-500">{entry.note}</span>
+                                                        </li>
+                                                    ))}
+                                                </ol>
+                                                <div className="flex flex-wrap gap-1">
+                                                    <button type="button" onClick={() => handleEscalateManager()} className="flex-1 rounded bg-amber-700 px-2 py-1 text-[10px] font-medium text-white hover:bg-amber-600">Escalate L1</button>
+                                                    <button type="button" onClick={() => handleEscalateRegional()} disabled={!canEscalateRegional && escalationStage !== "manager"} className="flex-1 rounded bg-rose-700 px-2 py-1 text-[10px] font-medium text-white hover:bg-rose-600 disabled:opacity-40">Escalate L2</button>
+                                                </div>
+                                                <button type="button" onClick={handleCloseLoop} className="w-full rounded bg-emerald-700 px-2 py-1 text-[11px] font-medium text-white hover:bg-emerald-600">Close the loop</button>
+                                                {needsEscalation && <p className="text-[10px] text-amber-300">Best match below {escalationThreshold} — consider escalation.</p>}
+                                                <div>
+                                                    <p className="mb-1 text-[10px] uppercase tracking-wide text-slate-500">Mission objectives</p>
+                                                    <ul className="space-y-0.5">
+                                                        {missionChallenge.objectives.map((o) => (
+                                                            <li key={o.id} className="flex items-center gap-1 text-[10px]">
+                                                                <span className={o.ok ? "text-emerald-300" : "text-slate-600"}>{o.ok ? "✓" : "○"}</span>
+                                                                <span className="text-slate-400">{o.label}</span>
+                                                                <span className="ml-auto text-slate-600">{o.detail}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {woMessage && <p className="mt-2 rounded bg-[#06182f] px-2 py-1 text-[11px] text-cyan-200">{woMessage}</p>}
+                                    </Panel>
+                                </div>
+
                                 <Panel
                                     title="Dispatch notes (ontology)"
                                     action={
@@ -2649,6 +4673,22 @@ function App() {
                                         </div>
                                     </Panel>
                                 </div>
+
+                                <div className="lg:col-span-2">
+                                    <Panel title="Ask Fabric IQ · operations & orders">
+                                        <div className="flex gap-2">
+                                            <input
+                                                value={question}
+                                                onChange={(e) => setQuestion(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void runAsk(); } }}
+                                                placeholder="Ask about this unit, its site, or what order to raise…"
+                                                className="flex-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-sm"
+                                            />
+                                            <button type="button" onClick={() => void runAsk()} disabled={askLoading} className="rounded bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50">{askLoading ? "Asking…" : "Ask"}</button>
+                                        </div>
+                                        {askResult && <p className="mt-2 text-sm leading-relaxed text-slate-200">{askResult.summary}</p>}
+                                    </Panel>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -2674,7 +4714,7 @@ function App() {
                                         onChange={(e) => setQuestion(e.target.value)}
                                         onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void runAsk(); } }}
                                         rows={3}
-                                        placeholder="Ask about output, alarms, inverter load, irradiance, dispatch notes…  (Ctrl+Enter to send)"
+                                        placeholder="Ask about throughput, alarms, utilization, unit temperature, dispatch notes…  (Ctrl+Enter to send)"
                                         className="mt-2 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-sm"
                                     />
                                     <div className="mt-2 flex flex-wrap gap-1">
@@ -2698,6 +4738,33 @@ function App() {
                                         {askLoading ? "Asking…" : "Ask Question"}
                                     </button>
                                     {askError && <p className="mt-2 text-xs text-red-300">{askError}</p>}
+                                    <div className="mt-2 space-y-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => void runAgentConnectionCheck()}
+                                            disabled={agentCheckLoading}
+                                            className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 transition-all duration-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50"
+                                        >
+                                            <span aria-hidden="true">🔌</span>{agentCheckLoading ? "Testing…" : "Test Data Agent"}
+                                        </button>
+                                        {agentCheckResult && (
+                                            <div className={`rounded-lg border p-2 text-xs ${agentCheckResult.ok ? "border-emerald-700/70 bg-emerald-900/20 text-emerald-200" : "border-red-800/70 bg-red-900/20 text-red-200"}`}>
+                                                <p className="font-medium">{agentCheckResult.message}</p>
+                                                <div className="mt-1 flex flex-wrap gap-3 text-[11px] opacity-90">
+                                                    <span>Mode: {agentCheckResult.mode.toUpperCase()}</span>
+                                                    <span>Auth: {agentCheckResult.authScheme}</span>
+                                                    {agentCheckResult.transportUsed && <span>Transport: {agentCheckResult.transportUsed.toUpperCase()}</span>}
+                                                    {agentCheckResult.transportTried.length > 0 && (
+                                                        <span>Tried: {agentCheckResult.transportTried.map((t) => t.toUpperCase()).join(" → ")}</span>
+                                                    )}
+                                                </div>
+                                                {agentCheckResult.url && <p className="mt-1 break-all text-[11px] opacity-90">URL: {agentCheckResult.url}</p>}
+                                                {agentCheckResult.sampleAnswer && (
+                                                    <p className="mt-1 text-[11px] opacity-90">Sample: {agentCheckResult.sampleAnswer.slice(0, 140)}</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                     {askResult && (
                                         <div className="mt-3 rounded border border-slate-700 bg-[#081226] p-3 text-sm text-slate-200">
                                             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
@@ -2794,8 +4861,107 @@ function App() {
                         </div>
 
                         <div className="mt-4 flex gap-2">
-                            <button type="button" onClick={() => { setView("operations"); setDetailOpen(false); }} className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">Open in Operations</button>
+                            <button type="button" onClick={() => { goToOps(); setDetailOpen(false); }} className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">Open in Operations</button>
                             <button type="button" onClick={() => { setView("analytics"); setDetailOpen(false); }} className="flex-1 rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600">View analytics</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {techPopupOpen && techPopupResponder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setTechPopupOpen(false)}>
+                    <div className="w-full max-w-md rounded-xl border border-slate-700 bg-[#07142a] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <img src={techPopupResponder.photo} alt={techPopupResponder.name} className="h-14 w-14 rounded-full border border-slate-700" />
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-cyan-300">WorkIQ responder</p>
+                                    <h2 className="text-lg font-semibold">{techPopupResponder.name}</h2>
+                                    <p className="text-sm text-slate-400">{techPopupResponder.role}</p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={() => setTechPopupOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100">✕</button>
+                        </div>
+                        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-300">
+                            <div className="flex justify-between"><dt className="text-slate-400">Shift</dt><dd className="capitalize">{techPopupResponder.shift}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">On-call</dt><dd className={techPopupResponder.onCall ? "text-emerald-300" : "text-slate-500"}>{techPopupResponder.onCall ? "yes" : "no"}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">ETA</dt><dd>{techPopupResponder.etaMin} min</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Match score</dt><dd className="text-cyan-200">{techPopupResponder.score}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Focus asset</dt><dd>{techPopupFocusComponent}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Active load</dt><dd>{techPopupResponder.currentLoad}</dd></div>
+                        </dl>
+                        <p className="mt-2 text-[11px] text-slate-500">{techPopupResponder.reason}</p>
+                        {techPopupEvidence && (
+                            <div className="mt-3 flex items-center gap-2 rounded border border-slate-700/60 bg-[#08142a] p-2">
+                                <img src={techPopupEvidence.image} alt={techPopupEvidence.label} className="h-12 w-20 rounded border border-slate-700 object-cover" />
+                                <div>
+                                    <p className="text-[11px] text-slate-200">{techPopupEvidence.label}</p>
+                                    <p className="text-[10px] text-slate-500">Captured {new Date(techPopupEvidence.capturedAt).toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="mt-4 flex gap-2">
+                            <button type="button" onClick={() => { void handleDispatchResponder(techPopupResponder); setTechPopupOpen(false); }} className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">Dispatch {techPopupResponder.name.split(" ")[0]}</button>
+                            <button type="button" onClick={() => { setWoAssignee(techPopupResponder.name); setTechPopupOpen(false); }} className="flex-1 rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600">Assign only</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {demoIntroOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setDemoIntroOpen(false)}>
+                    <div className="w-full max-w-lg rounded-xl border border-cyan-800/60 bg-[#07142a] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+                        <p className="text-[11px] uppercase tracking-wide text-cyan-300">Guided demo</p>
+                        <h2 className="mt-1 text-xl font-semibold">{narrateStep(REFINERY_DEMO_MANIFEST, "story").title}</h2>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-300">{narrateStep(REFINERY_DEMO_MANIFEST, "story").caption}</p>
+                        <ol className="mt-3 grid grid-cols-2 gap-1 text-[11px] text-slate-400">
+                            {demoScriptSteps.map((s) => (
+                                <li key={s.id} className="rounded bg-[#08142a] px-2 py-1">{s.label}</li>
+                            ))}
+                        </ol>
+                        <div className="mt-4 flex gap-2">
+                            <button type="button" onClick={handleStartDemoFromIntro} className="flex-1 rounded bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500">▶ Run the full walkthrough</button>
+                            <button type="button" onClick={() => setDemoIntroOpen(false)} className="rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {reportModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setReportModal(null)}>
+                    <div className="w-full max-w-lg rounded-xl border border-emerald-800/60 bg-[#07142a] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-[11px] uppercase tracking-wide text-emerald-300">Mission report</p>
+                                <h2 className="text-xl font-semibold">{reportModal.turbineId} · {reportModal.siteName}</h2>
+                            </div>
+                            <button type="button" onClick={() => setReportModal(null)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100">✕</button>
+                        </div>
+                        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-300">
+                            <div className="flex justify-between"><dt className="text-slate-400">Probable asset</dt><dd>{reportModal.component}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Priority</dt><dd>{reportModal.priority}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Responder</dt><dd>{reportModal.responder}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Dispatch quality</dt><dd>{reportModal.dispatchQualityScore}%</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Challenge</dt><dd className="capitalize">{reportModal.challengeVerdict} · {reportModal.challengeScore}%</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Duration</dt><dd>{(reportModal.durationMs / 1000).toFixed(1)}s · {reportModal.stepCount} steps</dd></div>
+                            <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Outcome</dt><dd className="text-emerald-300">{reportModal.outcome}</dd></div>
+                        </dl>
+                        <div className="mt-3 max-h-40 space-y-1 overflow-y-auto rounded border border-slate-700/60 bg-[#08142a] p-2">
+                            {reportModal.events.map((ev, i) => (
+                                <div key={`${ev.step}-${i}`} className="flex items-baseline gap-2 text-[11px]">
+                                    <span className="w-16 shrink-0 capitalize text-cyan-300">{ev.step}</span>
+                                    <span className="text-slate-400">{ev.detail}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {runHistorySummaries.length > 1 && (
+                            <div className="mt-2 text-[10px] text-slate-500">
+                                Run history: {runHistorySummaries.slice(0, 5).map((r) => `${r.turbineId} (${r.challengeScore}%)`).join(" · ")}
+                            </div>
+                        )}
+                        <div className="mt-4 flex gap-2">
+                            <button type="button" onClick={handleDownloadMissionReport} className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">⬇ Download JSON</button>
+                            <button type="button" onClick={() => setReportModal(null)} className="rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600">Close</button>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { createResilientRenderer, WEBGL_UNAVAILABLE_HTML } from "@/lib/scene-renderer";
 import {
     SITE_COLORS,
     STATUS_COLORS,
@@ -156,13 +157,6 @@ export default function WindFarmScene({
             return;
         }
 
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
         const scene = new THREE.Scene();
         const skyTexture = createSkyTexture(lightingMode);
         scene.background = skyTexture;
@@ -174,9 +168,11 @@ export default function WindFarmScene({
         camera.position.set(30, 36, 64);
         camera.lookAt(0, 0, 0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
+        const renderer = createResilientRenderer(host.clientWidth, host.clientHeight);
+        if (!renderer) {
+            host.innerHTML = WEBGL_UNAVAILABLE_HTML;
+            return;
+        }
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputColorSpace = THREE.SRGBColorSpace;

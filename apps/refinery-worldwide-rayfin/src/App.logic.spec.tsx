@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, afterEach } from "vitest";
-import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario } from "@/App";
+import { forecastDetail, anomalyScore, parseHash, newlyAlarmed, sourceLabel, signalState, derivePlantStatus, thresholdRows, formatBand, donutSegments, applyThresholdOverrides, clearThresholdOverrides, summarizeSites, forecastEscalation, simulateScenario, derivePriority, recommendComponent, recommendComponentStable, currentShiftByHour } from "@/App";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
 
 type TurbineLike = Parameters<typeof anomalyScore>[0];
@@ -360,5 +360,66 @@ describe("donutSegments", () => {
         ]);
         expect(segs[0].fraction).toBeCloseTo(0.75, 10);
         expect(segs[2].fraction).toBe(0);
+    });
+});
+
+describe("derivePriority", () => {
+    it("returns P1 for severe anomaly or imminent alarm", () => {
+        expect(derivePriority(0.8, null)).toBe("P1");
+        expect(derivePriority(0.1, 2)).toBe("P1");
+    });
+
+    it("returns P2 for moderate severity or medium ETA", () => {
+        expect(derivePriority(0.55, null)).toBe("P2");
+        expect(derivePriority(0.1, 7)).toBe("P2");
+    });
+
+    it("returns P3 when neither severity nor imminence is elevated", () => {
+        expect(derivePriority(0.2, null)).toBe("P3");
+        expect(derivePriority(0.2, 20)).toBe("P3");
+    });
+});
+
+describe("recommendComponent (refinery assets)", () => {
+    it("suggests the Pump when utilization severity dominates", () => {
+        expect(recommendComponent(300, 97)).toBe("Pump");
+    });
+
+    it("suggests the Heat Exchanger when unit-temperature severity dominates", () => {
+        expect(recommendComponent(429, 60)).toBe("Heat Exchanger");
+    });
+});
+
+describe("recommendComponentStable", () => {
+    it("returns the raw recommendation when there is no previous value", () => {
+        expect(recommendComponentStable(429, 60, null)).toBe("Heat Exchanger");
+        expect(recommendComponentStable(300, 97, undefined)).toBe("Pump");
+    });
+
+    it("holds the previous component when the two severities are within the margin", () => {
+        // Near-equal severities: hysteresis keeps the previously-shown component.
+        expect(recommendComponentStable(385, 91, "Pump")).toBe("Pump");
+        expect(recommendComponentStable(385, 91, "Heat Exchanger")).toBe("Heat Exchanger");
+    });
+
+    it("flips to the raw recommendation when the gap exceeds the margin", () => {
+        expect(recommendComponentStable(500, 60, "Pump")).toBe("Heat Exchanger");
+    });
+});
+
+describe("currentShiftByHour", () => {
+    it("maps daytime hours to the day shift", () => {
+        expect(currentShiftByHour(7)).toBe("day");
+        expect(currentShiftByHour(14)).toBe("day");
+    });
+
+    it("maps late-afternoon hours to the swing shift", () => {
+        expect(currentShiftByHour(15)).toBe("swing");
+        expect(currentShiftByHour(22)).toBe("swing");
+    });
+
+    it("maps overnight hours to the night shift", () => {
+        expect(currentShiftByHour(23)).toBe("night");
+        expect(currentShiftByHour(3)).toBe("night");
     });
 });

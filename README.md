@@ -20,6 +20,7 @@
   <img src="https://img.shields.io/badge/GQL%20queries-113%2B-107C10?style=flat-square" alt="GQL Queries"/>
   <img src="https://img.shields.io/badge/AI%20agents-12-FF6F00?style=flat-square" alt="AI Agents"/>
   <img src="https://img.shields.io/badge/copilot%20agents-7-5391FE?style=flat-square" alt="7 Copilot Agents"/>
+  <img src="https://img.shields.io/badge/Rayfin%20apps-3-0078D4?style=flat-square" alt="3 Rayfin Apps"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
 </p>
 
@@ -28,6 +29,7 @@
   <a href="#-supported-domains">Domains</a> ---
   <a href="#-what-gets-deployed">What Gets Deployed</a> ---
   <a href="#-architecture">Architecture</a> ---
+  <a href="#-fabric-apps-browser-digital-twins">Apps</a> ---
   <a href="#-multi-agent-development">Agents</a> ---
   <a href="#-development-roadmap">Roadmap</a>
 </p>
@@ -765,6 +767,22 @@ data the moment the connection aliases (`VITE_LIVE_TELEMETRY_MODEL`, `VITE_DATA_
 | :wind_face: **Wind Turbine** | [apps/wind-turbine-rayfin](apps/wind-turbine-rayfin/README.md) | `WindTurbine` | Multi-site fleet (world) |
 | :sunny: **Solar Farm** | [apps/solar-france-rayfin](apps/solar-france-rayfin/README.md) | `SolarFarm` | Multi-site fleet (France) |
 | :oil_drum: **Oil & Gas Refinery** | [apps/refinery-worldwide-rayfin](apps/refinery-worldwide-rayfin/README.md) | `OilGasRefinery` | Multi-site fleet (worldwide) |
+
+**Highlights (shared across the apps):**
+
+- :globe_with_meridians: **3D globe world map** — real 3D refinery / turbine / plant structures placed at their true lat/lon, colored by live status; drag to rotate, wheel to zoom, click a site to open its asset.
+- :cyclone: **Digital Twin hub** — per-asset 3D twin with an editable device graph, live signal meters, and an in-context site report, plus an **Operations & Orders** tab (ontology writeback, responder dispatch, work orders, L1/L2 escalation, and Ask Fabric IQ).
+- :test_tube: **Scenario Lab** — compare multiple what-if plans (curtailment / downtime / horizon) against forecast-vs-realised throughput, **import & export Excel / CSV**, and get a **GenAI** recommendation (routed to the Fabric Data Agent when configured, or a grounded offline engine otherwise).
+- :speech_balloon: **Ask Fabric IQ** — natural-language Q&A grounded in live telemetry + the ontology; live via the Data Agent or a deterministic offline engine.
+- :clapper: **Guided auto-demo** — a scripted, end-to-end incident walkthrough (locate → inspect → analyze → dispatch → ask → report) for stakeholder demos.
+
+**Deploy an app:**
+```powershell
+cd apps/refinery-worldwide-rayfin
+npm install
+npm run build:fabric
+npx rayfin up            # ships the static app into the Fabric workspace
+```
 
 > The remaining domains (Smart Building, Manufacturing, IT Asset, Healthcare) currently ship the
 > ontology/deployment layer only — no browser app yet. Each app's `README.md` covers prerequisites,

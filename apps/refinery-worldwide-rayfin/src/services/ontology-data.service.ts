@@ -30,11 +30,57 @@ export interface DispatchNoteRecord {
     createdAt: string;
 }
 
+/**
+ * Predictive maintenance work order (a structured writeback target). Raised from
+ * the anomaly escalation forecast + what-if simulator, it captures the suspected
+ * refinery asset, priority, the planned rate-cut/downtime intervention and its
+ * projected throughput impact, and a lifecycle status — so a predicted failure
+ * turns into a tracked, auditable action rather than a free-text note.
+ */
+export interface MaintenanceOrderRecord {
+    id?: string;
+    turbineId: string;
+    siteId: string;
+    component: string;
+    priority: string;
+    status: string;
+    curtailPct: number;
+    downtimeTicks: number;
+    projectedDeltaKwt: number;
+    assignee: string;
+    note: string;
+    createdAt: string;
+}
+
+/** Backend-stored second-level device node under a refinery process asset. */
+export interface UnitDeviceRecord {
+    id?: string;
+    deviceKey: string;
+    component: string;
+    label: string;
+    property: string;
+    unit: string;
+    note: string;
+    anchorX: number;
+    anchorY: number;
+    anchorZ: number;
+    lookAtX: number;
+    lookAtY: number;
+    lookAtZ: number;
+    offsetX: number;
+    offsetY: number;
+    offsetZ: number;
+    zoom: number;
+    sortOrder: number;
+}
+
 /** Schema map consumed by {@link RayfinClient} for typed GraphQL proxies. */
 export type OntologyDataSchema = {
     RefineryUnit: OntologySiteRecord;
     DispatchNote: DispatchNoteRecord;
     SensorThreshold: SignalThresholdRecord;
+    MaintenanceOrder: MaintenanceOrderRecord;
+    UnitDevice: UnitDeviceRecord;
 };
 
 /**
@@ -119,6 +165,32 @@ export async function recentDispatchNotes(limit = 50): Promise<DispatchNoteRecor
     return rows.slice(0, limit);
 }
 
+/** Persist a maintenance work order to the ontology-backed store. Throws if the backend is unreachable. */
+export async function saveMaintenanceOrder(order: MaintenanceOrderRecord): Promise<MaintenanceOrderRecord> {
+    return getRayfinClient().data.MaintenanceOrder.create({
+        turbineId: order.turbineId,
+        siteId: order.siteId,
+        component: order.component,
+        priority: order.priority,
+        status: order.status,
+        curtailPct: order.curtailPct,
+        downtimeTicks: order.downtimeTicks,
+        projectedDeltaKwt: order.projectedDeltaKwt,
+        assignee: order.assignee,
+        note: order.note,
+        createdAt: new Date(order.createdAt),
+    }) as Promise<MaintenanceOrderRecord>;
+}
+
+/** Read the most recent maintenance work orders (newest first). Throws if the backend is unreachable. */
+export async function recentMaintenanceOrders(limit = 20): Promise<MaintenanceOrderRecord[]> {
+    const rows = (await getRayfinClient()
+        .data.MaintenanceOrder.select(["id", "turbineId", "siteId", "component", "priority", "status", "projectedDeltaKwt", "assignee", "createdAt"])
+        .orderBy({ createdAt: "desc" })
+        .execute()) as MaintenanceOrderRecord[];
+    return rows.slice(0, limit);
+}
+
 /** List ontology sites registered in the backend. Throws if the backend is unreachable. */
 export async function listOntologySites(): Promise<OntologySiteRecord[]> {
     return (await getRayfinClient()
@@ -145,6 +217,92 @@ export async function ensureOntologySites(sites: OntologySiteRecord[]): Promise<
             capacityMw: site.capacityMw,
         });
     }
+}
+
+/** List configured refinery-asset child-device graph records. */
+export async function listUnitDevices(): Promise<UnitDeviceRecord[]> {
+    const rows = (await getRayfinClient()
+        .data.UnitDevice.select([
+            "id", "deviceKey", "component", "label", "property", "unit", "note",
+            "anchorX", "anchorY", "anchorZ",
+            "lookAtX", "lookAtY", "lookAtZ",
+            "offsetX", "offsetY", "offsetZ",
+            "zoom", "sortOrder",
+        ])
+        .orderBy({ sortOrder: "asc" })
+        .execute()) as UnitDeviceRecord[];
+    return rows;
+}
+
+/**
+ * Idempotently seed the component->device graph backing the digital twin view.
+ * Returns the number of rows present after seeding.
+ */
+export async function ensureUnitDevices(devices: UnitDeviceRecord[]): Promise<number> {
+    const existing = await listUnitDevices();
+    if (existing.length > 0) {
+        return existing.length;
+    }
+    for (const d of devices) {
+        await getRayfinClient().data.UnitDevice.create({
+            deviceKey: d.deviceKey,
+            component: d.component,
+            label: d.label,
+            property: d.property,
+            unit: d.unit,
+            note: d.note,
+            anchorX: d.anchorX,
+            anchorY: d.anchorY,
+            anchorZ: d.anchorZ,
+            lookAtX: d.lookAtX,
+            lookAtY: d.lookAtY,
+            lookAtZ: d.lookAtZ,
+            offsetX: d.offsetX,
+            offsetY: d.offsetY,
+            offsetZ: d.offsetZ,
+            zoom: d.zoom,
+            sortOrder: d.sortOrder,
+        });
+    }
+    return devices.length;
+}
+
+/** Create a refinery-asset child-device record. */
+export async function createUnitDevice(device: UnitDeviceRecord): Promise<UnitDeviceRecord> {
+    return getRayfinClient().data.UnitDevice.create({
+        deviceKey: device.deviceKey,
+        component: device.component,
+        label: device.label,
+        property: device.property,
+        unit: device.unit,
+        note: device.note,
+        anchorX: device.anchorX,
+        anchorY: device.anchorY,
+        anchorZ: device.anchorZ,
+        lookAtX: device.lookAtX,
+        lookAtY: device.lookAtY,
+        lookAtZ: device.lookAtZ,
+        offsetX: device.offsetX,
+        offsetY: device.offsetY,
+        offsetZ: device.offsetZ,
+        zoom: device.zoom,
+        sortOrder: device.sortOrder,
+    }) as Promise<UnitDeviceRecord>;
+}
+
+/** Update a refinery-asset child-device record by id (preferred) or deviceKey (fallback). */
+export async function updateUnitDevice(
+    target: { id?: string; deviceKey: string },
+    patch: Partial<Omit<UnitDeviceRecord, "id" | "deviceKey">>,
+): Promise<UnitDeviceRecord> {
+    const where = target.id ? { id: target.id } : { deviceKey: target.deviceKey };
+    return getRayfinClient().data.UnitDevice.update(where, patch) as Promise<UnitDeviceRecord>;
+}
+
+/** Delete a refinery-asset child-device record by id (preferred) or deviceKey (fallback). */
+export async function deleteUnitDevice(target: { id?: string; deviceKey: string }): Promise<UnitDeviceRecord> {
+    const where = target.id ? { id: target.id } : { deviceKey: target.deviceKey };
+    return getRayfinClient().data.UnitDevice.delete(where) as Promise<UnitDeviceRecord>;
 }
 
 export interface OntologyAnswer {

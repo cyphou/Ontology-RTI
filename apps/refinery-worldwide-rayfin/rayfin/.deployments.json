@@ -9,7 +9,17 @@
       "hostingUrl": "https://quiet-smoke-721dc7405e-westcentralus.webapp.msit.fabricapps.net",
       "fabricDeepLink": "https://app.fabric.microsoft.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e?ctid=72f988bf-86f1-41af-91ab-2d7cd011db47",
       "deployedAt": "2026-07-14T14:46:47.737Z"
+    },
+    "pde-ontology": {
+      "fabricItemId": "c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e",
+      "fabricApiUrl": "https://pbipmsitwcus2-msit.pbidedicated.windows.net/webapi/capacities/D78851EE-4936-4072-ABAB-1AD3D961D70E/workloads/BaaS/BaaSService/automatic/v1/workspaces/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e/",
+      "fabricWorkspaceId": "c4e0ab47-88d2-452d-ac98-ad101b574cf3",
+      "fabricTenantId": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+      "publishableKey": "pk-LjdMUG7bI7N2RnaZecKc",
+      "hostingUrl": "https://quiet-smoke-721dc7405e-westcentralus.webapp.msit.fabricapps.net",
+      "fabricDeepLink": "https://app.fabric.microsoft.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e?ctid=72f988bf-86f1-41af-91ab-2d7cd011db47",
+      "deployedAt": "2026-08-27T14:15:43.801Z"
     }
   },
-  "active": "pde-windturbine"
+  "active": "pde-ontology"
 }

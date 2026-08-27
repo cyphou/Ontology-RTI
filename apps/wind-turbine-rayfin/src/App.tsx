@@ -5,7 +5,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { lazyRetry } from "@/lib/lazy-retry";
 import * as THREE from "three";
 import {
     answerQuestion,
@@ -1147,8 +1148,8 @@ export function sourceLabel(source: AskResult["source"]): string {
     }
 }
 
-const LazyWindFarmScene = lazy(() => import("@/scenes/WindFarmScene"));
-const LazyTurbineTwinScene = lazy(() => import("@/scenes/TurbineTwinScene"));
+const LazyWindFarmScene = lazyRetry(() => import("@/scenes/WindFarmScene"));
+const LazyTurbineTwinScene = lazyRetry(() => import("@/scenes/TurbineTwinScene"));
 
 type StatusFilter = TurbineStatus | "all";
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { createResilientRenderer, WEBGL_UNAVAILABLE_HTML } from "@/lib/scene-renderer";
 import { STATUS_COLORS, TWIN_PARTS, signalColor } from "../App";
 
 type PlantStatus = "healthy" | "warning" | "alarm";
@@ -27,13 +28,6 @@ export default function PlantTwinScene({ turbine, paused }: { turbine: PlantTele
             return;
         }
 
-        const testCanvas = document.createElement("canvas");
-        const hasWebGL = !!(testCanvas.getContext("webgl2") || testCanvas.getContext("webgl"));
-        if (!hasWebGL) {
-            host.innerHTML = "<div style='padding:12px;color:#9aa3b2'>WebGL unavailable in this environment.</div>";
-            return;
-        }
-
         const scene = new THREE.Scene();
         scene.background = new THREE.Color("#081a2e");
         scene.fog = new THREE.Fog("#081a2e", 42, 130);
@@ -42,9 +36,11 @@ export default function PlantTwinScene({ turbine, paused }: { turbine: PlantTele
         camera.position.set(12, 10, 24);
         camera.lookAt(0, 6.5, 0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(host.clientWidth, host.clientHeight);
+        const renderer = createResilientRenderer(host.clientWidth, host.clientHeight);
+        if (!renderer) {
+            host.innerHTML = WEBGL_UNAVAILABLE_HTML;
+            return;
+        }
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         host.innerHTML = "";

@@ -5,11 +5,14 @@
 > command center for worldwide crude-oil refinery fleets, built on Fabric Rayfin
 > (React 19 + Vite + Three.js + Vitest).
 
-This app visualizes live refinery telemetry on a 3D world map, exposes per–process-unit
-digital twins, forecasts throughput, writes operational notes back to the Fabric ontology,
-and answers natural-language questions ("Ask Fabric IQ"). It ships fallback-safe: with no
-Fabric connection configured it runs on a synthetic telemetry generator, and it lights up
-real data the moment the connection aliases are set.
+This app visualizes live refinery telemetry on an interactive **3D globe** — real 3D refinery
+structures placed at their true lat/lon and colored by live status. It exposes per–process-unit
+**digital twins** with an **Operations & Orders** workspace (writeback, responder dispatch, work
+orders, escalation), a **Scenario Lab** that compares what-if plans against forecast-vs-realised
+throughput with **Excel import/export** and a **GenAI** recommendation, and it answers
+natural-language questions ("Ask Fabric IQ"). It ships fallback-safe: with no Fabric connection
+configured it runs on a synthetic telemetry generator, and it lights up real data the moment the
+connection aliases are set.
 
 See [ROADMAP.md](ROADMAP.md) for shipped capabilities and the forward plan, and
 [AGENTS.md](AGENTS.md) for build/agent guidance.
