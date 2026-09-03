@@ -132,6 +132,19 @@ export default function PlantTwinScene({ turbine, paused }: { turbine: PlantTele
             group.add(plat);
         });
 
+        // Secondary fractionation column with a smaller operating platform.
+        const secondaryColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.76, 4.6, 24), steelMat);
+        secondaryColumn.position.set(2.65, 2.5, -1.35);
+        secondaryColumn.castShadow = true;
+        group.add(secondaryColumn);
+        const secondaryDome = new THREE.Mesh(new THREE.SphereGeometry(0.62, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), steelMat);
+        secondaryDome.position.set(2.65, 4.8, -1.35);
+        group.add(secondaryDome);
+        const secondaryPlatform = new THREE.Mesh(new THREE.TorusGeometry(0.74, 0.07, 10, 24), pipeMat);
+        secondaryPlatform.rotation.x = Math.PI / 2;
+        secondaryPlatform.position.set(2.65, 3.35, -1.35);
+        group.add(secondaryPlatform);
+
         // Storage tank (caption "Tank").
         const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.4, 28), tankMat);
         tank.position.set(-3.6, 1.4, 0);
@@ -140,6 +153,46 @@ export default function PlantTwinScene({ turbine, paused }: { turbine: PlantTele
         const tankDome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), tankMat);
         tankDome.position.set(-3.6, 2.6, 0);
         group.add(tankDome);
+
+        // Spherical LPG tank and a pair of smaller product tanks make the unit's
+        // storage side visibly distinct from the distillation train.
+        const lpgTank = new THREE.Mesh(new THREE.SphereGeometry(0.9, 22, 16), tankMat);
+        lpgTank.position.set(-2.75, 1.35, -2.1);
+        lpgTank.castShadow = true;
+        group.add(lpgTank);
+        for (let legIndex = 0; legIndex < 4; legIndex += 1) {
+            const angle = (legIndex / 4) * Math.PI * 2 + Math.PI / 4;
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.8, 8), stackMat);
+            leg.position.set(-2.75 + Math.cos(angle) * 0.56, 0.4, -2.1 + Math.sin(angle) * 0.56);
+            group.add(leg);
+        }
+        [-1.55, -0.35].forEach((x) => {
+            const productTank = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.68, 1.1, 20), tankMat);
+            productTank.position.set(x, 0.75, -2.4);
+            productTank.castShadow = true;
+            group.add(productTank);
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(0.68, 0.26, 20), tankMat);
+            roof.position.set(x, 1.43, -2.4);
+            group.add(roof);
+        });
+
+        // Cooling tower and elevated pipe rack complete the process flow.
+        const coolingTower = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 1.08, 2.2, 24, 1, true), tankMat);
+        coolingTower.position.set(-0.9, 1.3, -1.6);
+        group.add(coolingTower);
+        const pipeRack = new THREE.Group();
+        [0, 0.34].forEach((height) => {
+            const header = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 5.8, 12), pipeMat);
+            header.rotation.z = Math.PI / 2;
+            header.position.set(-0.25, 1.3 + height, 2.25);
+            pipeRack.add(header);
+        });
+        [-2.8, -0.5, 1.8].forEach((x) => {
+            const support = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.12), stackMat);
+            support.position.set(x, 0.6, 2.25);
+            pipeRack.add(support);
+        });
+        group.add(pipeRack);
 
         // Flare stack with flame (caption "Flare"). `blades` holds the flame so the
         // animate loop can flicker it with live feed rate.

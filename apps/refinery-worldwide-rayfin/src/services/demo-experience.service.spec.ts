@@ -131,20 +131,21 @@ describe("slaUrgency", () => {
 });
 
 describe("demoNarration", () => {
-    it("orders the eight scripted steps 1..8 of 8", () => {
+    it("orders the nine scripted steps 1..9 of 9", () => {
         expect(demoNarration("story").index).toBe(1);
         expect(demoNarration("locate").index).toBe(2);
         expect(demoNarration("twin").index).toBe(3);
-        expect(demoNarration("graph").index).toBe(4);
-        expect(demoNarration("dispatch").index).toBe(5);
-        expect(demoNarration("support").index).toBe(6);
-        expect(demoNarration("ask").index).toBe(7);
-        expect(demoNarration("analytics").index).toBe(8);
-        expect(demoNarration("story").total).toBe(8);
+        expect(demoNarration("schematic").index).toBe(4);
+        expect(demoNarration("graph").index).toBe(5);
+        expect(demoNarration("dispatch").index).toBe(6);
+        expect(demoNarration("support").index).toBe(7);
+        expect(demoNarration("simulation").index).toBe(8);
+        expect(demoNarration("ask").index).toBe(9);
+        expect(demoNarration("story").total).toBe(9);
     });
 
     it("provides a non-empty title and caption for every step", () => {
-        for (const step of ["story", "locate", "twin", "graph", "dispatch", "support", "ask", "analytics"] as const) {
+        for (const step of ["story", "locate", "twin", "schematic", "graph", "dispatch", "support", "simulation", "ask"] as const) {
             const n = demoNarration(step);
             expect(n.title.length).toBeGreaterThan(0);
             expect(n.caption.length).toBeGreaterThan(0);
@@ -165,8 +166,8 @@ describe("domain demo manifest", () => {
 
     it("orders narration steps from the manifest step order", () => {
         expect(narrateStep(WIND_DEMO_MANIFEST, "story").index).toBe(1);
-        expect(narrateStep(WIND_DEMO_MANIFEST, "analytics").index).toBe(DEMO_STEP_ORDER.length);
-        expect(narrateStep(WIND_DEMO_MANIFEST, "dispatch").total).toBe(8);
+        expect(narrateStep(WIND_DEMO_MANIFEST, "ask").index).toBe(DEMO_STEP_ORDER.length);
+        expect(narrateStep(WIND_DEMO_MANIFEST, "dispatch").total).toBe(9);
     });
 
     it("drives narration from an arbitrary domain manifest", () => {
@@ -189,7 +190,7 @@ describe("domain demo manifest", () => {
             },
         };
         expect(narrateStep(solar, "story").title).toBe("Solar story");
-        expect(narrateStep(solar, "dispatch").index).toBe(5);
+        expect(narrateStep(solar, "dispatch").index).toBe(6);
     });
 });
 
@@ -366,7 +367,7 @@ describe("demo manifest registry", () => {
         expect(getDemoManifest("does-not-exist")).toBe(WIND_DEMO_MANIFEST);
     });
 
-    it("keeps every manifest complete across the four scripted steps", () => {
+    it("keeps every manifest complete across the ten scripted steps", () => {
         for (const manifest of Object.values(DEMO_MANIFESTS) as DomainDemoManifest[]) {
             for (const step of DEMO_STEP_ORDER) {
                 const n = narrateStep(manifest, step);

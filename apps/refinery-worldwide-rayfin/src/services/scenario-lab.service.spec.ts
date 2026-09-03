@@ -42,6 +42,22 @@ describe("compareScenarios", () => {
         expect(trim.deltaPct).toBeCloseTo(-15, 5);
     });
 
+    it("uses an imported explicit throughput instead of a curtailment estimate", () => {
+        const comparison = compareScenarios(1000, [{ id: "import", label: "Imported", curtailmentPct: 15, downtimeTicks: 0, horizonTicks: 12, throughputKbd: 725 }]);
+        expect(comparison.scenarios[0].projectedKbd).toBe(725);
+        expect(comparison.scenarios[0].volumeDelta).toBe(-3300);
+    });
+
+    it("calculates cost effectiveness from imported economic assumptions", () => {
+        const comparison = compareScenarios(100, [{ id: "economics", label: "Economics", curtailmentPct: 0, downtimeTicks: 0, horizonTicks: 2, throughputKbd: 90, pricePerBarrelUsd: 80, variableCostPerBarrelUsd: 50, maintenanceCostUsd: 1000, energyCostUsd: 500 }]);
+        const scenario = comparison.scenarios[0];
+        expect(scenario.revenueUsd).toBe(14_400_000);
+        expect(scenario.operatingCostUsd).toBe(9_001_500);
+        expect(scenario.grossMarginUsd).toBe(5_398_500);
+        expect(scenario.marginDeltaUsd).toBe(-601_500);
+        expect(scenario.costPerBarrelUsd).toBeCloseTo(50.01, 2);
+    });
+
     it("keeps a positive spread between best and worst", () => {
         const c = compareScenarios(1000, specs);
         expect(c.spread).toBeGreaterThan(0);

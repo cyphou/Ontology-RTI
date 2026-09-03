@@ -20,6 +20,10 @@ import {
     recordsToUnits,
     recordsToReadings,
     pivotReadings,
+    recordsToSafetyAlarms,
+    recordsToSensorLookup,
+    recordsToEquipmentLookup,
+    enrichSafetyAlarms,
     escapeDaxString,
     daxPowerHistory,
     daxAnomalyScores,
@@ -32,10 +36,8 @@ import {
 } from "@/services/live-telemetry.service";
 
 describe("live-telemetry.service", () => {
-    it("is not configured when VITE_LIVE_TELEMETRY_MODEL is unset", () => {
-        // The test environment does not define the alias, so the app must fall
-        // back to synthetic data rather than attempting a live query.
-        expect(isLiveTelemetryConfigured()).toBe(false);
+    it("is configured with the refinery semantic-model alias", () => {
+        expect(isLiveTelemetryConfigured()).toBe(true);
     });
 
     it("maps SDK query tables to records regardless of column order", () => {
@@ -99,6 +101,26 @@ describe("live-telemetry.service", () => {
         expect(metrics).toHaveLength(2);
         expect(metrics.find((m) => m.unitId === "PU001")?.powerKw).toBe(100);
         expect(metrics.find((m) => m.unitId === "PU002")?.powerKw).toBe(200);
+    });
+
+    it("retains the newest source timestamp for telemetry freshness", () => {
+        const [metric] = pivotReadings([
+            { unitId: "PU001", sensorType: "Throughput", value: 100, timestamp: "2026-08-27T10:00:00Z" },
+            { unitId: "PU001", sensorType: "UnitTemp", value: 410, timestamp: "2026-08-27T10:01:00Z" },
+        ]);
+        expect(metric.latestAt).toBe("2026-08-27T10:01:00Z");
+    });
+
+    it("enriches a safety alarm through sensor, equipment, process unit, and refinery", () => {
+        const alarms = recordsToSafetyAlarms([{ alarmid: "ALR001", sensorid: "SN001", severity: "Critical", alarmtimestamp: "2025-12-01T01:15:00Z", alarmtype: "HighTemperature", description: "Furnace hot", alarmvalue: 462.5, thresholdvalue: 450 }]);
+        const incidents = enrichSafetyAlarms(
+            alarms,
+            recordsToSensorLookup([{ sensorid: "SN001", equipmentid: "EQ001", sensorname: "CDU feed sensor" }]),
+            recordsToEquipmentLookup([{ equipmentid: "EQ001", equipmentname: "Main Feed Pump A", equipmenttype: "CentrifugalPump", processunitid: "PU001", criticalitylevel: "Critical" }]),
+            [{ unitId: "PU001", unitName: "CDU-1", refineryId: "REF001" }],
+            [{ refineryId: "REF001", refineryName: "Jamnagar", latitude: 22.34, longitude: 70.02, capacityKbd: 1240 }],
+        );
+        expect(incidents[0]).toMatchObject({ alarmId: "ALR001", equipmentName: "Main Feed Pump A", processUnitId: "PU001", processUnitName: "CDU-1", refineryName: "Jamnagar" });
     });
 });
 

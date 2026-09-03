@@ -1,3 +1,7 @@
 activeProfile: default
 profiles:
-  default: {}
+  default:
+    semanticModels:
+      refinery:
+        workspaceId: "c4e0ab47-88d2-452d-ac98-ad101b574cf3"
+        itemId: "d615fd15-1797-4e0a-aeb4-5741b367a649"

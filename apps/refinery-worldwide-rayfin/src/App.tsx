@@ -22,18 +22,24 @@ import {
     recentMaintenanceOrders,
     saveDispatchNote,
     saveMaintenanceOrder,
+    saveSimulationApproval,
+    saveSimulationRun,
+    updateMaintenanceOrder,
     updateUnitDevice,
     type DispatchNoteRecord,
     type MaintenanceOrderRecord,
+    type SimulationRunRecord,
     type SignalThresholdRecord,
     type UnitDeviceRecord,
 } from "@/services/ontology-data.service";
 import { isDataAgentConfigured, queryDataAgent, testDataAgentConnection, type DataAgentConnectionResult } from "@/services/data-agent.service";
 import {
     fetchLiveTelemetry,
+    fetchLiveIncidents,
     fetchAnomalyScores,
     fetchPowerHistory,
     isLiveTelemetryConfigured,
+    type EnrichedLiveIncident,
     type LiveTelemetrySnapshot,
 } from "@/services/live-telemetry.service";
 import { classifyAskIntent, normalizeAskQuestion } from "@/services/ask-routing.service";
@@ -41,6 +47,10 @@ import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/s
 import { HISTORY_WINDOWS, historyPointLimit, type HistoryWindow } from "@/services/history-window.service";
 import { compareScenarios, forecastVsRealised, buildScenarioPrompt, summarizeComparison, computeInsights, answerScenarioQuestion, type ScenarioSpec } from "@/services/scenario-lab.service";
 import { classifyImport, summarizeActuals, type ImportedActualsResult } from "@/services/scenario-import.service";
+import { buildIncidentQueue } from "@/services/incident-queue.service";
+import { buildBlastRadius, dataTrust } from "@/services/operational-insights.service";
+import { RefineryProcessSchematic } from "@/components/RefineryProcessSchematic";
+import { buildDecisionPackage, createSimulationRun, validateSimulationRun, type SimulationObjective, type SimulationPurpose } from "@/services/simulation-run.service";
 import {
     buildMissionChallenge,
     buildMissionReport,
@@ -246,6 +256,17 @@ const WORLD: number[][][] = [
         [173, -35], [176, -38], [178, -41], [174, -42], [171, -44], [167, -46],
         [170, -42], [172, -38], [173, -35],
     ],
+    // Antarctica — a simplified continuous southern continent so the globe reads
+    // correctly from every angle instead of ending in open ocean at the pole.
+    [
+        [-180, -72], [-155, -74], [-130, -70], [-108, -75], [-82, -72], [-58, -76],
+        [-28, -72], [0, -75], [28, -70], [58, -74], [92, -70], [122, -74],
+        [152, -71], [180, -74], [180, -88], [145, -87], [105, -86], [64, -88],
+        [20, -86], [-25, -88], [-68, -86], [-112, -88], [-150, -86], [-180, -88], [-180, -72],
+    ],
+    // Hawaii and Caribbean outlines help the Americas read correctly at fleet-map scale.
+    [[-161, 20], [-157, 21], [-155, 19], [-158, 18], [-161, 20]],
+    [[-84, 22], [-78, 24], [-74, 21], [-77, 18], [-82, 19], [-84, 22]],
 ];
 
 type SignalKey = "power" | "irradiance" | "moduleTemp" | "inverterLoad";
@@ -903,7 +924,7 @@ const LIVE_TELEMETRY_REFRESH_MS = 5000;
 // Assemble live semantic-model rows into the same PlantTelemetry shape the scene
 // renders, reusing the ontology refinery coordinates and the shared status bands so
 // real data flows through the identical rendering path as buildFarm().
-function assembleLiveView(snapshot: LiveTelemetrySnapshot): { turbines: PlantTelemetry[]; sites: SolarPlantSite[] } {
+function assembleLiveView(snapshot: LiveTelemetrySnapshot): { turbines: PlantTelemetry[]; sites: SolarPlantSite[]; latestAt?: string } {
     const metricsById = new Map(snapshot.metrics.map((m) => [m.unitId, m]));
     const refineryById = new Map(snapshot.refineries.map((r) => [r.refineryId, r]));
     const unitsByRefinery = new Map<string, string[]>();
@@ -959,14 +980,17 @@ function assembleLiveView(snapshot: LiveTelemetrySnapshot): { turbines: PlantTel
     return {
         turbines: plants.filter((p) => refineryById.has(p.siteId)),
         sites,
+        latestAt: snapshot.metrics.reduce<string | undefined>((latest, metric) => (
+            metric.latestAt && (!latest || metric.latestAt > latest) ? metric.latestAt : latest
+        ), undefined),
     };
 }
 
 // React hook: when a live semantic-model connection is configured, poll it and
 // return real units + sites; otherwise return null so callers fall back to the
 // synthetic feed. Any query failure also yields null (fail-safe).
-function useLiveTelemetry(): { turbines: PlantTelemetry[]; sites: SolarPlantSite[] } | null {
-    const [snapshot, setSnapshot] = useState<{ turbines: PlantTelemetry[]; sites: SolarPlantSite[] } | null>(null);
+function useLiveTelemetry(): { turbines: PlantTelemetry[]; sites: SolarPlantSite[]; latestAt?: string } | null {
+    const [snapshot, setSnapshot] = useState<{ turbines: PlantTelemetry[]; sites: SolarPlantSite[]; latestAt?: string } | null>(null);
 
     useEffect(() => {
         if (!isLiveTelemetryConfigured()) {
@@ -992,6 +1016,28 @@ function useLiveTelemetry(): { turbines: PlantTelemetry[]; sites: SolarPlantSite
     }, []);
 
     return snapshot;
+}
+
+// Poll the model's SafetyAlarm → Sensor → Equipment → Unit enrichment route.
+// A failed/unconfigured query returns null and leaves the existing incident queue active.
+function useLiveIncidents(): EnrichedLiveIncident[] | null {
+    const [incidents, setIncidents] = useState<EnrichedLiveIncident[] | null>(null);
+    useEffect(() => {
+        if (!isLiveTelemetryConfigured()) {
+            return;
+        }
+        let cancelled = false;
+        const load = async () => {
+            const data = await fetchLiveIncidents();
+            if (!cancelled && data) {
+                setIncidents(data);
+            }
+        };
+        void load();
+        const id = window.setInterval(load, LIVE_TELEMETRY_REFRESH_MS);
+        return () => { cancelled = true; window.clearInterval(id); };
+    }, []);
+    return incidents;
 }
 
 async function askFabricIQ(question: string, context: Record<string, unknown>): Promise<AskResult> {
@@ -1067,6 +1113,16 @@ export function sourceLabel(source: AskResult["source"]): string {
         default:
             return "Local engine (offline)";
     }
+}
+
+function buildAskInsights(result: AskResult, unit: PlantTelemetry, fleet: { alarms: number; warnings: number; healthy: number }) {
+    const evidence = result.evidence?.slice(0, 3) ?? [];
+    return [
+        { label: "Unit temperature", value: Math.min(100, Math.round((unit.moduleTempC / 500) * 100)), detail: `${unit.moduleTempC} °C`, color: "#ffd166" },
+        { label: "Utilization", value: Math.min(100, Math.round(unit.inverterLoadPct)), detail: `${unit.inverterLoadPct}%`, color: "#6ee7ff" },
+        { label: "Fleet attention", value: Math.min(100, Math.round(((fleet.alarms * 2 + fleet.warnings) / Math.max(1, fleet.alarms * 2 + fleet.warnings + fleet.healthy)) * 100)), detail: `${fleet.alarms} alarm · ${fleet.warnings} watch`, color: "#ef476f" },
+        ...evidence.map((item, index) => ({ label: `Evidence ${index + 1}`, value: Math.max(38, 88 - index * 18), detail: item, color: "#9bffb0" })),
+    ].slice(0, 5);
 }
 
 const LazySolarFleetScene = lazyRetry(() => import("@/scenes/GlobeFleetScene"));
@@ -1467,7 +1523,7 @@ const NAV: { key: ViewKey; label: string; icon: string }[] = [
     { key: "alerts", label: "Alerts", icon: "🚨" },
     { key: "graph", label: "Graph", icon: "🕸" },
     { key: "analytics", label: "Analytics", icon: "📊" },
-    { key: "scenario", label: "Scenario Lab", icon: "🧪" },
+    { key: "scenario", label: "Simulation", icon: "🧪" },
     { key: "ask", label: "Ask IQ", icon: "💬" },
 ];
 
@@ -1482,13 +1538,10 @@ export function parseHash(): { view?: ViewKey; selectedId?: string } {
     return { view, selectedId: id ? decodeURIComponent(id) : undefined };
 }
 
-const SUGGESTED = [
-    "Which refinery has the highest throughput now?",
-    "Any units in alarm?",
-    "Which unit has the highest utilization?",
-    "What is the hottest unit temperature?",
-    "Peak feed rate right now?",
-    "How many process units total?",
+const ASK_PROPOSALS = [
+    { label: "Prioritize risk", question: "Which units are at highest risk right now, and what should we prioritize?" },
+    { label: "Explain this alert", question: "What evidence supports the selected alert, and what should I check next?" },
+    { label: "Review maintenance", question: "Which open work order should the duty manager review first, and why?" },
 ];
 
 function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: ViewKey) => void; badges?: Partial<Record<ViewKey, number>> }) {
@@ -1519,9 +1572,9 @@ function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: View
 
 function KpiPill({ label, value, color }: { label: string; value: string; color?: string }) {
     return (
-        <div className="rounded-lg border border-slate-700/60 bg-[#0a1830aa] px-3 py-1.5">
+        <div className="min-w-[72px] rounded-lg border border-slate-700/60 bg-[#0a1830aa] px-3.5 py-2">
             <p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
-            <p className="text-sm font-semibold" style={color ? { color } : undefined}>{value}</p>
+            <p className="text-base font-semibold leading-tight" style={color ? { color } : undefined}>{value}</p>
         </div>
     );
 }
@@ -1536,6 +1589,22 @@ function MetricCard({ label, value, sub, accent = "text-cyan-200" }: { label: st
     );
 }
 
+function CompactGauge({ label, value, max = 100, suffix = "%", color = "#6ee7ff" }: { label: string; value: number; max?: number; suffix?: string; color?: string }) {
+    const clamped = Math.max(0, Math.min(max, value));
+    const degrees = (clamped / max) * 180;
+    return (
+        <div className="min-w-0 text-center">
+            <div className="relative mx-auto h-14 w-28 overflow-hidden">
+                <div className="absolute bottom-0 left-1/2 h-28 w-28 -translate-x-1/2 rounded-full border-[10px] border-slate-700/80" />
+                <div className="absolute bottom-0 left-1/2 h-px w-11 origin-left bg-white" style={{ transform: `rotate(${-180 + degrees}deg)`, backgroundColor: color }} />
+                <div className="absolute bottom-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 translate-y-1/2 rounded-full" style={{ backgroundColor: color }} />
+            </div>
+            <p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
+            <p className="text-sm font-semibold" style={{ color }}>{value.toFixed(value % 1 ? 1 : 0)}{suffix}</p>
+        </div>
+    );
+}
+
 function Panel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
     return (
         <div className="rounded-lg border border-slate-700/60 bg-[#07162dbf] p-3 shadow-[0_10px_30px_rgba(1,8,20,0.5)]">
@@ -1544,6 +1613,29 @@ function Panel({ title, action, children }: { title: string; action?: ReactNode;
                 {action}
             </div>
             {children}
+        </div>
+    );
+}
+
+function DemoCursorCue({ step }: { step: DemoScriptStepId }) {
+    const labels: Partial<Record<DemoScriptStepId, string>> = {
+        story: "Fleet overview",
+        locate: "Select refinery",
+        twin: "Inspect 3D twin",
+        schematic: "Follow process flow",
+        graph: "Drill into node",
+        dispatch: "Open dispatch",
+        support: "Call field support",
+        simulation: "Upload Excel",
+        ask: "Submit question",
+    };
+    return (
+        <div className="pointer-events-none absolute bottom-5 right-5 z-30 flex items-center gap-2 rounded-lg border border-cyan-500/60 bg-[#06182fee] px-2.5 py-2 text-[11px] font-semibold text-cyan-100 shadow-[0_8px_30px_rgba(0,0,0,0.55)] backdrop-blur-sm">
+            <span className="relative flex h-7 w-7 items-center justify-center">
+                <span className="absolute h-7 w-7 animate-ping rounded-full border border-cyan-300/70" />
+                <span className="relative text-lg leading-none">↖</span>
+            </span>
+            <span>{labels[step] ?? "Demo action"}</span>
         </div>
     );
 }
@@ -1743,25 +1835,29 @@ function Meter({ label, value, unit, max, warn, alarm, property }: { label: stri
 
 const SIGNAL_DEFS: SignalMetadata[] = SIGNAL_ORDER.map((k) => SIGNAL_METADATA[k]);
 
-function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect }: {
+function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect, initialZoom = 1.35, focusSiteId, showDemoCursor = false }: {
     turbines: PlantTelemetry[];
     sites: SolarPlantSite[];
     selectedId: string;
     statusFilter: StatusFilter;
     onSelect: (id: string) => void;
+    initialZoom?: number;
+    focusSiteId?: string;
+    showDemoCursor?: boolean;
 }) {
     const W = 1000;
     const H = 680;
     const cx = W / 2;
     const cy = H / 2;
-    const [zoom, setZoom] = useState(1);
+    const [zoom, setZoom] = useState(initialZoom);
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [hovered, setHovered] = useState<string | null>(null);
     const [hoveredSite, setHoveredSite] = useState<string | null>(null);
     const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
     const nSites = Math.max(sites.length, 1);
-    const sitePos = sites.map((s, i) => {
+    const visibleSites = focusSiteId ? sites.filter((site) => site.id === focusSiteId) : sites;
+    const sitePos = visibleSites.map((s, i) => {
         const a = (Math.PI * 2 * i) / nSites - Math.PI / 2;
         return { id: s.id, name: s.name, x: cx + Math.cos(a) * 210, y: cy + Math.sin(a) * 210, a };
     });
@@ -1770,7 +1866,7 @@ function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect
     const hoveredSiteId = hoveredSite ?? (hovered ? turbines.find((t) => t.id === hovered)?.siteId : undefined);
 
     // Pre-place every turbine so we can anchor the signal drill-down for the selection.
-    const placed = sites.flatMap((s) => {
+    const placed = visibleSites.flatMap((s) => {
         const sp = sitePosById.get(s.id);
         if (!sp) {
             return [] as { t: PlantTelemetry; sp: typeof sitePos[number]; x: number; y: number; a: number }[];
@@ -1876,6 +1972,16 @@ function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect
                         </g>
                     );
                 })()}
+                {showDemoCursor && selectedPlaced && (
+                    <g className="pointer-events-none" transform={`translate(${selectedPlaced.x + 22} ${selectedPlaced.y - 28})`}>
+                        <circle r={16} fill="none" stroke="#6ee7ff" strokeWidth={2} opacity={0.8}>
+                            <animate attributeName="r" values="9;22;9" dur="1.8s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1.8s" repeatCount="indefinite" />
+                        </circle>
+                        <path d="M0 0 L0 20 L6 15 L12 26 L17 23 L11 12 L21 12 Z" fill="#f8fafc" stroke="#06182f" strokeWidth={2} />
+                        <text x={25} y={7} fill="#d9f7ff" fontSize={11} fontWeight="600">Click unit</text>
+                    </g>
+                )}
                 {sitePos.map((p, i) => (
                     <g
                         key={p.id}
@@ -1897,9 +2003,9 @@ function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect
 function App() {
     const initialRoute = parseHash();
     const [seed, setSeed] = useState(0);
-    const [selectedId, setSelectedId] = useState(initialRoute.selectedId ?? "CESTAS-PV-01");
+    const [selectedId, setSelectedId] = useState(initialRoute.selectedId ?? "PORTARTHUR-U-01");
     const [view, setView] = useState<ViewKey>(initialRoute.view ?? "map");
-    // Digital Twin now hosts the merged Sites + Operations content via a sub-tab.
+    const [twinViewMode, setTwinViewMode] = useState<"3d" | "schematic">("3d");
     const [twinTab, setTwinTab] = useState<"overview" | "ops">("overview");
     const [detailOpen, setDetailOpen] = useState(false);
 
@@ -1923,6 +2029,7 @@ function App() {
     const [showAcked, setShowAcked] = useState(false);
     const [graphFilter, setGraphFilter] = useState<StatusFilter>("all");
     const [graphNonce, setGraphNonce] = useState(0);
+    const [graphInitialZoom, setGraphInitialZoom] = useState(1.35);
     const [autoLogCount, setAutoLogCount] = useState(0);
     const prevStatusRef = useRef<Record<string, PlantStatus>>({});
     const autoLoggedRef = useRef<Set<string>>(new Set());
@@ -1943,19 +2050,25 @@ function App() {
     const [simDowntime, setSimDowntime] = useState(0);
     const [simHorizon, setSimHorizon] = useState(12);
 
-    // Scenario Lab: multiple editable what-if plans compared side by side.
-    const [scenarios, setScenarios] = useState<ScenarioSpec[]>([
-        { id: "asis", label: "Run as-is", curtailmentPct: 0, downtimeTicks: 0, horizonTicks: 12 },
-        { id: "trim", label: "Trim throughput 15%", curtailmentPct: 15, downtimeTicks: 0, horizonTicks: 12 },
-        { id: "maint", label: "Maintenance window", curtailmentPct: 0, downtimeTicks: 4, horizonTicks: 12 },
-    ]);
+    // Comparison starts with current performance versus forecast; users add one
+    // candidate plan through the downloadable Excel template.
+    const [scenarios, setScenarios] = useState<ScenarioSpec[]>([]);
     const [scenarioNarrative, setScenarioNarrative] = useState<string | null>(null);
     const [scenarioNarrativeSource, setScenarioNarrativeSource] = useState<"fabriciq" | "local" | null>(null);
     const [scenarioNarrativeLoading, setScenarioNarrativeLoading] = useState(false);
     const [scenarioQuestion, setScenarioQuestion] = useState("");
+    const [simulationPurpose, setSimulationPurpose] = useState<SimulationPurpose>("maintenance");
+    const [simulationObjective, setSimulationObjective] = useState<SimulationObjective>("margin");
+    const [simulationHorizon, setSimulationHorizon] = useState(24);
+    const [simulationTimeUnit, setSimulationTimeUnit] = useState<"hour" | "day">("hour");
+    const [submittedSimulation, setSubmittedSimulation] = useState<SimulationRunRecord | null>(null);
+    const [simulationSubmitMessage, setSimulationSubmitMessage] = useState<string | null>(null);
+    const [simulationSubmitting, setSimulationSubmitting] = useState(false);
+    const [simulationReviewReason, setSimulationReviewReason] = useState("");
     const [importedActuals, setImportedActuals] = useState<ImportedActualsResult | null>(null);
     const [importStatus, setImportStatus] = useState<string | null>(null);
     const scenarioFileRef = useRef<HTMLInputElement | null>(null);
+    const simulationImpactRef = useRef<HTMLDivElement | null>(null);
     const [historyWindow, setHistoryWindow] = useState<HistoryWindow>("6h");
     const [wbAction, setWbAction] = useState("Acknowledge");
     const [wbSetpoint, setWbSetpoint] = useState("");
@@ -1991,7 +2104,9 @@ function App() {
     const [demoIntroOpen, setDemoIntroOpen] = useState(false);
     const [reportModal, setReportModal] = useState<MissionReport | null>(null);
     const [demoFocusPart, setDemoFocusPart] = useState<string | null>(null);
+    const demoCancelRef = useRef(false);
     const runAskRef = useRef<(override?: string) => Promise<void>>(async () => {});
+    const runScenarioNarrativeRef = useRef<(question?: string) => Promise<void>>(async () => {});
     const missionReportRef = useRef<() => void>(() => {});
 
     // Twin device graph admin.
@@ -2064,6 +2179,7 @@ function App() {
 
     const syntheticTurbines = useMemo(() => buildFarm(seed), [seed, thresholdNonce]);
     const liveView = useLiveTelemetry();
+    const liveIncidents = useLiveIncidents();
     const turbines = liveView?.turbines ?? syntheticTurbines;
     const sites = liveView?.sites ?? SITES;
     const selected = turbines.find((t) => t.id === selectedId) ?? turbines[0];
@@ -2133,18 +2249,16 @@ function App() {
         setDetailOpen(true);
     }, []);
 
-    // Merged navigation: Operations lives inside the Digital Twin as a sub-tab.
+    // Assignment actions now return to the unified Digital Twin view.
     const goToOps = useCallback(() => {
         setView("twin");
-        setTwinTab("ops");
     }, []);
-    // Open the Digital Twin on its Overview (3D twin) sub-tab, optionally selecting a unit.
+    // Open the unified Digital Twin, optionally selecting a unit.
     const goToTwin = useCallback((id?: string) => {
         if (id) {
             setSelectedId(id);
         }
         setView("twin");
-        setTwinTab("overview");
     }, []);
 
     const matchesFilter = useCallback(
@@ -2167,6 +2281,52 @@ function App() {
     const activeAlerts = useMemo(
         () => turbines.filter((t) => t.status !== "healthy").sort((a, b) => anomalyScore(b) - anomalyScore(a)),
         [turbines],
+    );
+    const incidentStartedRef = useRef<Record<string, string>>({});
+    useEffect(() => {
+        const activeIds = new Set(activeAlerts.map((alert) => alert.id));
+        activeAlerts.forEach((alert) => {
+            incidentStartedRef.current[alert.id] ??= new Date().toISOString();
+        });
+        Object.keys(incidentStartedRef.current).forEach((id) => {
+            if (!activeIds.has(id)) {
+                delete incidentStartedRef.current[id];
+            }
+        });
+    }, [activeAlerts]);
+    const incidentQueue = useMemo(
+        () => buildIncidentQueue(activeAlerts.map((alert) => ({
+            id: alert.id,
+            siteId: alert.siteId,
+            siteName: alert.siteName,
+            status: alert.status,
+            anomalyScore: anomalyScore(alert),
+            unitTempC: alert.moduleTempC,
+            utilizationPct: alert.inverterLoadPct,
+            throughputKbd: alert.powerKw,
+            acknowledged: Boolean(ackLog[alert.id]),
+            hasOpenOrder: maintenanceOrders.some((order) => order.turbineId === alert.id && !["closed", "resolved"].includes(order.status.toLowerCase())),
+            detectedAt: incidentStartedRef.current[alert.id] ?? new Date().toISOString(),
+        }))),
+        [activeAlerts, ackLog, maintenanceOrders],
+    );
+    const telemetryTrust = useMemo(
+        () => dataTrust(isLiveTelemetryConfigured(), liveView?.latestAt),
+        [liveView],
+    );
+    const selectedIncident = incidentQueue.find((incident) => incident.id === selected.id) ?? null;
+    const selectedBlastRadius = useMemo(
+        () => selectedIncident
+            ? buildBlastRadius({
+                unitId: selectedIncident.id,
+                siteId: selectedIncident.siteId,
+                siteName: selectedIncident.siteName,
+                asset: selectedIncident.probableAsset,
+                severity: selectedIncident.severity,
+                hasOpenOrder: selectedIncident.hasOpenOrder,
+            })
+            : null,
+        [selectedIncident],
     );
     const anomalyWatch = useMemo(
         () => turbines.map((t) => ({ t, score: anomalyScore(t), forecast: forecastEscalation(anomalyHistRef.current.get(t.id) ?? []) })).sort((a, b) => b.score - a.score).slice(0, 6),
@@ -2457,6 +2617,91 @@ function App() {
         () => forecastVsRealised(powerHistory, fc.value),
         [powerHistory, fc.value],
     );
+    const simulationRun = useMemo(() => createSimulationRun({
+        refineryId: selected.siteId,
+        processUnitId: selected.id,
+        purpose: simulationPurpose,
+        objective: simulationObjective,
+        horizon: simulationHorizon,
+        timeUnit: simulationTimeUnit,
+        baselineSource: telemetryTrust.mode === "live" ? "live" : telemetryTrust.mode === "simulated" ? "simulated" : telemetryTrust.mode,
+        baselineAt: liveView?.latestAt,
+    }), [selected.siteId, selected.id, simulationPurpose, simulationObjective, simulationHorizon, simulationTimeUnit, telemetryTrust.mode, liveView?.latestAt]);
+    const simulationValidation = useMemo(
+        () => validateSimulationRun(simulationRun, Boolean(scenarioComparison.scenarios[0])),
+        [simulationRun, scenarioComparison.scenarios],
+    );
+    const downloadSimulationPackage = useCallback(() => {
+        const candidate = scenarioComparison.scenarios[0];
+        const payload = buildDecisionPackage(simulationRun, {
+            throughputKbd: selected.powerKw,
+            forecastKbd: scenarioVariance.forecast,
+            feedRateKbd: selected.irradianceWm2,
+            unitTempC: selected.moduleTempC,
+            utilizationPct: selected.inverterLoadPct,
+        }, candidate);
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${simulationRun.runId}-decision-package.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }, [scenarioComparison.scenarios, scenarioVariance.forecast, selected, simulationRun]);
+    const submitSimulationForReview = useCallback(async () => {
+        const candidate = scenarioComparison.scenarios[0];
+        if (!simulationValidation.valid || !candidate) {
+            setSimulationSubmitMessage("Import a candidate scenario and resolve validation warnings before submitting.");
+            return;
+        }
+        setSimulationSubmitting(true);
+        const decisionPackage = buildDecisionPackage(simulationRun, {
+            throughputKbd: selected.powerKw,
+            forecastKbd: scenarioVariance.forecast,
+            feedRateKbd: selected.irradianceWm2,
+            unitTempC: selected.moduleTempC,
+            utilizationPct: selected.inverterLoadPct,
+        }, candidate);
+        const record: SimulationRunRecord = {
+            runId: simulationRun.runId,
+            refineryId: simulationRun.refineryId,
+            processUnitId: simulationRun.processUnitId,
+            purpose: simulationRun.purpose,
+            objective: simulationRun.objective,
+            horizon: simulationRun.horizon,
+            timeUnit: simulationRun.timeUnit,
+            status: "Submitted",
+            baselineSource: simulationRun.baselineSource,
+            baselineAt: simulationRun.baselineAt,
+            createdBy: "current-user",
+            createdAt: new Date().toISOString(),
+            decisionPackage: JSON.stringify(decisionPackage),
+        };
+        try {
+            const saved = await saveSimulationRun(record);
+            setSubmittedSimulation(saved);
+            setSimulationSubmitMessage(`Submitted ${record.runId} for review and saved to the backend.`);
+        } catch {
+            const local = (() => { try { return JSON.parse(localStorage.getItem("refinery-simulation-runs") ?? "[]") as SimulationRunRecord[]; } catch { return [] as SimulationRunRecord[]; } })();
+            local.unshift({ ...record, id: record.runId });
+            localStorage.setItem("refinery-simulation-runs", JSON.stringify(local.slice(0, 20)));
+            setSubmittedSimulation({ ...record, id: record.runId });
+            setSimulationSubmitMessage(`Submitted ${record.runId} locally; backend unavailable.`);
+        } finally {
+            setSimulationSubmitting(false);
+        }
+    }, [scenarioComparison.scenarios, simulationValidation, simulationRun, selected, scenarioVariance.forecast]);
+    const recordSimulationDecision = useCallback(async (decision: "Approved" | "Rejected") => {
+        if (!submittedSimulation) {
+            return;
+        }
+        try {
+            await saveSimulationApproval({ runId: submittedSimulation.runId, decision, reason: simulationReviewReason || "No comment provided.", decidedBy: "current-user", decidedAt: new Date().toISOString() });
+            setSimulationSubmitMessage(`${submittedSimulation.runId} ${decision.toLowerCase()} and decision recorded.`);
+        } catch {
+            setSimulationSubmitMessage(`${submittedSimulation.runId} ${decision.toLowerCase()} locally; backend unavailable.`);
+        }
+    }, [submittedSimulation, simulationReviewReason]);
     const scenarioInsights = useMemo(() => computeInsights(scenarioComparison), [scenarioComparison]);
     const importedSummary = useMemo(
         () => (importedActuals ? summarizeActuals(importedActuals.points) : null),
@@ -2495,8 +2740,8 @@ function App() {
             const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
             const result = classifyImport(rows, file.name);
             if (result.kind === "scenarios") {
-                setScenarios((prev) => [...prev, ...result.scenarios].slice(0, 8));
-                setImportStatus(`Imported ${result.scenarios.length} scenario(s) from ${file.name}.`);
+                setScenarios(result.scenarios.slice(0, 1));
+                setImportStatus(`Imported ${result.scenarios.length ? 1 : 0} scenario from ${file.name}.`);
             } else if (result.kind === "actuals") {
                 setImportedActuals(result);
                 setImportStatus(`Imported ${result.points.length} actual reading(s) from ${file.name}.`);
@@ -2506,6 +2751,72 @@ function App() {
             setScenarioNarrative(null);
         } catch (err) {
             setImportStatus(`Could not read file: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }, []);
+    const handleDemoScenarioUpload = useCallback(async () => {
+        const XLSX = await import("xlsx");
+        const workbook = XLSX.utils.book_new();
+        const sheet = XLSX.utils.json_to_sheet([{
+            Label: "Demo maintenance window",
+            "Curtailment %": 12,
+            Downtime: 4,
+            Horizon: 12,
+            "Throughput kbd": Math.round(selected.powerKw * 0.88),
+            "Feed rate kbd": selected.irradianceWm2,
+            "Unit temp C": selected.moduleTempC,
+            "Utilization %": Math.max(0, selected.inverterLoadPct - 8),
+            "Price per barrel USD": 82,
+            "Variable cost per barrel USD": 48,
+            "Maintenance cost USD": 125000,
+            "Energy cost USD": 35000,
+        }]);
+        XLSX.utils.book_append_sheet(workbook, sheet, "Scenario");
+        const buffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+        await handleScenarioImport(new File([buffer], "demo-refinery-scenario.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    }, [handleScenarioImport, selected.inverterLoadPct, selected.irradianceWm2, selected.moduleTempC, selected.powerKw]);
+    const tuneDemoScenario = useCallback(() => {
+        setScenarios((current) => current.map((scenario) => ({
+            ...scenario,
+            curtailmentPct: 10,
+            downtimeTicks: Math.min(3, scenario.horizonTicks),
+            horizonTicks: Math.max(12, scenario.horizonTicks),
+            throughputKbd: Math.max(0, Math.round(scenario.throughputKbd != null ? scenario.throughputKbd * 0.94 : selected.powerKw * 0.84)),
+        })));
+        setImportStatus("Demo adjustment: maintenance window and projected throughput updated.");
+    }, [selected.powerKw]);
+    const downloadScenarioTemplate = useCallback(async () => {
+        setImportStatus("Building scenario template…");
+        try {
+            const XLSX = await import("xlsx");
+            const workbook = XLSX.utils.book_new();
+            const template = XLSX.utils.json_to_sheet([{
+                Label: "Planned maintenance window",
+                "Curtailment %": 15,
+                Downtime: 4,
+                Horizon: 12,
+                "Throughput kbd": Math.round(selected.powerKw * 0.85),
+                "Feed rate kbd": selected.irradianceWm2,
+                "Unit temp C": selected.moduleTempC,
+                "Utilization %": Math.max(0, selected.inverterLoadPct - 10),
+                "Price per barrel USD": 82,
+                "Variable cost per barrel USD": 48,
+                "Maintenance cost USD": 125000,
+                "Energy cost USD": 35000,
+            }]);
+            XLSX.utils.book_append_sheet(workbook, template, "Scenario");
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
+                ["How to use this template"],
+                ["Fill one row in the Scenario sheet, save it, then upload it in Comparison."],
+                ["Throughput kbd is the scenario's explicit projected rate; when supplied, it is used instead of a curtailment estimate."],
+                ["Feed rate kbd, Unit temp C, and Utilization % enable side-by-side operating-number comparison."],
+                ["Curtailment % is used only when no Throughput kbd is supplied."],
+                ["Economic fields are imported assumptions: price, variable cost, maintenance cost, and energy cost."],
+                ["Downtime and Horizon are planning ticks used for the volume comparison."],
+            ]), "Instructions");
+            XLSX.writeFile(workbook, "refinery-scenario-template.xlsx");
+            setImportStatus("Downloaded refinery-scenario-template.xlsx");
+        } catch (err) {
+            setImportStatus(`Template export failed: ${err instanceof Error ? err.message : String(err)}`);
         }
     }, []);
     // Export the current comparison, insights, variance, AI summary (and any imported
@@ -2581,6 +2892,10 @@ function App() {
             setScenarioNarrativeLoading(false);
         }
     }, [scenarioComparison, scenarioVariance, scenarioInsights, importedNote, importedActuals, selected.id, selected.siteName]);
+
+    useEffect(() => {
+        runScenarioNarrativeRef.current = runScenarioNarrative;
+    }, [runScenarioNarrative]);
 
     // ---- Mission-ops derived state ---------------------------------------
     const selectedForecast = forecastEscalation(anomalyHistRef.current.get(selected.id) ?? []);
@@ -2800,14 +3115,39 @@ function App() {
             createdAt: new Date().toISOString(),
         };
         try {
-            await saveMaintenanceOrder(resolution);
+            if (!selectedOpenOrder.id) {
+                throw new Error("The work order has no persistent id.");
+            }
+            await updateMaintenanceOrder(selectedOpenOrder.id, {
+                status: resolution.status,
+                assignee: resolution.assignee,
+                note: resolution.note,
+            });
             setEscalationStage("none");
             setWoMessage(`Loop closed — ${selectedOpenOrder.turbineId} order marked Resolved.`);
             void loadOrders();
             return true;
         } catch {
-            setWoMessage("Close the loop: backend unreachable, resolution not persisted.");
-            return false;
+            const local = (() => {
+                try {
+                    return JSON.parse(localStorage.getItem("refinery-workorders") ?? "[]") as MaintenanceOrderRecord[];
+                } catch {
+                    return [] as MaintenanceOrderRecord[];
+                }
+            })();
+            const index = local.findIndex((order) => order.id === selectedOpenOrder.id || (
+                !selectedOpenOrder.id && order.turbineId === selectedOpenOrder.turbineId && order.createdAt === selectedOpenOrder.createdAt
+            ));
+            if (index < 0) {
+                setWoMessage("Close the loop: order was not found in the local store.");
+                return false;
+            }
+            local[index] = { ...local[index], ...resolution, id: local[index].id, createdAt: local[index].createdAt };
+            localStorage.setItem("refinery-workorders", JSON.stringify(local));
+            setMaintenanceOrders(local);
+            setEscalationStage("none");
+            setWoMessage(`Loop closed — ${selectedOpenOrder.turbineId} order resolved locally; backend unavailable.`);
+            return true;
         }
     }, [canWriteback, handleEscalateManager, loadOrders, selectedOpenOrder, simCurtail, simDowntime]);
 
@@ -2867,9 +3207,8 @@ function App() {
         return handleCloseLoop();
     }, [handleCloseLoop, selected.id, selected.siteName]);
 
-    // Visibly "click" a few graph nodes during the graph step: highlight the current
-    // unit, then two peers (same site when possible, else other units), then restore
-    // the original selection so downstream steps act on the right unit.
+    // Visibly click several unit nodes during the graph step. The graph opens
+    // zoomed out so the fleet-to-site-to-unit hierarchy is readable first.
     const cycleGraphSelection = useCallback(async (dwellMs: number) => {
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
         const originalId = selected.id;
@@ -2884,8 +3223,10 @@ function App() {
             const t = turbines.find((x) => x.id === id);
             if (t) {
                 setWoMessage(i === 0
-                    ? `Graph: drilled into incident node ${id} (${t.status}) — assets & sensors expanded.`
-                    : `Graph: tracing related node ${id} — same refinery ${t.siteName}.`);
+                    ? `Graph: click 1 — unit ${id} selected; its signal nodes expanded.`
+                    : i < cycleIds.length - 1
+                        ? `Graph: click ${i + 1} — tracing peer unit ${id} in ${t.siteName}.`
+                        : `Graph: click ${i + 1} — returning to the incident unit ${id}.`);
             }
             await delay(stepMs);
         }
@@ -2897,12 +3238,18 @@ function App() {
         if (autoPlayRunning) {
             return;
         }
+        demoCancelRef.current = false;
         setAutoPlayRunning(true);
         setDemoIntroOpen(false);
         setDemoPanelOpen(false);
-        const dwellMs = 10000;
-        const preActionMs = 5000;
+        const pageDurationMs = 6000;
+        const preActionMs = 2000;
         const delay = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+        const stopIfCancelled = () => {
+            if (demoCancelRef.current) {
+                throw new Error("demo-cancelled");
+            }
+        };
         const logStep = (step: string, detail: string) =>
             setDemoRunLog((log) => [...log, { step, at: new Date().toISOString(), detail }]);
         try {
@@ -2916,41 +3263,61 @@ function App() {
             setView("map");
             handlePrimeDemoStory();
             setTechPopupOpen(false);
-            await delay(dwellMs);
+            setDetailOpen(false);
+            setWoMessage(`Map: orbiting the fleet view; the demo target is ${selected.siteName}.`);
+            await delay(pageDurationMs);
+            stopIfCancelled();
             // 2 — Locate: show the map first, then filter down to the affected site.
             setDemoScriptStep("locate");
             setDemoStepIndex(1);
             setView("map");
             setTechPopupOpen(false);
+            setDetailOpen(false);
             await delay(preActionMs);
-            setSiteFilter(selected.siteId);
-            setWoMessage(`Fleet map filtered to ${selected.siteName} — focused on ${selected.id}.`);
-            logStep("locate", `Filtered map to refinery ${selected.siteName} and focused ${selected.id}`);
-            await delay(dwellMs - preActionMs);
+            setWoMessage(`Map: ${selected.siteName} context visible; no map movement required.`);
+            logStep("locate", `Selected ${selected.id} on the static fleet map`);
+            await delay(pageDurationMs - preActionMs);
+            stopIfCancelled();
             // 3 — Inspect the digital twin: overall view first, then focus a process asset.
             setDemoScriptStep("twin");
             setDemoStepIndex(2);
             setView("twin");
+            setTwinViewMode("3d");
             setTwinTab("overview");
+            setDetailOpen(false);
             setDemoFocusPart(null);
             setWoMessage(`Digital twin: overall view of ${selected.id}.`);
             await delay(preActionMs);
             setDemoFocusPart("array");
             setWoMessage(`Digital twin: inspecting the column on ${selected.id} — reading asset & sensor signals.`);
             logStep("twin", "Overall view → focused the column asset and its sensors");
-            await delay(dwellMs - preActionMs);
-            // 4 — Analyze the ontology graph: show it first, then filter/traverse.
-            setDemoScriptStep("graph");
+            await delay(pageDurationMs - preActionMs);
+            stopIfCancelled();
+            // 4 — Follow the process in the 2D schematic.
+            setDemoScriptStep("schematic");
             setDemoStepIndex(3);
-            setView("graph");
-            logStep("graph", `Analyzed the ontology graph (filter: ${selected.status})`);
-            await delay(preActionMs);
-            setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
-            await cycleGraphSelection(dwellMs - preActionMs);
-            // 5 — Take action: show operations first, then launch the dispatch popup.
-            setDemoScriptStep("dispatch");
+            setTwinViewMode("schematic");
+            setTwinTab("overview");
+            setView("twin");
+            setWoMessage(`Process schematic: following feed, unit, exchanger, and product flow for ${selected.id}.`);
+            logStep("schematic", "Opened the Process schematic and followed the live process path");
+            await delay(pageDurationMs);
+            stopIfCancelled();
+            // 5 — Trace the ontology graph with visible node selections.
+            setDemoScriptStep("graph");
             setDemoStepIndex(4);
+            setGraphInitialZoom(1.35);
+            setGraphNonce((n) => n + 1);
+            setView("graph");
+            setWoMessage("Graph: zoomed out to Fleet → Site → Unit, then drilling into related nodes.");
+            await delay(preActionMs);
+            await cycleGraphSelection(pageDurationMs - preActionMs);
+            stopIfCancelled();
+            // 6 — Dispatch the lead from the Digital Twin.
+            setDemoScriptStep("dispatch");
+            setDemoStepIndex(5);
             goToOps();
+            setTwinViewMode("3d");
             setTechPopupOpen(false);
             await delay(preActionMs);
             setTechPopupOpen(true);
@@ -2958,49 +3325,77 @@ function App() {
             if (!dispatched) {
                 await handleRaiseWorkOrder();
             }
+            stopIfCancelled();
             logStep("dispatch", "Opened dispatch popup and raised the work order");
-            await delay(dwellMs - preActionMs);
-            // 6 — Call field support, close the loop, and reset filters.
+            await delay(pageDurationMs - preActionMs);
+            // 7 — Field support closes the operational loop.
             setDemoScriptStep("support");
-            setDemoStepIndex(5);
+            setDemoStepIndex(6);
             setTechPopupOpen(false);
             goToOps();
             const closed = await handleCallFieldSupport();
+            stopIfCancelled();
             setSiteFilter("all");
-            setGraphFilter("all");
             logStep("support", closed ? "Field support called — loop closed" : "Field support called — escalated for review");
-            await delay(dwellMs);
-            // 7 — Ask Fabric IQ: click Ask and read the recommendation.
-            setDemoScriptStep("ask");
-            setDemoStepIndex(6);
-            setTechPopupOpen(false);
-            setView("ask");
-            const askPrompt = `Which units are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
-            setQuestion(askPrompt);
-            setWoMessage("Fabric IQ: submitting the prioritization question…");
-            await runAskRef.current(askPrompt);
-            logStep("ask", "Asked Fabric IQ for prioritization");
-            setWoMessage("Fabric IQ answered — visualizing the trend in Analytics next.");
-            await delay(dwellMs);
-            // 8 — Analytics: visualize the trends behind the answer, then open the report.
-            setDemoScriptStep("analytics");
+            await delay(pageDurationMs);
+            // 8 — Import a real Excel scenario and show the comparison.
+            setDemoScriptStep("simulation");
             setDemoStepIndex(7);
-            setView("analytics");
-            setWoMessage("Analytics: throughput, deltas and the operating curve behind the recommendation.");
-            logStep("analytics", "Reviewed performance analytics behind the answer");
-            await delay(dwellMs);
-            missionReportRef.current();
-            logStep("analytics", "Opened the mission report");
+            setView("scenario");
+            setSimulationPurpose("maintenance");
+            setSimulationObjective("margin");
+            setSimulationTimeUnit("hour");
+            setSimulationHorizon(24);
+            setWoMessage("Simulation: uploading the prepared Excel scenario for baseline comparison.");
+            await handleDemoScenarioUpload();
+            stopIfCancelled();
+            logStep("simulation", "Uploaded demo-refinery-scenario.xlsx and populated the comparison");
+            tuneDemoScenario();
             await delay(preActionMs);
+            setWoMessage("Simulation: adjusted the maintenance window and running the comparison analysis.");
+            await runScenarioNarrativeRef.current();
+            stopIfCancelled();
+            setImportStatus("Comparison refreshed: updated maintenance window and projected throughput are now shown below.");
+            window.setTimeout(() => simulationImpactRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+            logStep("simulation", "Ran the comparison analysis and reviewed the proposed plan");
+            await delay(pageDurationMs - preActionMs);
+            // 9 — Ask Fabric IQ about the incident and proposed plan.
+            setDemoScriptStep("ask");
+            setDemoStepIndex(8);
+            setView("ask");
+            const askPrompt = `What evidence supports ${selected.id}, and what should the duty manager review before approving the maintenance plan?`;
+            setQuestion(askPrompt);
+            setWoMessage("Ask Fabric IQ: selected the evidence-and-decision question.");
+            await delay(preActionMs);
+            setWoMessage("Ask Fabric IQ: submitting the selected question.");
+            await runAskRef.current(askPrompt);
+            stopIfCancelled();
+            logStep("ask", "Asked Fabric IQ to explain the incident and proposed response");
+            await delay(pageDurationMs);
+            // 10 — Ask IQ is the final demo surface.
+            setView("alerts");
+            setWoMessage("Demo complete — incident, response, simulation, and Ask IQ reviewed.");
+            stopIfCancelled();
             setWoMessage((prev) => `${prev ?? ""} Demo script executed.`.trim());
             setDemoRunCount((count) => count + 1);
+        } catch (error) {
+            if (error instanceof Error && error.message === "demo-cancelled") {
+                setWoMessage("Guided demo stopped safely. No later steps were run.");
+            } else {
+                throw error;
+            }
         } finally {
-            await delay(1500);
             setAutoPlayRunning(false);
             setDemoScriptStep("idle");
             setDemoFocusPart(null);
         }
-    }, [autoPlayRunning, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handlePrimeDemoStory, handleRaiseWorkOrder, selected.id, selected.siteId, selected.siteName, selected.status]);
+    }, [autoPlayRunning, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handleDemoScenarioUpload, handlePrimeDemoStory, handleRaiseWorkOrder, openTurbine, selected.id, selected.siteId, selected.siteName, selected.status, tuneDemoScenario]);
+
+    const handleStopDemo = useCallback(() => {
+        if (autoPlayRunning) {
+            demoCancelRef.current = true;
+        }
+    }, [autoPlayRunning]);
 
     const demoScriptLead = techPopupResponder ?? primaryResponder ?? suggestedResponders[0] ?? null;
     const demoScriptSteps = useMemo<DemoScriptStep[]>(() => [
@@ -3032,6 +3427,7 @@ function App() {
             action: async () => {
                 setDemoScriptStep("twin");
                 setView("twin");
+                setTwinViewMode("3d");
                 setTwinTab("overview");
                 setDemoFocusPart(null);
                 await new Promise<void>((resolve) => window.setTimeout(resolve, 2500));
@@ -3039,19 +3435,32 @@ function App() {
             },
         },
         {
+            id: "schematic",
+            label: "4. Process schematic",
+            detail: "Switch the Digital Twin to the live process-flow schematic.",
+            action: () => {
+                setDemoScriptStep("schematic");
+                setView("twin");
+                setTwinViewMode("schematic");
+                setTwinTab("overview");
+                setWoMessage(`Process schematic: following the live flow for ${selected.id}.`);
+            },
+        },
+        {
             id: "graph",
-            label: "4. Ontology graph",
-            detail: "Filter the ontology graph to the unit's severity.",
+            label: "5. Ontology graph",
+            detail: "Open the graph and click through related unit nodes.",
             action: async () => {
                 setDemoScriptStep("graph");
-                setGraphFilter(selected.status === "alarm" ? "alarm" : selected.status === "warning" ? "warning" : "all");
+                setGraphInitialZoom(1.35);
+                setGraphNonce((n) => n + 1);
                 setView("graph");
                 await cycleGraphSelection(8000);
             },
         },
         {
             id: "dispatch",
-            label: "5. Dispatch lead",
+            label: "6. Dispatch lead",
             detail: "Open the dispatch popup and send the selected responder.",
             action: async () => {
                 setDemoScriptStep("dispatch");
@@ -3069,7 +3478,7 @@ function App() {
         },
         {
             id: "support",
-            label: "6. Field support",
+            label: "7. Field support",
             detail: "Call on-site field support and close the loop.",
             action: async () => {
                 setDemoScriptStep("support");
@@ -3079,28 +3488,37 @@ function App() {
             },
         },
         {
-            id: "ask",
-            label: "7. Ask Fabric IQ",
-            detail: "Ask a prioritization question and read the recommendation.",
+            id: "simulation",
+            label: "8. Simulation comparison",
+            detail: "Upload the prepared Excel scenario and review the comparison.",
             action: async () => {
-                setDemoScriptStep("ask");
-                setTechPopupOpen(false);
-                setView("ask");
-                const prompt = `Which units are at highest risk right now, and what should we prioritize for ${selected.siteName}?`;
-                setQuestion(prompt);
-                await runAskRef.current(prompt);
+                setDemoScriptStep("simulation");
+                setView("scenario");
+                setSimulationPurpose("maintenance");
+                setSimulationObjective("margin");
+                setWoMessage("Simulation: uploading the prepared Excel scenario.");
+                await handleDemoScenarioUpload();
+                tuneDemoScenario();
+                setWoMessage("Simulation: adjusted the maintenance window and running the comparison analysis.");
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 2000));
+                await runScenarioNarrativeRef.current();
+                setImportStatus("Comparison refreshed: updated maintenance window and projected throughput are now shown below.");
+                window.setTimeout(() => simulationImpactRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
             },
         },
         {
-            id: "analytics",
-            label: "8. Analytics & report",
-            detail: "Visualize the trend in Analytics, then open the mission report.",
+            id: "ask",
+            label: "9. Ask Fabric IQ",
+            detail: "Ask a question about evidence and the proposed maintenance plan.",
             action: async () => {
-                setDemoScriptStep("analytics");
-                setTechPopupOpen(false);
-                setView("analytics");
-                await new Promise<void>((resolve) => window.setTimeout(resolve, 1500));
-                missionReportRef.current();
+                setDemoScriptStep("ask");
+                setView("ask");
+                const prompt = `What evidence supports ${selected.id}, and what should the duty manager review before approving the maintenance plan?`;
+                setQuestion(prompt);
+                setWoMessage("Ask Fabric IQ: selected the evidence-and-decision question.");
+                await new Promise<void>((resolve) => window.setTimeout(resolve, 2000));
+                setWoMessage("Ask Fabric IQ: submitting the selected question.");
+                await runAskRef.current(prompt);
             },
         },
     ], [demoScriptLead, cycleGraphSelection, handleAutoHealNow, handleCallFieldSupport, handleDispatchResponder, handlePrimeDemoStory, handleRaiseWorkOrder, selected.id, selected.siteId, selected.siteName, selected.status]);
@@ -3155,29 +3573,6 @@ function App() {
     useEffect(() => {
         missionReportRef.current = handleOpenMissionReport;
     }, [handleOpenMissionReport]);
-
-    // Compile a mission report automatically once an auto-run finishes.
-    const autoPlayPrevRef = useRef(false);
-    useEffect(() => {
-        const finished = autoPlayPrevRef.current && !autoPlayRunning;
-        autoPlayPrevRef.current = autoPlayRunning;
-        if (!finished || demoRunLog.length === 0) {
-            return;
-        }
-        const report = buildMissionReport({
-            turbineId: selected.id,
-            siteName: selected.siteName,
-            component: suggestedComponent,
-            priority: suggestedPriority,
-            responder: primaryResponder?.name ?? null,
-            dispatchQualityScore: dispatchQuality.score,
-            challengeScore: missionChallenge.score,
-            challengeVerdict: missionChallenge.verdict,
-            events: demoRunLog,
-            outcome: selectedOpenOrder ? `Open order (${selectedOpenOrder.priority})` : "No open order",
-        });
-        recordMissionRun(report);
-    }, [autoPlayRunning, demoRunLog, dispatchQuality.score, missionChallenge.score, missionChallenge.verdict, primaryResponder, recordMissionRun, selected.id, selected.siteName, selectedOpenOrder, suggestedComponent, suggestedPriority]);
 
     // Demo keyboard shortcuts: ← / → step, Enter run step, Esc close — gated on the panel.
     useEffect(() => {
@@ -3631,12 +4026,12 @@ function App() {
 
     return (
         <main className="flex h-full flex-col bg-[radial-gradient(circle_at_12%_8%,#13223e_0%,#050911_55%,#02050a_100%)] text-slate-100">
-            <header className="flex flex-wrap items-center gap-3 border-b border-slate-800/60 bg-[#071126cc] px-3 py-3 backdrop-blur-sm sm:px-5">
+            <header className="relative z-50 flex shrink-0 flex-wrap items-center gap-3 border-b border-slate-800/60 bg-[#071126cc] px-3 py-3 backdrop-blur-sm sm:px-5">
                 <div className="mr-2">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-300">Fabric Rayfin App</p>
                     <h1 className="text-xl font-semibold leading-tight">Geo Refinery Twin Command Center · Worldwide</h1>
-                    <p className="mt-0.5 text-[10px] text-amber-300/80" title="Live fleet telemetry is simulated in-browser; ontology sites and dispatch notes persist to the Fabric Rayfin backend.">
-                        ◐ Simulated telemetry · ontology + dispatch notes persisted to Fabric
+                    <p className={`mt-0.5 text-[10px] ${telemetryTrust.mode === "live" ? "text-emerald-300" : telemetryTrust.mode === "stale" || telemetryTrust.mode === "unknown" ? "text-amber-300" : "text-amber-300/80"}`} title={telemetryTrust.detail}>
+                        {telemetryTrust.mode === "live" ? "●" : telemetryTrust.mode === "simulated" ? "◐" : "!"} {telemetryTrust.label} · {telemetryTrust.detail}
                     </p>
                 </div>
 
@@ -3660,7 +4055,7 @@ function App() {
                             🎬 {autoPlayRunning ? "Running…" : "Guided demo"}
                         </button>
                         {demoPanelOpen && (
-                            <div className="absolute right-0 top-full z-40 mt-2 w-80 rounded-lg border border-slate-700 bg-[#07142a] p-3 text-left shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
+                            <div className="absolute right-0 top-full z-[60] mt-2 max-h-[calc(100vh-5rem)] w-80 max-w-[calc(100vw-1rem)] origin-top-right overflow-y-auto rounded-lg border border-cyan-800/70 bg-[#07142a] p-3 text-left shadow-[0_18px_50px_rgba(0,0,0,0.75)]">
                                 <div className="flex items-center justify-between">
                                     <p className="text-sm font-semibold text-cyan-200">Guided demo</p>
                                     <button type="button" onClick={() => setDemoPanelOpen(false)} className="rounded p-0.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100">✕</button>
@@ -3668,7 +4063,11 @@ function App() {
                                 <p className="mt-1 text-[11px] text-slate-400">Detection → resolution on one live refinery incident. Use ← / → to step, Enter to run a step, Esc to close.</p>
                                 <div className="mt-2 flex gap-2">
                                     <button type="button" onClick={() => setDemoIntroOpen(true)} className="flex-1 rounded bg-slate-700 px-2 py-1.5 text-xs font-medium text-white hover:bg-slate-600">Intro</button>
-                                    <button type="button" onClick={() => void handleAutoRunDemo()} disabled={autoPlayRunning} className="flex-1 rounded bg-cyan-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50">▶ Run all</button>
+                                    {autoPlayRunning ? (
+                                        <button type="button" onClick={handleStopDemo} className="flex-1 rounded bg-rose-700 px-2 py-1.5 text-xs font-semibold text-white hover:bg-rose-600">■ Stop</button>
+                                    ) : (
+                                        <button type="button" onClick={() => void handleAutoRunDemo()} className="flex-1 rounded bg-cyan-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500">▶ Run all</button>
+                                    )}
                                 </div>
                                 <ol className="mt-2 max-h-56 space-y-1 overflow-y-auto">
                                     {demoScriptSteps.map((step, i) => (
@@ -3685,10 +4084,7 @@ function App() {
                                         </li>
                                     ))}
                                 </ol>
-                                <div className="mt-2 flex items-center justify-between gap-2">
-                                    <button type="button" onClick={handleOpenMissionReport} className="flex-1 rounded bg-emerald-700 px-2 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-600">Mission report</button>
-                                    <span className="text-[10px] text-slate-500">{runHistorySummaries.length} run{runHistorySummaries.length === 1 ? "" : "s"}</span>
-                                </div>
+                                <p className="mt-2 text-[10px] text-slate-500">Demo ends after the Ask IQ decision context.</p>
                             </div>
                         )}
                     </div>
@@ -3730,7 +4126,8 @@ function App() {
             <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                 <NavRail view={view} onChange={setView} badges={{ alerts: unackedAlerts.length }} />
 
-                <section className="relative min-h-0 flex-1">
+                <section className="relative z-0 min-h-0 flex-1">
+                    {demoNarration && <DemoCursorCue step={demoScriptStep} />}
                     {view === "map" && (
                         <div className="relative h-full min-h-[420px] md:min-h-[520px]">
                             <SceneErrorBoundary label="Fleet map">
@@ -3763,13 +4160,10 @@ function App() {
                         </div>
                     )}
 
-                    {view === "twin" && twinTab === "overview" && (
+                    {view === "twin" && (
                         <div className="h-full overflow-y-auto p-4">
                             <div className="mb-3 flex flex-wrap items-center gap-2">
-                                <div className="flex overflow-hidden rounded-lg border border-slate-700 text-xs">
-                                    <button type="button" onClick={() => setTwinTab("overview")} className={`px-3 py-1.5 font-medium ${twinTab === "overview" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Overview</button>
-                                    <button type="button" onClick={() => setTwinTab("ops")} className={`px-3 py-1.5 font-medium ${twinTab === "ops" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Operations &amp; Orders</button>
-                                </div>
+                                <p className="text-sm font-semibold text-slate-100">Digital Twin</p>
                                 <span className="text-xs text-slate-400">{selected.id} · {selected.siteName}</span>
                             </div>
                             <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
@@ -3807,8 +4201,13 @@ function App() {
                                         </span>
                                     </div>
 
+                                    <div className="flex overflow-hidden self-start rounded border border-slate-700 text-[11px]">
+                                        <button type="button" onClick={() => setTwinViewMode("3d")} className={`px-2.5 py-1 ${twinViewMode === "3d" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>3D twin</button>
+                                        <button type="button" onClick={() => setTwinViewMode("schematic")} className={`border-l border-slate-700 px-2.5 py-1 ${twinViewMode === "schematic" ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300 hover:bg-slate-800"}`}>Process schematic</button>
+                                    </div>
+
                                     <div className="relative h-[480px] overflow-hidden rounded-xl border border-slate-700/60 bg-[#051020]">
-                                        <SceneErrorBoundary label="Digital twin">
+                                        {twinViewMode === "3d" ? <><SceneErrorBoundary label="Digital twin">
                                             <Suspense fallback={<div className="h-full w-full animate-pulse bg-[#051020]" />}>
                                                 <LazyPlantTwinScene turbine={selected} paused={!live} />
                                             </Suspense>
@@ -3821,7 +4220,36 @@ function App() {
                                             <div className="absolute bottom-3 left-3 right-3 rounded-lg border border-cyan-500/50 bg-[#06182fdd] px-3 py-2 text-xs text-cyan-100 backdrop-blur">
                                                 Guided focus · {(TWIN_PARTS.find((p) => p.key === demoFocusPart)?.caption ?? demoFocusPart)} — reading asset &amp; sensor signals for {selected.id}.
                                             </div>
-                                        )}
+                                        )}</> : <RefineryProcessSchematic unitId={selected.id} siteName={selected.siteName} status={selected.status} feedKbd={selected.irradianceWm2} temperatureC={selected.moduleTempC} utilizationPct={selected.inverterLoadPct} throughputKbd={selected.powerKw} onCreateWorkOrder={() => { if (primaryResponder) { setTechPopupResponderId(primaryResponder.id); setTechPopupOpen(true); } }} />}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                                        <Panel
+                                            title="Work orders"
+                                            action={<span className="text-[11px] text-slate-400">{maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).length} ongoing</span>}
+                                        >
+                                            <div className="space-y-2">
+                                                {maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).slice(0, 4).map((order) => (
+                                                    <button key={order.id ?? `${order.turbineId}-${order.createdAt}`} type="button" onClick={() => setSelectedId(order.turbineId)} className={`w-full rounded border px-2 py-2 text-left text-xs ${order.turbineId === selected.id ? "border-cyan-600/60 bg-cyan-950/30" : "border-slate-700/60 bg-[#08142a] hover:border-slate-500"}`}>
+                                                        <div className="flex items-center justify-between gap-2"><span className="font-semibold text-slate-100">{order.turbineId}</span><span className={order.priority === "P1" ? "text-rose-300" : order.priority === "P2" ? "text-amber-300" : "text-emerald-300"}>{order.priority}</span></div>
+                                                        <p className="mt-0.5 truncate text-slate-400">{order.component} · {order.assignee ?? "Unassigned"}</p>
+                                                    </button>
+                                                ))}
+                                                {maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).length === 0 && <p className="text-xs text-slate-500">No ongoing work orders for this fleet.</p>}
+                                            </div>
+                                        </Panel>
+
+                                        <Panel title="Assign new task">
+                                            {primaryResponder ? (
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <img src={primaryResponder.photo} alt={primaryResponder.name} className="h-12 w-12 shrink-0 rounded-full border border-cyan-800/70 bg-[#08142a] object-cover" />
+                                                        <div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-100">{primaryResponder.name}</p><p className="truncate text-xs text-slate-400">{primaryResponder.role}</p><p className="mt-1 text-[11px] text-cyan-200">{suggestedComponent} · {primaryResponder.etaMin} min ETA</p></div>
+                                                    </div>
+                                                    <button type="button" onClick={() => { setTechPopupResponderId(primaryResponder.id); setTechPopupOpen(true); }} className="shrink-0 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Assign task</button>
+                                                </div>
+                                            ) : <p className="text-xs text-slate-500">No responder matches this unit's incident profile.</p>}
+                                        </Panel>
                                     </div>
                                 </div>
 
@@ -3836,6 +4264,18 @@ function App() {
                                             <div className="flex justify-between"><dt className="text-slate-400">Rated capacity</dt><dd>{selectedSite ? `${selectedSite.capacityMw} kbd` : "—"}</dd></div>
                                         </dl>
                                     </Panel>
+
+                                    {selectedBlastRadius && (
+                                        <Panel title="Incident impact" action={<span className="text-[10px] text-amber-300">{selectedIncident?.severity}</span>}>
+                                            <p className="text-[11px] text-slate-300">{selectedBlastRadius.action}</p>
+                                            <div className="mt-2 grid grid-cols-1 gap-2 text-[10px] sm:grid-cols-3">
+                                                <div><p className="font-semibold text-slate-400">Upstream</p>{selectedBlastRadius.upstream.map((item) => <p key={item} className="mt-0.5 text-slate-300">• {item}</p>)}</div>
+                                                <div><p className="font-semibold text-slate-400">Downstream</p>{selectedBlastRadius.downstream.map((item) => <p key={item} className="mt-0.5 text-slate-300">• {item}</p>)}</div>
+                                                <div><p className="font-semibold text-slate-400">Check</p>{selectedBlastRadius.constraints.map((item) => <p key={item} className="mt-0.5 text-slate-300">• {item}</p>)}</div>
+                                            </div>
+                                            <button type="button" onClick={() => setView("graph")} className="mt-2 text-[11px] font-medium text-cyan-200 hover:text-cyan-100">Open relationship graph →</button>
+                                        </Panel>
+                                    )}
 
                                     <Panel
                                         title="Twin device graph (admin)"
@@ -3957,7 +4397,14 @@ function App() {
                                                 ))}
                                             </ul>
                                         )}
-                                        <button type="button" onClick={goToOps} className="mt-2 w-full rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">Dispatch / writeback →</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { if (primaryResponder) { setTechPopupResponderId(primaryResponder.id); setTechPopupOpen(true); } }}
+                                            disabled={!primaryResponder}
+                                            className="mt-2 w-full rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            Create work order
+                                        </button>
                                     </Panel>
 
                                     <Panel title="Site report" action={siteReport ? <span className="text-[10px] text-slate-500">{siteReport.unitCount} units</span> : undefined}>
@@ -3984,11 +4431,77 @@ function App() {
                                     </Panel>
                                 </div>
                             </div>
+
                         </div>
                     )}
 
                     {view === "alerts" && (
                         <div className="h-full overflow-y-auto p-4">
+                            <div className="mb-3 grid grid-cols-1 gap-2 lg:grid-cols-3">
+                                <div className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-3">
+                                    <p className="text-[10px] uppercase tracking-wide text-rose-300">Signal</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-100">{incidentQueue[0] ? `${incidentQueue[0].id} · ${incidentQueue[0].severity}` : "No active incident"}</p>
+                                    <p className="mt-1 text-xs text-slate-400">{incidentQueue[0] ? `${incidentQueue[0].siteName} · ${incidentQueue[0].probableAsset} · ${incidentQueue[0].ageMinutes}m active` : "All visible units are within health bands."}</p>
+                                </div>
+                                <div className="rounded-lg border border-amber-700/60 bg-amber-950/20 p-3">
+                                    <p className="text-[10px] uppercase tracking-wide text-amber-300">Proposal</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-100">{incidentQueue[0] ? (incidentQueue[0].hasOpenOrder ? "Inspect the open order" : incidentQueue[0].acknowledged ? "Create a work order" : "Acknowledge and inspect") : "Continue monitoring"}</p>
+                                    <p className="mt-1 text-xs text-slate-400">The queue ranks severity, anomaly, age, and existing work.</p>
+                                </div>
+                                <div className="rounded-lg border border-cyan-800/60 bg-cyan-950/20 p-3">
+                                    <p className="text-[10px] uppercase tracking-wide text-cyan-300">Question</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-100">What should we check next?</p>
+                                    <button type="button" onClick={() => { setQuestion(incidentQueue[0] ? `What evidence supports ${incidentQueue[0].id}, and what should I check next?` : ASK_PROPOSALS[0].question); setView("ask"); }} className="mt-2 rounded bg-cyan-700 px-2 py-1 text-xs font-medium text-white hover:bg-cyan-600">Ask Fabric IQ</button>
+                                </div>
+                            </div>
+                            {liveIncidents && liveIncidents.length > 0 && (
+                                <Panel title="Fabric safety incidents" action={<span className="text-[11px] text-emerald-300">● Semantic model</span>}>
+                                    <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+                                        {liveIncidents.filter((incident) => !incident.acknowledgedAt).slice(0, 8).map((incident) => (
+                                            <div key={incident.alarmId} className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-2 text-xs">
+                                                <div className="flex items-start justify-between gap-2"><div><p className="font-semibold text-slate-100">{incident.alarmId} · {incident.severity}</p><p className="text-slate-400">{incident.equipmentName ?? incident.sensorId} · {incident.processUnitName ?? incident.processUnitId ?? "Unit unresolved"}</p></div><span className="text-[10px] text-slate-500">{incident.timestamp}</span></div>
+                                                <p className="mt-1 text-slate-300">{incident.description || incident.alarmType}</p>
+                                                <p className="mt-1 text-[11px] text-slate-400">{incident.alarmValue} / threshold {incident.thresholdValue} · {incident.equipmentType ?? "equipment type unavailable"}</p>
+                                                {incident.processUnitId && <button type="button" onClick={() => goToTwin(incident.processUnitId!)} className="mt-2 rounded bg-cyan-700 px-2 py-1 text-[11px] font-medium text-white hover:bg-cyan-600">Inspect unit</button>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Panel>
+                            )}
+                            <Panel
+                                title="Incident command queue"
+                                action={<span className="text-[11px] text-slate-400">{incidentQueue.length} requiring attention</span>}
+                            >
+                                {incidentQueue.length === 0 ? (
+                                    <p className="text-xs text-emerald-300">No active incidents. All visible process units are within their health bands.</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+                                        {incidentQueue.slice(0, 8).map((incident) => (
+                                            <div key={incident.id} className={`rounded-lg border p-2 ${incident.severity === "Critical" ? "border-rose-700/70 bg-rose-950/20" : incident.severity === "High" ? "border-amber-700/70 bg-amber-950/20" : "border-slate-700/70 bg-[#08142a]"}`}>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <button type="button" onClick={() => goToTwin(incident.id)} className="font-semibold text-slate-100 hover:text-cyan-200">{incident.id}</button>
+                                                        <p className="truncate text-[11px] text-slate-400">{incident.siteName} · {incident.probableAsset} · {incident.ageMinutes}m active</p>
+                                                    </div>
+                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${incident.severity === "Critical" ? "bg-rose-700/70 text-rose-100" : incident.severity === "High" ? "bg-amber-600/70 text-amber-50" : "bg-slate-700 text-slate-200"}`}>{incident.severity}</span>
+                                                </div>
+                                                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-400">
+                                                    <span>Unit {incident.unitTempC} °C</span><span>Utilization {incident.utilizationPct}%</span><span>{incident.throughputKbd.toLocaleString()} kbd</span>
+                                                </div>
+                                                <div className="mt-2 flex gap-2">
+                                                    {incident.nextAction === "Acknowledge" && (
+                                                        <button type="button" onClick={() => { const target = activeAlerts.find((alert) => alert.id === incident.id); if (target) { void acknowledgeAlert(target); } }} disabled={!canWriteback} className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50">Acknowledge</button>
+                                                    )}
+                                                    {incident.nextAction === "Create work order" && (
+                                                        <button type="button" onClick={() => { setWoMessage(`Review ${incident.id} in the Digital Twin, then create its work order with the refreshed responder recommendation.`); goToTwin(incident.id); }} className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500">Open work order</button>
+                                                    )}
+                                                    <button type="button" onClick={() => goToTwin(incident.id)} className="rounded bg-slate-700 px-2 py-1 text-xs text-white hover:bg-slate-600">Inspect twin</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </Panel>
                             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                                 <Panel
                                     title={`Active alarms & warnings (${unackedAlerts.length}/${activeAlerts.length})`}
@@ -4076,11 +4589,11 @@ function App() {
                                             <button key={s} type="button" onClick={() => setGraphFilter(s)} className={`px-2 py-1 capitalize ${graphFilter === s ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>{s}</button>
                                         ))}
                                     </div>
-                                    <button type="button" onClick={() => setGraphNonce((n) => n + 1)} className="rounded bg-slate-700 px-2 py-1 text-white">Reset view</button>
+                                    <button type="button" onClick={() => { setGraphInitialZoom(1); setGraphNonce((n) => n + 1); }} className="rounded bg-slate-700 px-2 py-1 text-white">Reset view</button>
                                 </div>
                             </div>
                             <div className="relative h-[calc(100%-2rem)] rounded-xl border border-slate-700/60 bg-[#051020]">
-                                <RelationshipGraph key={graphNonce} turbines={turbines} sites={sites} selectedId={selected.id} statusFilter={graphFilter} onSelect={(id) => setSelectedId(id)} />
+                                <RelationshipGraph key={graphNonce} turbines={turbines} sites={sites} selectedId={selected.id} statusFilter={graphFilter} initialZoom={graphInitialZoom} focusSiteId={selected.siteId} showDemoCursor={demoScriptStep === "graph"} onSelect={(id) => setSelectedId(id)} />
                                 <div className="pointer-events-none absolute right-3 top-2 rounded-md border border-slate-700/60 bg-[#08142acc] px-2.5 py-2 text-[11px] text-slate-300 backdrop-blur-sm">
                                     <p className="mb-1 font-medium text-slate-400">Node types</p>
                                     <div className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#6ee7ff] bg-[#0e2a4d]" /> Fleet</div>
@@ -4097,42 +4610,35 @@ function App() {
 
                     {view === "analytics" && (
                         <div className="h-full overflow-y-auto p-4">
-                            <div className="mb-3">{toolbar}</div>
+                            <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b-2 border-rose-500 pb-2">
+                                <div><h2 className="text-2xl font-semibold text-slate-100">Global Refinery Cockpit</h2><p className="text-xs text-slate-400">Fleet position, process performance, incidents, maintenance, and inventory</p></div>
+                                <span className={`text-xs ${telemetryTrust.mode === "live" ? "text-emerald-300" : "text-amber-300"}`}>{telemetryTrust.label}</span>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                                 <MetricCard label="Fleet throughput" value={`${fleetPower.toLocaleString()} kbd`} sub={`${visibleTurbines.length} units online`} />
-                                <MetricCard label="Utilization" value={`${capacityFactor.toFixed(0)}%`} sub={`of ${fleetRatedMw.toFixed(0)} kbd rated`} accent="text-emerald-300" />
-                                <MetricCard label="Avg feed rate" value={`${avgWind.toFixed(0)} kbd`} sub="across visible fleet" />
-                                <MetricCard label="Avg unit temp" value={`${avgTemp.toFixed(1)} °C`} sub="thermal load" accent="text-amber-300" />
+                                <MetricCard label="Active incidents" value={String(incidentQueue.length)} sub={`${alarms} alarm · ${warnings} watch`} accent={incidentQueue.length ? "text-rose-300" : "text-emerald-300"} />
+                                <MetricCard label="Open work orders" value={String(maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).length)} sub="requires attention" accent="text-amber-300" />
+                                <MetricCard label="Capacity factor" value={`${capacityFactor.toFixed(0)}%`} sub={`${fleetRatedMw.toFixed(0)} kbd rated`} accent="text-emerald-300" />
                             </div>
 
                             <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-                                <Panel title="Throughput share by site"><DonutChart items={outputBars} unit="kbd" /></Panel>
-                                <Panel title="Fleet health">
+                                <Panel title="Global operations" action={<span className="text-[10px] text-slate-500">Select a unit for its Digital Twin</span>}>
                                     <HealthBar healthy={healthy} warning={warnings} alarm={alarms} />
-                                    <div className="mt-3 flex flex-wrap gap-4 text-xs">
-                                        <span style={{ color: STATUS_COLORS.healthy }}>● Healthy {healthy}</span>
-                                        <span style={{ color: STATUS_COLORS.warning }}>● Warning {warnings}</span>
-                                        <span style={{ color: STATUS_COLORS.alarm }}>● Alarm {alarms}</span>
-                                    </div>
+                                    <div className="mt-3 space-y-2">{[...turbines].sort((a, b) => b.powerKw - a.powerKw).slice(0, 6).map((unit) => { const pct = Math.min(100, Math.round((unit.powerKw / Math.max(1, unit.irradianceWm2)) * 100)); return <button key={unit.id} type="button" onClick={() => goToTwin(unit.id)} className="block w-full text-left text-xs"><div className="flex justify-between"><span className="text-slate-200">{unit.id}</span><span className="text-slate-400">{unit.powerKw} kbd · {pct}% plan</span></div><div className="mt-1 h-2 rounded bg-slate-800"><div className="h-2 rounded" style={{ width: `${pct}%`, backgroundColor: STATUS_COLORS[unit.status] }} /></div></button>; })}</div>
                                 </Panel>
-                                <Panel title="Top performers"><BarList items={topBars} /></Panel>
-                            </div>
-
-                            <div className="mt-3">
-                                <Panel
-                                    title="Yield curve · feed rate vs throughput"
-                                    action={
-                                        <div className="flex flex-wrap gap-3 text-[10px]">
-                                            <span style={{ color: STATUS_COLORS.healthy }}>● Healthy</span>
-                                            <span style={{ color: STATUS_COLORS.warning }}>● Warning</span>
-                                            <span style={{ color: STATUS_COLORS.alarm }}>● Alarm</span>
-                                        </div>
-                                    }
-                                >
-                                    <ScatterPlot points={powerCurve} xLabel="Feed rate (kbd)" yLabel="Throughput (kbd)" xMax={curveFeedMax} yMax={curvePowerMax} />
-                                    <p className="mt-1 text-[10px] leading-tight text-slate-500">
-                                        Each dot is a visible process unit. Points hugging the upper-right convert feed to product efficiently; low-throughput dots at high feed rate are underperformers worth inspecting.
-                                    </p>
+                                <Panel title="Site portfolio" action={<span className="text-[10px] text-slate-500">Worldwide</span>}>
+                                    <div className="space-y-2">{siteSummaries.slice(0, 7).map((site) => <button key={site.id} type="button" onClick={() => { const unit = turbines.find((candidate) => candidate.siteId === site.id); if (unit) { goToTwin(unit.id); } }} className="flex w-full items-center justify-between border-b border-slate-800 pb-1.5 text-left text-xs last:border-0"><span className="flex min-w-0 items-center gap-2"><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: site.alarms ? STATUS_COLORS.alarm : site.warnings ? STATUS_COLORS.warning : STATUS_COLORS.healthy }} /><span className="truncate text-slate-200">{site.name}</span></span><span className="ml-2 shrink-0 text-slate-400">{site.totalKbd.toLocaleString()} kbd</span></button>)}</div>
+                                </Panel>
+                                <Panel title="Production & quality" action={<span className="text-[10px] text-slate-500">Modeled product split</span>}>
+                                    <div className="grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-400">Light products</p><p className="mt-1 text-xl font-semibold text-cyan-200">{Math.round(fleetPower * 0.46).toLocaleString()} kbd</p><p className="text-[10px] text-slate-500">gasoline · LPG · naphtha</p></div><div><p className="text-slate-400">Middle distillates</p><p className="mt-1 text-xl font-semibold text-cyan-200">{Math.round(fleetPower * 0.34).toLocaleString()} kbd</p><p className="text-[10px] text-slate-500">diesel · jet · kerosene</p></div><div className="border-t border-slate-700 pt-2"><p className="text-slate-400">Off-spec units</p><p className="mt-1 text-xl font-semibold text-rose-300">{alarms}</p></div><div className="border-t border-slate-700 pt-2"><p className="text-slate-400">Average unit temp</p><p className="mt-1 text-xl font-semibold text-amber-300">{avgTemp.toFixed(0)} °C</p></div></div>
+                                </Panel>
+                                <Panel title="Maintenance & energy">
+                                    <div className="space-y-3 text-xs"><div><div className="flex justify-between"><span className="text-slate-400">PM compliance</span><span className="font-semibold text-emerald-300">{Math.max(0, 100 - maintenanceOrders.length * 4)}%</span></div><div className="mt-1 h-2 rounded bg-slate-800"><div className="h-2 rounded bg-emerald-400" style={{ width: `${Math.max(0, 100 - maintenanceOrders.length * 4)}%` }} /></div></div><div><div className="flex justify-between"><span className="text-slate-400">Energy index</span><span className="font-semibold text-amber-300">{Math.min(100, 48 + capacityFactor * 0.44).toFixed(0)}%</span></div><div className="mt-1 h-2 rounded bg-slate-800"><div className="h-2 rounded bg-amber-400" style={{ width: `${Math.min(100, 48 + capacityFactor * 0.44)}%` }} /></div></div><div className="flex justify-between border-t border-slate-700 pt-2"><span className="text-slate-400">Modeled power demand</span><span className="font-semibold text-cyan-200">{Math.round(fleetPower * 0.42).toLocaleString()} MW</span></div></div>
+                                </Panel>
+                                <Panel title="Supply & inventory" action={<span className="text-[10px] text-slate-500">Modeled coverage</span>}>
+                                    <p className="mb-3 text-xs text-slate-400">Crude receipt <span className="font-semibold text-slate-100">{Math.round(avgWind * turbines.length).toLocaleString()} bpd</span></p>
+                                    <div className="space-y-2 text-xs">{["Crude", "Light distillate", "Middle distillate", "Heavy distillate"].map((product, index) => { const level = 72 - index * 11 + (capacityFactor / 12); return <div key={product}><div className="flex justify-between"><span className="text-slate-300">{product}</span><span className="text-slate-400">{level.toFixed(0)}%</span></div><div className="mt-1 h-2 rounded bg-slate-800"><div className="h-2 rounded bg-cyan-400/80" style={{ width: `${level}%` }} /></div></div>; })}</div>
                                 </Panel>
                             </div>
                         </div>
@@ -4143,12 +4649,26 @@ function App() {
                             <div className="mb-3">{toolbar}</div>
                             <div className="mx-auto max-w-5xl space-y-3">
                                 <Panel
-                                    title={`Scenario Lab · ${selected.siteName} · ${selected.id}`}
-                                    action={<span className="text-[11px] text-slate-400">Baseline {selected.powerKw.toLocaleString()} kbd</span>}
+                                    title={`Simulation · ${selected.siteName} · ${selected.id}`}
+                                    action={<span className={`text-[11px] ${simulationValidation.valid ? "text-emerald-300" : "text-rose-300"}`}>{simulationValidation.valid ? "Draft ready" : "Invalid run"}</span>}
                                 >
                                     <p className="text-xs text-slate-400">
-                                        Compare operating plans (throughput curtailment + maintenance downtime), import your own plans or actuals from Excel/CSV, weigh them against forecast-vs-realised throughput, then ask GenAI for a full read.
+                                        Lock the baseline, select the simulation purpose and objective, then import a candidate operating scenario for review.
                                     </p>
+                                    <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                                        <label className="text-[11px] text-slate-400">Purpose<select value={simulationPurpose} onChange={(e) => setSimulationPurpose(e.target.value as SimulationPurpose)} className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-xs text-slate-100"><option value="maintenance">Maintenance outage</option><option value="production">Production optimization</option><option value="feedstock">Feedstock change</option><option value="incident">Incident response</option></select></label>
+                                        <label className="text-[11px] text-slate-400">Objective<select value={simulationObjective} onChange={(e) => setSimulationObjective(e.target.value as SimulationObjective)} className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-xs text-slate-100"><option value="margin">Maximize margin</option><option value="throughput">Maximize throughput</option><option value="risk">Minimize risk</option><option value="energy">Minimize energy</option></select></label>
+                                        <label className="text-[11px] text-slate-400">Horizon<input type="number" min={1} max={simulationTimeUnit === "hour" ? 168 : 90} value={simulationHorizon} onChange={(e) => setSimulationHorizon(Number(e.target.value))} className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-xs text-slate-100" /></label>
+                                        <label className="text-[11px] text-slate-400">Time unit<select value={simulationTimeUnit} onChange={(e) => setSimulationTimeUnit(e.target.value as "hour" | "day")} className="mt-1 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-xs text-slate-100"><option value="hour">Hours</option><option value="day">Days</option></select></label>
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded bg-[#08142a] px-2 py-1.5 text-[11px]"><span className="text-slate-400">Baseline: <span className="text-slate-200">{telemetryTrust.label}</span>{simulationRun.baselineAt ? ` · ${simulationRun.baselineAt}` : ""}</span><button type="button" onClick={downloadSimulationPackage} className="rounded border border-slate-600 px-2 py-1 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200">Download decision package</button></div>
+                                    {simulationValidation.warnings.length > 0 && <ul className="mt-2 space-y-0.5 text-[11px] text-amber-300">{simulationValidation.warnings.map((warning) => <li key={warning}>! {warning}</li>)}</ul>}
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                        <button type="button" onClick={() => void submitSimulationForReview()} disabled={simulationSubmitting || !scenarioComparison.scenarios[0]} className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">{simulationSubmitting ? "Submitting…" : "Submit for review"}</button>
+                                        <span className="text-[11px] text-slate-500">Submission creates a decision record; it does not issue plant controls.</span>
+                                    </div>
+                                    {simulationSubmitMessage && <p className="mt-2 text-[11px] text-cyan-200">{simulationSubmitMessage}</p>}
+                                    {submittedSimulation && <div className="mt-3 rounded border border-slate-700 bg-[#06101f] p-2"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-100">Review · {submittedSimulation.runId}</span><span className="rounded bg-amber-900/60 px-2 py-0.5 text-[10px] font-semibold text-amber-200">{submittedSimulation.status}</span></div><div className="mt-2 flex flex-wrap gap-2"><input value={simulationReviewReason} onChange={(e) => setSimulationReviewReason(e.target.value)} placeholder="Decision note" className="min-w-48 flex-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1 text-xs text-slate-100" /><button type="button" onClick={() => void recordSimulationDecision("Approved")} className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-600">Approve</button><button type="button" onClick={() => void recordSimulationDecision("Rejected")} className="rounded bg-rose-700 px-2 py-1 text-xs font-medium text-white hover:bg-rose-600">Reject</button></div></div>}
                                     <div className="mt-2 flex flex-wrap items-center gap-2">
                                         <input
                                             ref={scenarioFileRef}
@@ -4157,11 +4677,11 @@ function App() {
                                             className="hidden"
                                             onChange={(e) => { const f = e.target.files?.[0]; if (f) { void handleScenarioImport(f); } e.target.value = ""; }}
                                         />
-                                        <button type="button" onClick={() => scenarioFileRef.current?.click()} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200">
-                                            ⬆ Import Excel / CSV
+                                        <button type="button" onClick={() => void downloadScenarioTemplate()} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200">
+                                            ⬇ Download Excel template
                                         </button>
-                                        <button type="button" onClick={() => void handleScenarioExport()} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200">
-                                            ⬇ Export to Excel
+                                        <button type="button" onClick={() => scenarioFileRef.current?.click()} className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500">
+                                            ⬆ Import scenario
                                         </button>
                                         {importedActuals && (
                                             <button type="button" onClick={() => { setImportedActuals(null); setImportStatus(null); }} className="rounded border border-slate-700 px-2 py-1.5 text-[11px] text-slate-400 hover:text-rose-300">Clear import</button>
@@ -4169,12 +4689,20 @@ function App() {
                                         {importStatus && <span className="text-[11px] text-slate-400">{importStatus}</span>}
                                     </div>
                                     <p className="mt-1 text-[10px] text-slate-500">
-                                        Recognised columns — scenarios: label, curtailment %, downtime, horizon · actuals: period, actual, forecast.
+                                        Fill the template's Scenario sheet: Label, Curtailment %, Downtime, Horizon. Uploading a new file replaces the current candidate.
                                     </p>
                                 </Panel>
 
-                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                                    {scenarioComparison.scenarios.map((s) => (
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                    <Panel title="Current performance">
+                                        <p className="text-2xl font-semibold text-slate-100">{scenarioVariance.realisedMean.toLocaleString()} <span className="text-sm font-normal text-slate-400">kbd</span></p>
+                                        <p className="mt-1 text-xs text-slate-400">Realised average · latest {scenarioVariance.realisedLast.toLocaleString()} kbd</p>
+                                    </Panel>
+                                    <Panel title="Forecast">
+                                        <p className="text-2xl font-semibold text-cyan-200">{scenarioVariance.forecast.toLocaleString()} <span className="text-sm font-normal text-slate-400">kbd</span></p>
+                                        <p className="mt-1 text-xs text-slate-400">{scenarioVariance.accuracyPct}% accuracy · {scenarioVariance.bias === "on-track" ? "tracking realised" : `${scenarioVariance.absErrorPct}% ${scenarioVariance.bias}`}</p>
+                                    </Panel>
+                                    {scenarioComparison.scenarios.slice(0, 1).map((s) => (
                                         <div key={s.id} className={`rounded-xl border p-3 ${s.isBest ? "border-emerald-500/70 bg-emerald-950/20" : "border-slate-700/70 bg-[#08142a]"}`}>
                                             <div className="flex items-center justify-between gap-2">
                                                 <input
@@ -4184,9 +4712,7 @@ function App() {
                                                     aria-label="Scenario label"
                                                 />
                                                 {s.isBest && <span className="rounded-full bg-emerald-900/70 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">BEST</span>}
-                                                {scenarios.length > 1 && (
-                                                    <button type="button" onClick={() => removeScenario(s.id)} aria-label="Remove scenario" className="rounded p-0.5 text-slate-500 hover:bg-slate-800 hover:text-rose-300">✕</button>
-                                                )}
+                                                <button type="button" onClick={() => { setScenarios([]); setScenarioNarrative(null); }} aria-label="Remove imported scenario" className="rounded p-0.5 text-slate-500 hover:bg-slate-800 hover:text-rose-300">✕</button>
                                             </div>
                                             <div className="mt-2 space-y-2 text-[11px] text-slate-300">
                                                 <label className="block">
@@ -4210,21 +4736,25 @@ function App() {
                                             </dl>
                                         </div>
                                     ))}
-                                    {scenarios.length < 8 && (
-                                        <button type="button" onClick={addScenario} className="flex min-h-[8rem] items-center justify-center rounded-xl border border-dashed border-slate-600 text-sm text-slate-400 hover:border-cyan-500 hover:text-cyan-200">+ Add scenario</button>
+                                    {scenarios.length === 0 && (
+                                        <button type="button" onClick={() => scenarioFileRef.current?.click()} className="flex min-h-[8rem] items-center justify-center rounded-xl border border-dashed border-slate-600 text-sm text-slate-400 hover:border-cyan-500 hover:text-cyan-200">Import one scenario</button>
                                     )}
                                 </div>
 
-                                <Panel title="Insights">
-                                    <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-6">
-                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Plans</p><p className="text-sm font-semibold text-slate-100">{scenarioInsights.planCount}</p></div>
-                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Best</p><p className="truncate text-sm font-semibold text-emerald-300" title={scenarioInsights.bestLabel ?? ""}>{scenarioInsights.bestLabel ?? "—"}</p></div>
-                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Spread</p><p className="text-sm font-semibold text-slate-100">{scenarioInsights.spread.toLocaleString()}</p></div>
-                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Avg Δ</p><p className={`text-sm font-semibold ${scenarioInsights.avgDelta < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenarioInsights.avgDelta >= 0 ? "+" : ""}{scenarioInsights.avgDelta.toLocaleString()}</p></div>
-                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Dispersion</p><p className="text-sm font-semibold text-slate-100">{scenarioInsights.deltaStdDev.toLocaleString()}</p></div>
-                                        <div className="rounded-lg bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Riskiest</p><p className="truncate text-sm font-semibold text-amber-300" title={scenarioInsights.riskiestLabel ?? ""}>{scenarioInsights.riskiestLabel ?? "—"}</p></div>
-                                    </div>
+                                <div ref={simulationImpactRef}>
+                                <Panel title="Imported scenario impact">
+                                    {scenarioComparison.scenarios[0] ? <div className="grid grid-cols-3 gap-2 text-center"><div className="rounded bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Projected throughput</p><p className="mt-1 text-sm font-semibold text-cyan-200">{scenarioComparison.scenarios[0].projectedKbd.toLocaleString()} kbd</p></div><div className="rounded bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">Volume impact</p><p className={`mt-1 text-sm font-semibold ${scenarioComparison.scenarios[0].volumeDelta < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenarioComparison.scenarios[0].volumeDelta >= 0 ? "+" : ""}{scenarioComparison.scenarios[0].volumeDelta.toLocaleString()} kbd·t</p></div><div className="rounded bg-[#08142a] p-2"><p className="text-[10px] text-slate-400">vs current plan</p><p className={`mt-1 text-sm font-semibold ${scenarioComparison.scenarios[0].deltaPct < 0 ? "text-rose-300" : "text-emerald-300"}`}>{scenarioComparison.scenarios[0].deltaPct >= 0 ? "+" : ""}{scenarioComparison.scenarios[0].deltaPct}%</p></div></div> : <p className="text-xs text-slate-500">Download the template, add one operating scenario, then import it to compare its projected impact.</p>}
                                 </Panel>
+                                </div>
+
+                                {scenarioComparison.scenarios[0] && <Panel title="Operating numbers · current vs forecast vs imported">
+                                    <div className="overflow-x-auto"><table className="w-full min-w-[540px] text-left text-xs"><thead className="border-b border-slate-700 text-slate-400"><tr><th className="py-2 font-medium">Metric</th><th className="py-2 text-right font-medium">Current</th><th className="py-2 text-right font-medium">Forecast</th><th className="py-2 text-right font-medium text-cyan-200">Imported scenario</th></tr></thead><tbody className="text-slate-200"><tr className="border-b border-slate-800"><td className="py-2">Throughput</td><td className="py-2 text-right">{selected.powerKw.toLocaleString()} kbd</td><td className="py-2 text-right">{scenarioVariance.forecast.toLocaleString()} kbd</td><td className="py-2 text-right font-semibold text-cyan-200">{scenarioComparison.scenarios[0].projectedKbd.toLocaleString()} kbd</td></tr><tr className="border-b border-slate-800"><td className="py-2">Feed rate</td><td className="py-2 text-right">{selected.irradianceWm2.toLocaleString()} kbd</td><td className="py-2 text-right text-slate-500">—</td><td className="py-2 text-right text-cyan-200">{scenarioComparison.scenarios[0].feedRateKbd?.toLocaleString() ?? "—"}{scenarioComparison.scenarios[0].feedRateKbd != null ? " kbd" : ""}</td></tr><tr className="border-b border-slate-800"><td className="py-2">Unit temperature</td><td className="py-2 text-right">{selected.moduleTempC.toFixed(1)} °C</td><td className="py-2 text-right text-slate-500">—</td><td className={`py-2 text-right ${scenarioComparison.scenarios[0].unitTempC != null && scenarioComparison.scenarios[0].unitTempC >= 430 ? "font-semibold text-rose-300" : "text-cyan-200"}`}>{scenarioComparison.scenarios[0].unitTempC?.toFixed(1) ?? "—"}{scenarioComparison.scenarios[0].unitTempC != null ? " °C" : ""}</td></tr><tr><td className="py-2">Utilization</td><td className="py-2 text-right">{selected.inverterLoadPct.toFixed(0)}%</td><td className="py-2 text-right text-slate-500">—</td><td className={`py-2 text-right ${scenarioComparison.scenarios[0].utilizationPct != null && scenarioComparison.scenarios[0].utilizationPct >= 98 ? "font-semibold text-rose-300" : "text-cyan-200"}`}>{scenarioComparison.scenarios[0].utilizationPct?.toFixed(0) ?? "—"}{scenarioComparison.scenarios[0].utilizationPct != null ? "%" : ""}</td></tr></tbody></table></div>
+                                </Panel>}
+
+                                {scenarioComparison.scenarios[0]?.grossMarginUsd != null && <Panel title="Cost effectiveness" action={<span className="text-[10px] text-slate-500">Imported assumptions</span>}>
+                                    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4"><MetricCard label="Projected revenue" value={scenarioComparison.scenarios[0].revenueUsd!.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })} /><MetricCard label="Operating cost" value={scenarioComparison.scenarios[0].operatingCostUsd!.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })} accent="text-amber-300" /><MetricCard label="Gross margin" value={scenarioComparison.scenarios[0].grossMarginUsd!.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })} accent={scenarioComparison.scenarios[0].grossMarginUsd! >= 0 ? "text-emerald-300" : "text-rose-300"} /><MetricCard label="Margin vs current" value={scenarioComparison.scenarios[0].marginDeltaUsd!.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0, signDisplay: "always" })} sub={scenarioComparison.scenarios[0].roiPct != null ? `ROI ${scenarioComparison.scenarios[0].roiPct.toFixed(0)}%` : `${scenarioComparison.scenarios[0].costPerBarrelUsd!.toFixed(2)} $/bbl`} accent={scenarioComparison.scenarios[0].marginDeltaUsd! >= 0 ? "text-emerald-300" : "text-rose-300"} /></div>
+                                    <p className="mt-2 text-[11px] text-slate-500">Margin = scenario volume × (price − variable cost) − maintenance cost − energy cost. All cost inputs come from the uploaded workbook.</p>
+                                </Panel>}
 
                                 {importedActuals && importedSummary && (
                                     <Panel
@@ -4254,7 +4784,7 @@ function App() {
                                 )}
 
                                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                                    <Panel title="Forecast vs realised · selected unit">
+                                    <Panel title="Current vs forecast · selected unit">
                                         <Sparkline values={powerHistory} color={STATUS_COLORS[selected.status]} forecast={fc} />
                                         <dl className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
                                             <div><dt className="text-slate-400">Realised</dt><dd className="font-semibold text-slate-100">{scenarioVariance.realisedMean.toLocaleString()} kbd</dd></div>
@@ -4265,7 +4795,7 @@ function App() {
                                             Forecast is running {scenarioVariance.bias === "on-track" ? "on track with" : `${scenarioVariance.absErrorPct}% ${scenarioVariance.bias}`} realised throughput.
                                         </p>
                                     </Panel>
-                                    <Panel title="Volume delta vs baseline">
+                                    <Panel title="Imported scenario volume impact">
                                         <div className="space-y-2">
                                             {scenarioComparison.scenarios.map((s) => {
                                                 const maxAbs = Math.max(1, ...scenarioComparison.scenarios.map((x) => Math.abs(x.volumeDelta)));
@@ -4290,10 +4820,9 @@ function App() {
                                     ) : undefined}
                                 >
                                     <div className="flex flex-wrap gap-2">
-                                        <button type="button" onClick={() => void runScenarioNarrative()} disabled={scenarioNarrativeLoading} className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50">{scenarioNarrativeLoading ? "Analyzing…" : "✨ Recommend best plan"}</button>
+                                        <button type="button" onClick={() => void runScenarioNarrative()} disabled={scenarioNarrativeLoading} className="rounded bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50">{scenarioNarrativeLoading ? "Analyzing…" : "✨ Analyze comparison"}</button>
                                         <button type="button" onClick={() => void runScenarioNarrative("Explain the forecast vs realised variance and what is driving it")} disabled={scenarioNarrativeLoading} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Explain variance</button>
-                                        <button type="button" onClick={() => void runScenarioNarrative("Assess the downtime and operational risk across the plans")} disabled={scenarioNarrativeLoading} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Assess risk</button>
-                                        <button type="button" onClick={() => void runScenarioNarrative("Give a full side-by-side comparison of all plans")} disabled={scenarioNarrativeLoading} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Full comparison</button>
+                                        <button type="button" onClick={() => void runScenarioNarrative("Assess the downtime and operational risk of the imported scenario")} disabled={scenarioNarrativeLoading || scenarios.length === 0} className="rounded border border-slate-600 bg-[#0a1830] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-cyan-500 hover:text-cyan-200 disabled:opacity-50">Assess imported scenario</button>
                                     </div>
                                     <div className="mt-2 flex gap-2">
                                         <input
@@ -4307,13 +4836,13 @@ function App() {
                                     </div>
                                     {scenarioNarrative
                                         ? <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-200">{scenarioNarrative}</p>
-                                        : <p className="mt-2 text-xs text-slate-500">Ask across the {scenarioComparison.scenarios.length} plans{importedActuals ? " and your imported data" : ""} using the Data Agent when configured, or an offline engine grounded in the comparison.</p>}
+                                        : <p className="mt-2 text-xs text-slate-500">Ask about current performance, the forecast, or the imported scenario{importedActuals ? " and your imported data" : ""}. Uses the Data Agent when configured, otherwise a grounded local engine.</p>}
                                 </Panel>
                             </div>
                         </div>
                     )}
 
-                    {view === "twin" && twinTab === "ops" && (
+                    {false && (
                         <div className="h-full overflow-y-auto p-4">
                             <div className="mb-3 flex flex-wrap items-center gap-2">
                                 <div className="flex overflow-hidden rounded-lg border border-slate-700 text-xs">
@@ -4322,6 +4851,52 @@ function App() {
                                 </div>
                                 <span className="text-xs text-slate-400">{selected.id} · {selected.siteName}</span>
                             </div>
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                                <Panel
+                                    title="Ongoing operations"
+                                    action={<span className="text-[11px] text-slate-400">{maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).length} open</span>}
+                                >
+                                    <div className="space-y-2">
+                                        {maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).slice(0, 5).map((order) => (
+                                            <button key={order.id ?? `${order.turbineId}-${order.createdAt}`} type="button" onClick={() => { setSelectedId(order.turbineId); }} className={`w-full rounded border px-2 py-2 text-left text-xs ${order.turbineId === selected.id ? "border-cyan-600/60 bg-cyan-950/30" : "border-slate-700/60 bg-[#08142a] hover:border-slate-500"}`}>
+                                                <div className="flex items-center justify-between gap-2"><span className="font-semibold text-slate-100">{order.turbineId}</span><span className={order.priority === "P1" ? "text-rose-300" : order.priority === "P2" ? "text-amber-300" : "text-emerald-300"}>{order.priority}</span></div>
+                                                <p className="mt-0.5 truncate text-slate-400">{order.component} · {order.assignee ?? "Unassigned"}</p>
+                                            </button>
+                                        ))}
+                                        {maintenanceOrders.filter((order) => !["closed", "resolved"].includes(order.status.toLowerCase())).length === 0 && <p className="text-xs text-slate-500">No active work orders. Select a unit and assign a task when action is needed.</p>}
+                                    </div>
+                                </Panel>
+
+                                <Panel title="Selected unit">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div><p className="text-lg font-semibold text-slate-100">{selected.id}</p><p className="text-xs text-slate-400">{selected.siteName}</p></div>
+                                        <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${STATUS_COLORS[selected.status]}22`, color: STATUS_COLORS[selected.status] }}>{selected.status.toUpperCase()}</span>
+                                    </div>
+                                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                        <div className="rounded bg-[#08142a] p-2"><p className="text-slate-500">Throughput</p><p className="mt-0.5 font-semibold text-slate-100">{selected.powerKw.toLocaleString()} kbd</p></div>
+                                        <div className="rounded bg-[#08142a] p-2"><p className="text-slate-500">Unit temperature</p><p className="mt-0.5 font-semibold text-slate-100">{selected.moduleTempC} °C</p></div>
+                                        <div className="rounded bg-[#08142a] p-2"><p className="text-slate-500">Utilization</p><p className="mt-0.5 font-semibold text-slate-100">{selected.inverterLoadPct}%</p></div>
+                                        <div className="rounded bg-[#08142a] p-2"><p className="text-slate-500">Forecast</p><p className="mt-0.5 font-semibold text-cyan-200">{forecast.toLocaleString()} kbd</p></div>
+                                    </div>
+                                    {selectedOpenOrder && <p className="mt-3 rounded bg-amber-950/30 px-2 py-1.5 text-[11px] text-amber-200">Open {selectedOpenOrder.priority} order · {selectedOpenOrder.component} · {selectedOpenOrder.assignee ?? "unassigned"}</p>}
+                                </Panel>
+
+                                <Panel title="Assign new task">
+                                    {primaryResponder ? (
+                                        <>
+                                            <div className="flex items-center gap-3">
+                                                <img src={primaryResponder.photo} alt={primaryResponder.name} className="h-14 w-14 rounded-full border border-cyan-800/70 bg-[#08142a] object-cover" />
+                                                <div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-100">{primaryResponder.name}</p><p className="truncate text-xs text-slate-400">{primaryResponder.role}</p><p className="mt-1 text-[11px] text-cyan-200">{suggestedComponent} · {primaryResponder.etaMin} min ETA</p></div>
+                                            </div>
+                                            <p className="mt-3 text-xs leading-relaxed text-slate-400">Review the person, incident evidence, priority, and assignment in one dedicated dispatch popup.</p>
+                                            <button type="button" onClick={() => { setTechPopupResponderId(primaryResponder.id); setTechPopupOpen(true); }} className="mt-3 w-full rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Assign new task</button>
+                                        </>
+                                    ) : <p className="text-xs text-slate-500">No responder matches this unit's current incident profile.</p>}
+                                </Panel>
+                            </div>
+
+                            {/* Legacy operations controls removed: the focused panels above are the sole operations workflow. */}
+                            <div className="hidden">
                             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                                 <Panel title="Selected unit">
                                     <p className="text-lg font-semibold">{selected.id}</p>
@@ -4691,6 +5266,7 @@ function App() {
                                 </div>
                             </div>
                         </div>
+                        </div>
                     )}
 
                     {view === "ask" && (
@@ -4704,11 +5280,16 @@ function App() {
                                         </span>
                                     }
                                 >
-                                    <p className="text-xs text-slate-400">
-                                        {isDataAgentConfigured()
-                                            ? "Routed to the deployed Fabric Data Agent (Lakehouse/Eventhouse), with a local fallback."
-                                            : "Answered by a deterministic in-browser engine grounded in simulated telemetry, ontology sites, and dispatch-note history. Set VITE_DATA_AGENT_URL to route to a real Fabric Data Agent."}
-                                    </p>
+                                    <div className="rounded-lg border border-cyan-800/60 bg-cyan-950/20 p-3">
+                                        <p className="text-[10px] uppercase tracking-wide text-cyan-300">Proposal</p>
+                                        <p className="mt-1 text-sm text-slate-200">Start with the question that turns the current signal into an operator decision.</p>
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                            {ASK_PROPOSALS.map((proposal) => (
+                                                <button key={proposal.label} type="button" onClick={() => setQuestion(proposal.question)} className="rounded border border-cyan-800 bg-[#08142a] px-2 py-1 text-[11px] text-cyan-200 hover:border-cyan-500">{proposal.label}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="mt-3 text-[11px] text-slate-500">Source is labeled on every answer: {isDataAgentConfigured() ? "live Fabric Data Agent with local fallback" : "local ontology-grounded engine; configure a Data Agent for live answers"}.</p>
                                     <textarea
                                         value={question}
                                         onChange={(e) => setQuestion(e.target.value)}
@@ -4717,18 +5298,6 @@ function App() {
                                         placeholder="Ask about throughput, alarms, utilization, unit temperature, dispatch notes…  (Ctrl+Enter to send)"
                                         className="mt-2 w-full rounded border border-slate-700 bg-[#08142a] px-2 py-1.5 text-sm"
                                     />
-                                    <div className="mt-2 flex flex-wrap gap-1">
-                                        {SUGGESTED.map((q) => (
-                                            <button
-                                                key={q}
-                                                type="button"
-                                                onClick={() => { setQuestion(q); void runAsk(q); }}
-                                                className="rounded-full border border-slate-700 bg-[#0a1830] px-2.5 py-1 text-[11px] text-slate-300 hover:border-cyan-500 hover:text-cyan-200"
-                                            >
-                                                {q}
-                                            </button>
-                                        ))}
-                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => void runAsk()}
@@ -4780,6 +5349,20 @@ function App() {
                                                 </span>
                                             </div>
                                             <p className="mt-1">{askResult.summary}</p>
+                                            <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                                                <div>
+                                                    <p className="text-[10px] uppercase tracking-wide text-cyan-300">Key insights</p>
+                                                    <ul className="mt-1 space-y-1 text-xs text-slate-300">
+                                                        {(askResult.evidence?.slice(0, 3) ?? [`${selected.id} is ${selected.status} at ${selected.moduleTempC} °C`, `Current throughput is ${selected.powerKw.toLocaleString()} kbd at ${selected.inverterLoadPct}% utilization`, "Recommended next step: inspect evidence and review the maintenance plan"]).map((insight, index) => <li key={`${insight}-${index}`} className="flex gap-2"><span className="text-cyan-300">•</span><span>{insight}</span></li>)}
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] uppercase tracking-wide text-cyan-300">Operational picture</p>
+                                                    <div className="mt-1 space-y-1.5">
+                                                        {buildAskInsights(askResult, selected, { alarms, warnings, healthy }).map((insight) => <div key={insight.label}><div className="flex justify-between gap-2 text-[10px] text-slate-400"><span className="truncate">{insight.label}</span><span className="shrink-0 text-slate-300">{insight.detail}</span></div><div className="mt-0.5 h-1.5 rounded bg-slate-800"><div className="h-1.5 rounded" style={{ width: `${insight.value}%`, backgroundColor: insight.color }} /></div></div>)}
+                                                    </div>
+                                                </div>
+                                            </div>
                                             {askResult.evidence && askResult.evidence.length > 0 && (
                                                 <ul className="mt-2 list-disc pl-4 text-xs text-slate-400">
                                                     {askResult.evidence.slice(0, 3).map((ev, i) => (
@@ -4870,18 +5453,25 @@ function App() {
 
             {techPopupOpen && techPopupResponder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setTechPopupOpen(false)}>
-                    <div className="w-full max-w-md rounded-xl border border-slate-700 bg-[#07142a] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-[#07142a] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                                <img src={techPopupResponder.photo} alt={techPopupResponder.name} className="h-14 w-14 rounded-full border border-slate-700" />
+                                <img src={techPopupResponder.photo} alt={techPopupResponder.name} className="h-16 w-16 rounded-full border border-cyan-800/70 bg-[#08142a] object-cover" />
                                 <div>
-                                    <p className="text-[11px] uppercase tracking-wide text-cyan-300">WorkIQ responder</p>
+                                    <p className="text-[11px] uppercase tracking-wide text-cyan-300">Create work order · dispatch responder</p>
                                     <h2 className="text-lg font-semibold">{techPopupResponder.name}</h2>
                                     <p className="text-sm text-slate-400">{techPopupResponder.role}</p>
                                 </div>
                             </div>
                             <button type="button" onClick={() => setTechPopupOpen(false)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100">✕</button>
                         </div>
+
+                        <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg border border-slate-700/70 bg-[#08142a] p-2 text-center text-[11px]">
+                            <div><p className="text-slate-500">Process unit</p><p className="mt-0.5 font-semibold text-slate-100">{selected.id}</p></div>
+                            <div><p className="text-slate-500">Focus asset</p><p className="mt-0.5 font-semibold text-cyan-200">{techPopupFocusComponent}</p></div>
+                            <div><p className="text-slate-500">Priority</p><p className={`mt-0.5 font-semibold ${suggestedPriority === "P1" ? "text-rose-300" : suggestedPriority === "P2" ? "text-amber-300" : "text-emerald-300"}`}>{suggestedPriority}</p></div>
+                        </div>
+
                         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-300">
                             <div className="flex justify-between"><dt className="text-slate-400">Shift</dt><dd className="capitalize">{techPopupResponder.shift}</dd></div>
                             <div className="flex justify-between"><dt className="text-slate-400">On-call</dt><dd className={techPopupResponder.onCall ? "text-emerald-300" : "text-slate-500"}>{techPopupResponder.onCall ? "yes" : "no"}</dd></div>
@@ -4900,8 +5490,17 @@ function App() {
                                 </div>
                             </div>
                         )}
+                        <div className="mt-3 rounded-lg border border-slate-700/70 bg-[#06101f] p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">Dispatch workflow</p>
+                            <ol className="mt-2 grid grid-cols-1 gap-1.5 text-[11px] text-slate-400 sm:grid-cols-3">
+                                <li><span className="mr-1 rounded-full bg-cyan-900/70 px-1.5 py-0.5 font-semibold text-cyan-200">1</span>Review unit, asset and priority</li>
+                                <li><span className="mr-1 rounded-full bg-cyan-900/70 px-1.5 py-0.5 font-semibold text-cyan-200">2</span>Attach the evidence packet</li>
+                                <li><span className="mr-1 rounded-full bg-cyan-900/70 px-1.5 py-0.5 font-semibold text-cyan-200">3</span>Create and assign the work order</li>
+                            </ol>
+                            <p className="mt-2 text-[10px] text-slate-500">Dispatch writes the assignment and incident context to the ontology-backed work-order store. Assign only keeps the selection for later review.</p>
+                        </div>
                         <div className="mt-4 flex gap-2">
-                            <button type="button" onClick={() => { void handleDispatchResponder(techPopupResponder); setTechPopupOpen(false); }} className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">Dispatch {techPopupResponder.name.split(" ")[0]}</button>
+                            <button type="button" onClick={() => { void handleDispatchResponder(techPopupResponder); setTechPopupOpen(false); }} disabled={!canWriteback} className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">{canWriteback ? `Dispatch ${techPopupResponder.name.split(" ")[0]}` : "Operator mode required"}</button>
                             <button type="button" onClick={() => { setWoAssignee(techPopupResponder.name); setTechPopupOpen(false); }} className="flex-1 rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600">Assign only</button>
                         </div>
                     </div>

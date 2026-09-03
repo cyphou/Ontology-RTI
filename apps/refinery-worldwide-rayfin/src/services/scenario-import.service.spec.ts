@@ -48,6 +48,14 @@ describe("classifyImport", () => {
         }
     });
 
+    it("reads explicit refinery operating numbers from a scenario row", () => {
+        const result = classifyImport([{ Label: "Hot run", Curtailment: 0, Downtime: 1, Horizon: 12, "Throughput kbd": 720, "Feed rate kbd": 800, "Unit temp C": 435, "Utilization %": 98, "Price per barrel USD": 82, "Variable cost per barrel USD": 48, "Maintenance cost USD": 125000, "Energy cost USD": 35000 }]);
+        expect(result.kind).toBe("scenarios");
+        if (result.kind === "scenarios") {
+            expect(result.scenarios[0]).toMatchObject({ throughputKbd: 720, feedRateKbd: 800, unitTempC: 435, utilizationPct: 98, pricePerBarrelUsd: 82, variableCostPerBarrelUsd: 48, maintenanceCostUsd: 125000, energyCostUsd: 35000 });
+        }
+    });
+
     it("returns empty with a reason when no recognizable columns exist", () => {
         const result = classifyImport([{ foo: 1, bar: 2 }]);
         expect(result.kind).toBe("empty");

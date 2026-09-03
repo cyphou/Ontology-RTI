@@ -20,6 +20,16 @@ export interface ScenarioSpec {
     downtimeTicks: number;
     // planning horizon in ticks.
     horizonTicks: number;
+    // Optional imported operating readings. When projected throughput is supplied,
+    // it takes precedence over the curtailment-derived value for a real comparison.
+    throughputKbd?: number;
+    feedRateKbd?: number;
+    unitTempC?: number;
+    utilizationPct?: number;
+    pricePerBarrelUsd?: number;
+    variableCostPerBarrelUsd?: number;
+    maintenanceCostUsd?: number;
+    energyCostUsd?: number;
 }
 
 export interface ScenarioComputed extends ScenarioSpec {
@@ -31,6 +41,12 @@ export interface ScenarioComputed extends ScenarioSpec {
     deltaPct: number;
     rank: number;
     isBest: boolean;
+    revenueUsd?: number;
+    operatingCostUsd?: number;
+    grossMarginUsd?: number;
+    marginDeltaUsd?: number;
+    costPerBarrelUsd?: number;
+    roiPct?: number;
 }
 
 export interface ScenarioComparison {
@@ -49,7 +65,9 @@ function computeScenario(baselineKbd: number, spec: ScenarioSpec): { projectedKb
     const curtail = Math.min(100, Math.max(0, spec.curtailmentPct));
     const horizon = Math.max(0, Math.round(spec.horizonTicks));
     const downtime = Math.min(horizon, Math.max(0, Math.round(spec.downtimeTicks)));
-    const projectedKbd = Math.round(baseline * (1 - curtail / 100));
+    const projectedKbd = Number.isFinite(spec.throughputKbd)
+        ? Math.max(0, Math.round(spec.throughputKbd!))
+        : Math.round(baseline * (1 - curtail / 100));
     const runningTicks = horizon - downtime;
     return {
         projectedKbd,
@@ -66,6 +84,17 @@ export function compareScenarios(baselineKbd: number, specs: ScenarioSpec[]): Sc
         const c = computeScenario(baselineKbd, spec);
         const volumeDelta = c.volumeScenario - c.volumeBaseline;
         const deltaPct = c.volumeBaseline > 0 ? (volumeDelta / c.volumeBaseline) * 100 : 0;
+        const hasEconomics = [spec.pricePerBarrelUsd, spec.variableCostPerBarrelUsd, spec.maintenanceCostUsd, spec.energyCostUsd].some((value) => Number.isFinite(value));
+        const price = Math.max(0, spec.pricePerBarrelUsd ?? 0);
+        const variableCost = Math.max(0, spec.variableCostPerBarrelUsd ?? 0);
+        const maintenanceCost = Math.max(0, spec.maintenanceCostUsd ?? 0);
+        const energyCost = Math.max(0, spec.energyCostUsd ?? 0);
+        const revenueUsd = c.volumeScenario * 1000 * price;
+        const operatingCostUsd = c.volumeScenario * 1000 * variableCost + maintenanceCost + energyCost;
+        const grossMarginUsd = revenueUsd - operatingCostUsd;
+        const baselineMarginUsd = c.volumeBaseline * 1000 * (price - variableCost);
+        const interventionCostUsd = maintenanceCost + energyCost;
+        const marginDeltaUsd = grossMarginUsd - baselineMarginUsd;
         return {
             ...spec,
             projectedKbd: c.projectedKbd,
@@ -76,6 +105,14 @@ export function compareScenarios(baselineKbd: number, specs: ScenarioSpec[]): Sc
             deltaPct: +deltaPct.toFixed(1),
             rank: 0,
             isBest: false,
+            ...(hasEconomics ? {
+                revenueUsd,
+                operatingCostUsd,
+                grossMarginUsd,
+                marginDeltaUsd,
+                costPerBarrelUsd: c.volumeScenario > 0 ? operatingCostUsd / (c.volumeScenario * 1000) : 0,
+                roiPct: interventionCostUsd > 0 ? (marginDeltaUsd / interventionCostUsd) * 100 : undefined,
+            } : {}),
         };
     });
 

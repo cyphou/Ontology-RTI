@@ -36,6 +36,7 @@ export interface LiveRefinery {
 export interface LiveUnit {
     unitId: string;
     refineryId: string;
+    unitName?: string;
 }
 
 /** Latest pivoted signal values for a single process unit. */
@@ -45,6 +46,7 @@ export interface LiveMetrics {
     irradianceWm2: number;
     moduleTempC: number;
     inverterLoadPct: number;
+    latestAt?: string;
 }
 
 /** Everything needed to assemble a live view of the refinery fleet. */
@@ -54,11 +56,49 @@ export interface LiveTelemetrySnapshot {
     metrics: LiveMetrics[];
 }
 
+/** Safety alarm projected from the protected semantic-model route. */
+export interface LiveSafetyAlarm {
+    alarmId: string;
+    sensorId: string;
+    severity: string;
+    timestamp: string;
+    alarmType: string;
+    description: string;
+    alarmValue: number;
+    thresholdValue: number;
+    acknowledgedAt?: string;
+}
+
+export interface LiveSensorLookup {
+    sensorId: string;
+    equipmentId: string;
+    sensorName: string;
+}
+
+export interface LiveEquipmentLookup {
+    equipmentId: string;
+    equipmentName: string;
+    equipmentType: string;
+    processUnitId: string;
+    criticality: string;
+}
+
+export interface EnrichedLiveIncident extends LiveSafetyAlarm {
+    equipmentId?: string;
+    equipmentName?: string;
+    equipmentType?: string;
+    processUnitId?: string;
+    processUnitName?: string;
+    refineryId?: string;
+    refineryName?: string;
+}
+
 /** A single latest sensor reading (one SensorType for one process unit). */
 export interface TelemetryReading {
     unitId: string;
     sensorType: string;
     value: number;
+    timestamp?: string;
 }
 
 // Connection alias resolved from fabric.generated.ts (managed by `npx fabric-app-data`).
@@ -86,7 +126,22 @@ export const DAX_REFINERIES =
 export const DAX_UNITS =
     'EVALUATE SELECTCOLUMNS(dimprocessunit, ' +
     '"ProcessUnitId", dimprocessunit[ProcessUnitId], ' +
-    '"RefineryId", dimprocessunit[RefineryId])';
+    '"RefineryId", dimprocessunit[RefineryId], ' +
+    '"ProcessUnitName", dimprocessunit[ProcessUnitName])';
+
+export const DAX_SAFETY_ALARMS =
+    'EVALUATE SELECTCOLUMNS(factsafetyalarm, ' +
+    '"AlarmId", factsafetyalarm[AlarmId], "SensorId", factsafetyalarm[SensorId], ' +
+    '"Severity", factsafetyalarm[Severity], "AlarmTimestamp", factsafetyalarm[AlarmTimestamp], ' +
+    '"AlarmType", factsafetyalarm[AlarmType], "Description", factsafetyalarm[Description], ' +
+    '"AlarmValue", factsafetyalarm[AlarmValue], "ThresholdValue", factsafetyalarm[ThresholdValue], ' +
+    '"AcknowledgedTimestamp", factsafetyalarm[AcknowledgedTimestamp])';
+
+export const DAX_SENSOR_LOOKUP =
+    'EVALUATE SELECTCOLUMNS(dimsensor, "SensorId", dimsensor[SensorId], "EquipmentId", dimsensor[EquipmentId], "SensorName", dimsensor[SensorName])';
+
+export const DAX_EQUIPMENT_LOOKUP =
+    'EVALUATE SELECTCOLUMNS(dimequipment, "EquipmentId", dimequipment[EquipmentId], "EquipmentName", dimequipment[EquipmentName], "EquipmentType", dimequipment[EquipmentType], "ProcessUnitId", dimequipment[ProcessUnitId], "CriticalityLevel", dimequipment[CriticalityLevel])';
 
 // Latest Value per (ProcessUnitId, SensorType). Timestamp is an ISO string, so MAX()
 // gives the most recent reading; the inner CALCULATE isolates that row's value.
@@ -97,7 +152,8 @@ export const DAX_LATEST_TELEMETRY =
     'RETURN CALCULATE(MAX(sensortelemetry[Value]), sensortelemetry[Timestamp] = ts)), ' +
     '"ProcessUnitId", sensortelemetry[ProcessUnitId], ' +
     '"SensorType", sensortelemetry[SensorType], ' +
-    '"Value", [LatestValue])';
+    '"Value", [LatestValue], ' +
+    '"Timestamp", CALCULATE(MAX(sensortelemetry[Timestamp])))';
 
 // Default number of historical points to pull for a sparkline / forecast window.
 export const DEFAULT_HISTORY_LIMIT = 40;
@@ -211,8 +267,64 @@ export function recordsToUnits(records: Record<string, unknown>[]): LiveUnit[] {
         .map((r) => ({
             unitId: toText(r["processunitid"]),
             refineryId: toText(r["refineryid"]),
+            unitName: toText(r["processunitname"]) || undefined,
         }))
         .filter((t) => t.unitId !== "");
+}
+
+export function recordsToSensorLookup(records: Record<string, unknown>[]): LiveSensorLookup[] {
+    return records.map((r) => ({ sensorId: toText(r["sensorid"]), equipmentId: toText(r["equipmentid"]), sensorName: toText(r["sensorname"]) }))
+        .filter((sensor) => sensor.sensorId !== "" && sensor.equipmentId !== "");
+}
+
+export function recordsToEquipmentLookup(records: Record<string, unknown>[]): LiveEquipmentLookup[] {
+    return records.map((r) => ({
+        equipmentId: toText(r["equipmentid"]), equipmentName: toText(r["equipmentname"]), equipmentType: toText(r["equipmenttype"]),
+        processUnitId: toText(r["processunitid"]), criticality: toText(r["criticalitylevel"]),
+    })).filter((asset) => asset.equipmentId !== "" && asset.processUnitId !== "");
+}
+
+export function recordsToSafetyAlarms(records: Record<string, unknown>[]): LiveSafetyAlarm[] {
+    return records.map((r) => ({
+        alarmId: toText(r["alarmid"]),
+        sensorId: toText(r["sensorid"]),
+        severity: toText(r["severity"]),
+        timestamp: toText(r["alarmtimestamp"]),
+        alarmType: toText(r["alarmtype"]),
+        description: toText(r["description"]),
+        alarmValue: toNumber(r["alarmvalue"]),
+        thresholdValue: toNumber(r["thresholdvalue"]),
+        acknowledgedAt: toText(r["acknowledgedtimestamp"]) || undefined,
+    })).filter((alarm) => alarm.alarmId !== "" && alarm.sensorId !== "");
+}
+
+export function enrichSafetyAlarms(
+    alarms: LiveSafetyAlarm[],
+    sensors: LiveSensorLookup[],
+    equipment: LiveEquipmentLookup[],
+    units: Array<LiveUnit & { unitName?: string }>,
+    refineries: LiveRefinery[],
+): EnrichedLiveIncident[] {
+    const sensorById = new Map(sensors.map((sensor) => [sensor.sensorId, sensor]));
+    const equipmentById = new Map(equipment.map((asset) => [asset.equipmentId, asset]));
+    const unitById = new Map(units.map((unit) => [unit.unitId, unit]));
+    const refineryById = new Map(refineries.map((refinery) => [refinery.refineryId, refinery]));
+    return alarms.map((alarm) => {
+        const sensor = sensorById.get(alarm.sensorId);
+        const asset = sensor ? equipmentById.get(sensor.equipmentId) : undefined;
+        const unit = asset ? unitById.get(asset.processUnitId) : undefined;
+        const refinery = unit ? refineryById.get(unit.refineryId) : undefined;
+        return {
+            ...alarm,
+            equipmentId: asset?.equipmentId,
+            equipmentName: asset?.equipmentName,
+            equipmentType: asset?.equipmentType,
+            processUnitId: asset?.processUnitId,
+            processUnitName: unit?.unitName,
+            refineryId: unit?.refineryId,
+            refineryName: refinery?.refineryName,
+        };
+    });
 }
 
 export function recordsToReadings(records: Record<string, unknown>[]): TelemetryReading[] {
@@ -221,6 +333,7 @@ export function recordsToReadings(records: Record<string, unknown>[]): Telemetry
             unitId: toText(r["processunitid"]),
             sensorType: toText(r["sensortype"]),
             value: toNumber(r["value"]),
+            timestamp: toText(r["timestamp"]) || undefined,
         }))
         .filter((r) => r.unitId !== "");
 }
@@ -242,6 +355,9 @@ export function pivotReadings(readings: TelemetryReading[]): LiveMetrics[] {
             byUnit.set(reading.unitId, metrics);
         }
         metrics[signal] = reading.value;
+        if (reading.timestamp && (!metrics.latestAt || reading.timestamp > metrics.latestAt)) {
+            metrics.latestAt = reading.timestamp;
+        }
     }
     return [...byUnit.values()];
 }
@@ -285,6 +401,35 @@ export async function fetchLiveTelemetry(): Promise<LiveTelemetrySnapshot | null
         units: recordsToUnits(unitRecords),
         metrics: pivotReadings(recordsToReadings(telemetryRecords)),
     };
+}
+
+/**
+ * Fetch safety alarms and enrich them through the Direct Lake model's Sensor,
+ * Equipment, Process Unit, and Refinery dimensions. This is the browser-safe
+ * counterpart to the Eventhouse EnrichedEquipmentAlert() function: it uses the
+ * Fabric host proxy and never exposes KQL credentials to client code.
+ */
+export async function fetchLiveIncidents(): Promise<EnrichedLiveIncident[] | null> {
+    if (!isLiveTelemetryConfigured()) {
+        return null;
+    }
+    const [alarmRecords, sensorRecords, equipmentRecords, unitRecords, refineryRecords] = await Promise.all([
+        runQuery(DAX_SAFETY_ALARMS),
+        runQuery(DAX_SENSOR_LOOKUP),
+        runQuery(DAX_EQUIPMENT_LOOKUP),
+        runQuery(DAX_UNITS),
+        runQuery(DAX_REFINERIES),
+    ]);
+    if (!alarmRecords || !sensorRecords || !equipmentRecords || !unitRecords || !refineryRecords) {
+        return null;
+    }
+    return enrichSafetyAlarms(
+        recordsToSafetyAlarms(alarmRecords),
+        recordsToSensorLookup(sensorRecords),
+        recordsToEquipmentLookup(equipmentRecords),
+        recordsToUnits(unitRecords),
+        recordsToRefineries(refineryRecords),
+    );
 }
 
 /**

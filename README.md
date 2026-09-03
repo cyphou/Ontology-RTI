@@ -830,6 +830,7 @@ npx rayfin up            # ships the static app into the Fabric workspace
 | :compass: | [docs/WIND_TURBINE_RAYFIN_GITHUB_PROJECTS_IMPORT.md](docs/WIND_TURBINE_RAYFIN_GITHUB_PROJECTS_IMPORT.md) | Field mapping and import procedure for GitHub Projects |
 | :rocket: | [docs/WIND_TURBINE_RAYFIN_DEPLOYMENT_MSIT.md](docs/WIND_TURBINE_RAYFIN_DEPLOYMENT_MSIT.md) | Deployment handoff for the MSIT Fabric workspace and Rayfin app identifiers |
 | :oil_drum: | [docs/REFINERY_WORLDWIDE_RAYFIN_DEPLOYMENT_MSIT.md](docs/REFINERY_WORLDWIDE_RAYFIN_DEPLOYMENT_MSIT.md) | Deployment handoff for the worldwide refinery geo-twin Rayfin app |
+| :movie_camera: | [docs/REFINERY_DEMO_BRIEF.md](docs/REFINERY_DEMO_BRIEF.md) | Refinery demo story, AVEVA and industrial-platform positioning, run-of-show, and readiness checklist |
 
 ---
 

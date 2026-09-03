@@ -10,7 +10,7 @@
 // and scripted narration). These are intentionally free of React and Wind-specific
 // state so Solar and Refinery can reuse them without copy/paste.
 
-export type DemoScriptStepId = "story" | "locate" | "twin" | "graph" | "dispatch" | "support" | "ask" | "analytics";
+export type DemoScriptStepId = "story" | "locate" | "twin" | "schematic" | "graph" | "dispatch" | "support" | "simulation" | "analytics" | "ask" | "report";
 
 export type EscalationStage = "none" | "manager" | "regional";
 
@@ -301,7 +301,7 @@ export interface DomainDemoManifest {
     steps: Record<DemoScriptStepId, DemoManifestStep>;
 }
 
-export const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "graph", "dispatch", "support", "ask", "analytics"];
+export const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "schematic", "graph", "dispatch", "support", "simulation", "ask"];
 
 export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
     domainId: "wind-turbine",
@@ -314,11 +314,14 @@ export const WIND_DEMO_MANIFEST: DomainDemoManifest = {
         story: { title: "Welcome — from detection to resolution", caption: "This guided demo follows one live wind-fleet incident end to end: locate it on the map, inspect the digital twin, trace the ontology graph, dispatch a technician, then ask Fabric IQ. To begin, the ontology has framed the probable component, priority, and lead technician for the affected turbine.", focus: "Incident summary — turbine, probable component, priority, lead technician", action: "Auto-frames the top incident on the map" },
         locate: { title: "Locate on the fleet map", caption: "The global map centers on the affected turbine and its wind site for situational awareness.", focus: "The affected wind site and its turbines on the global map", action: "Applies the site filter to zoom in" },
         twin: { title: "Inspect the digital twin", caption: "Drill into the 3D digital twin to read component- and device-level signals for the turbine.", focus: "The 3D turbine — rotor blades and pitch signals", action: "Clicks the rotor, then the pitch-control device" },
+        schematic: { title: "Follow the process flow", caption: "Switch from the 3D twin to the process schematic to follow the live unit flow.", focus: "Feed, unit, exchanger, and product path", action: "Opens Process schematic" },
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause.", focus: "The incident node with its component & device branches", action: "Clicks through the related graph nodes" },
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected energy impact from the what-if plan.", focus: "The best-matched technician and dispatch popup", action: "Raises and assigns the work order" },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold.", focus: "Field-support status and the closed maintenance loop", action: "Calls field support and closes the loop" },
         ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions.", focus: "The plain-language answer and fleet-health snapshot", action: "Submits the question to Fabric IQ" },
-        analytics: { title: "Visualize in Analytics", caption: "Fabric IQ's recommendation is backed by the performance analytics — output trends, deltas, and the wind-power curve — before the mission report is compiled.", focus: "Output trends, deltas and the wind-power curve", action: "Opens the mission report" },
+        simulation: { title: "Compare an operating plan", caption: "Upload the Excel scenario and compare its projected throughput and economics against the baseline.", focus: "Excel import, baseline, projected impact, and comparison", action: "Uploads the prepared Excel scenario" },
+        analytics: { title: "Review the operating picture", caption: "Review fleet performance and the projected impact before asking Fabric IQ for the decision context.", focus: "Throughput, incidents, maintenance, and inventory", action: "Opens the Analytics cockpit" },
+        report: { title: "Close with the mission report", caption: "The incident, action, simulation, and AI answer are compiled into one mission report.", focus: "One auditable report for the completed demo", action: "Opens the mission report" },
     },
 };
 
@@ -347,11 +350,14 @@ export const SOLAR_DEMO_MANIFEST: DomainDemoManifest = {
         story: { title: "Welcome — from detection to resolution", caption: "This guided demo follows one live solar incident end to end: locate the inverter string on the map, inspect the digital twin, trace the ontology graph, dispatch a technician, then ask Fabric IQ. To begin, the ontology has framed the probable component, priority, and lead technician for the affected inverter string.", focus: "Incident summary — inverter string, probable component, priority, lead technician", action: "Auto-frames the top incident on the map" },
         locate: { title: "Locate on the site map", caption: "The map centers on the affected inverter string and its solar plant for situational awareness.", focus: "The affected solar plant and its inverter strings on the map", action: "Applies the site filter to zoom in" },
         twin: { title: "Inspect the digital twin", caption: "Drill into the 3D digital twin to read module- and inverter-level signals for the string.", focus: "The 3D string — modules and inverter signals", action: "Clicks the module, then the device detail" },
+        schematic: { title: "Follow the plant flow", caption: "Switch from the 3D twin to the process schematic to follow the live plant flow.", focus: "Live source, conversion, and output path", action: "Opens Process schematic" },
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause.", focus: "The incident node with its component & device branches", action: "Clicks through the related graph nodes" },
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected yield impact from the what-if plan.", focus: "The best-matched technician and dispatch popup", action: "Raises and assigns the work order" },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold.", focus: "Field-support status and the closed maintenance loop", action: "Calls field support and closes the loop" },
         ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions.", focus: "The plain-language answer and plant-health snapshot", action: "Submits the question to Fabric IQ" },
-        analytics: { title: "Visualize in Analytics", caption: "Fabric IQ's recommendation is backed by the performance analytics — yield trends, deltas, and the irradiance-power curve — before the mission report is compiled.", focus: "Yield trends, deltas and the irradiance-power curve", action: "Opens the mission report" },
+        simulation: { title: "Compare an operating plan", caption: "Upload the Excel scenario and compare its projected output and economics against the baseline.", focus: "Excel import, baseline, projected impact, and comparison", action: "Uploads the prepared Excel scenario" },
+        analytics: { title: "Review the operating picture", caption: "Review plant performance and the projected impact before asking Fabric IQ for the decision context.", focus: "Output, incidents, maintenance, and inventory", action: "Opens the Analytics cockpit" },
+        report: { title: "Close with the mission report", caption: "The incident, action, simulation, and AI answer are compiled into one mission report.", focus: "One auditable report for the completed demo", action: "Opens the mission report" },
     },
 };
 
@@ -366,11 +372,14 @@ export const REFINERY_DEMO_MANIFEST: DomainDemoManifest = {
         story: { title: "Welcome — from detection to resolution", caption: "This guided demo follows one live refinery incident end to end: locate the process unit on the map, inspect the digital twin, trace the ontology graph, dispatch an engineer, then ask Fabric IQ. To begin, the ontology has framed the probable asset, priority, and lead engineer for the affected process unit.", focus: "Incident summary — process unit, probable asset, priority, lead engineer", action: "Auto-frames the top incident on the map" },
         locate: { title: "Locate on the site map", caption: "The map centers on the affected process unit and its refinery for situational awareness.", focus: "The affected refinery and its process units on the map", action: "Applies the site filter to zoom in" },
         twin: { title: "Inspect the digital twin", caption: "Drill into the 3D digital twin to read asset- and sensor-level signals for the unit.", focus: "The 3D unit — asset and sensor signals", action: "Clicks the asset, then the sensor detail" },
+        schematic: { title: "Follow the process flow", caption: "Switch from the 3D twin to the process schematic to follow the live unit flow.", focus: "Feed, unit, exchanger, and product path", action: "Opens Process schematic" },
         graph: { title: "Analyze the ontology graph", caption: "Trace asset relationships and dependencies in the ontology graph to confirm the probable cause.", focus: "The incident node with its asset & sensor branches", action: "Clicks through the related graph nodes" },
         dispatch: { title: "Dispatch the responder", caption: "A tracked maintenance work order is raised and assigned, with projected throughput impact from the what-if plan.", focus: "The best-matched engineer and dispatch popup", action: "Raises and assigns the work order" },
         support: { title: "Call field support", caption: "On-site field support is contacted and the loop is closed, auto-escalating if the match is below threshold.", focus: "Field-support status and the closed maintenance loop", action: "Calls field support and closes the loop" },
         ask: { title: "Ask Fabric IQ", caption: "A natural-language question is posed to Fabric IQ over the live telemetry and ontology to prioritize next actions.", focus: "The plain-language answer and unit-health snapshot", action: "Submits the question to Fabric IQ" },
-        analytics: { title: "Visualize in Analytics", caption: "Fabric IQ's recommendation is backed by the performance analytics — throughput trends, deltas, and the operating curve — before the mission report is compiled.", focus: "Throughput trends, deltas and the operating curve", action: "Opens the mission report" },
+        simulation: { title: "Compare an operating plan", caption: "Upload the Excel scenario and compare its projected throughput and economics against the baseline.", focus: "Excel import, baseline, projected impact, and comparison", action: "Uploads the prepared Excel scenario" },
+        analytics: { title: "Review the operating picture", caption: "Review refinery performance and the projected impact before asking Fabric IQ for the decision context.", focus: "Throughput, incidents, maintenance, and inventory", action: "Opens the Analytics cockpit" },
+        report: { title: "Close with the mission report", caption: "The incident, action, simulation, and AI answer are compiled into one mission report.", focus: "One auditable report for the completed demo", action: "Opens the mission report" },
     },
 };
 

@@ -37,6 +37,16 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 
 ## 🔜 Near term (next 1–2 iterations)
 
+### Demo readiness
+
+- [x] **Industrial positioning brief** — AVEVA / PI, AspenTech, Siemens, Hexagon, and Cognite
+	reference matrix with explicit non-replacement claims and a ten-minute refinery story. See
+	[REFINERY_DEMO_BRIEF.md](../../docs/REFINERY_DEMO_BRIEF.md).
+- [ ] **Demo mode hardening** — lock one incident and one simulation, support safe cancellation,
+	capture the exact work-order ID, and emit one final mission report.
+- [ ] **Demo data pack** — provide a repeatable live, synthetic, and hybrid setup with documented
+	provenance, freshness, responder, evidence, and scenario assumptions.
+
 - [x] **Fabric Data Agent seam** — “Ask Fabric IQ” routes to a real deployed Data Agent when `VITE_DATA_AGENT_URL` is set (source `fabriciq`), with graceful fallback to the ontology‑grounded engine (`ontology`) and a pure offline engine (`local`). UI now labels the active engine honestly and flags telemetry as **simulated**.
 - [x] **Real timeseries history** — replace seeded telemetry with persisted readings (Eventhouse/KQL) so sparklines and forecasts reflect actual data.
 - [x] **Twin signal thresholds from ontology** — drive Meter warn/alarm bounds from ontology property metadata instead of hardcoded constants.

@@ -5,13 +5,23 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("@/lib/rayfin-client", () => ({
+    getRayfinClient: () => {
+        throw new Error("No backend configured in test");
+    },
+}));
+
 import {
     encodeBand,
     decodeBand,
     INF_BAND,
     saveMaintenanceOrder,
     recentMaintenanceOrders,
+    saveSimulationRun,
+    recentSimulationRuns,
+    saveSimulationApproval,
     listUnitDevices,
     ensureUnitDevices,
     createUnitDevice,
@@ -73,6 +83,12 @@ describe("maintenance order + unit device writeback (fallback-safe)", () => {
     it("exposes the maintenance order writeback functions", () => {
         expect(typeof saveMaintenanceOrder).toBe("function");
         expect(typeof recentMaintenanceOrders).toBe("function");
+    });
+
+    it("exposes the persisted simulation and append-only approval functions", () => {
+        expect(typeof saveSimulationRun).toBe("function");
+        expect(typeof recentSimulationRuns).toBe("function");
+        expect(typeof saveSimulationApproval).toBe("function");
     });
 
     it("exposes the unit device CRUD functions", () => {

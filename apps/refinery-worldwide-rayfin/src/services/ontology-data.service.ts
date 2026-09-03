@@ -52,6 +52,34 @@ export interface MaintenanceOrderRecord {
     createdAt: string;
 }
 
+/** A versioned simulation submitted for governed review. */
+export interface SimulationRunRecord {
+    id?: string;
+    runId: string;
+    refineryId: string;
+    processUnitId: string;
+    purpose: string;
+    objective: string;
+    horizon: number;
+    timeUnit: string;
+    status: string;
+    baselineSource: string;
+    baselineAt?: string;
+    createdBy: string;
+    createdAt: string;
+    decisionPackage: string;
+}
+
+/** Append-only simulation review decision. Backend authorization owns approver identity. */
+export interface SimulationApprovalRecord {
+    id?: string;
+    runId: string;
+    decision: string;
+    reason: string;
+    decidedBy: string;
+    decidedAt: string;
+}
+
 /** Backend-stored second-level device node under a refinery process asset. */
 export interface UnitDeviceRecord {
     id?: string;
@@ -80,6 +108,8 @@ export type OntologyDataSchema = {
     DispatchNote: DispatchNoteRecord;
     SensorThreshold: SignalThresholdRecord;
     MaintenanceOrder: MaintenanceOrderRecord;
+    SimulationRun: SimulationRunRecord;
+    SimulationApproval: SimulationApprovalRecord;
     UnitDevice: UnitDeviceRecord;
 };
 
@@ -182,6 +212,14 @@ export async function saveMaintenanceOrder(order: MaintenanceOrderRecord): Promi
     }) as Promise<MaintenanceOrderRecord>;
 }
 
+/** Update an existing work order. A stable backend id is required for lifecycle changes. */
+export async function updateMaintenanceOrder(
+    id: string,
+    patch: Partial<Omit<MaintenanceOrderRecord, "id" | "createdAt">>,
+): Promise<MaintenanceOrderRecord> {
+    return getRayfinClient().data.MaintenanceOrder.update({ id }, patch) as Promise<MaintenanceOrderRecord>;
+}
+
 /** Read the most recent maintenance work orders (newest first). Throws if the backend is unreachable. */
 export async function recentMaintenanceOrders(limit = 20): Promise<MaintenanceOrderRecord[]> {
     const rows = (await getRayfinClient()
@@ -189,6 +227,45 @@ export async function recentMaintenanceOrders(limit = 20): Promise<MaintenanceOr
         .orderBy({ createdAt: "desc" })
         .execute()) as MaintenanceOrderRecord[];
     return rows.slice(0, limit);
+}
+
+/** Persist a simulation package for review. The backend is the source of record when reachable. */
+export async function saveSimulationRun(run: SimulationRunRecord): Promise<SimulationRunRecord> {
+    return getRayfinClient().data.SimulationRun.create({
+        runId: run.runId,
+        refineryId: run.refineryId,
+        processUnitId: run.processUnitId,
+        purpose: run.purpose,
+        objective: run.objective,
+        horizon: run.horizon,
+        timeUnit: run.timeUnit,
+        status: run.status,
+        baselineSource: run.baselineSource,
+        baselineAt: run.baselineAt ? new Date(run.baselineAt) : undefined,
+        createdBy: run.createdBy,
+        createdAt: new Date(run.createdAt),
+        decisionPackage: run.decisionPackage,
+    }) as Promise<SimulationRunRecord>;
+}
+
+/** Read recent submitted simulations for the selected analyst workflow. */
+export async function recentSimulationRuns(limit = 20): Promise<SimulationRunRecord[]> {
+    const rows = (await getRayfinClient().data.SimulationRun
+        .select(["id", "runId", "refineryId", "processUnitId", "purpose", "objective", "horizon", "timeUnit", "status", "baselineSource", "baselineAt", "createdBy", "createdAt", "decisionPackage"])
+        .orderBy({ createdAt: "desc" })
+        .execute()) as SimulationRunRecord[];
+    return rows.slice(0, limit);
+}
+
+/** Append a simulation review decision. Do not mutate an existing approval record. */
+export async function saveSimulationApproval(approval: SimulationApprovalRecord): Promise<SimulationApprovalRecord> {
+    return getRayfinClient().data.SimulationApproval.create({
+        runId: approval.runId,
+        decision: approval.decision,
+        reason: approval.reason,
+        decidedBy: approval.decidedBy,
+        decidedAt: new Date(approval.decidedAt),
+    }) as Promise<SimulationApprovalRecord>;
 }
 
 /** List ontology sites registered in the backend. Throws if the backend is unreachable. */
