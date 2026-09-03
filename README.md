@@ -768,6 +768,8 @@ data the moment the connection aliases (`VITE_LIVE_TELEMETRY_MODEL`, `VITE_DATA_
 | :sunny: **Solar Farm** | [apps/solar-france-rayfin](apps/solar-france-rayfin/README.md) | `SolarFarm` | Multi-site fleet (France) |
 | :oil_drum: **Oil & Gas Refinery** | [apps/refinery-worldwide-rayfin](apps/refinery-worldwide-rayfin/README.md) | `OilGasRefinery` | Multi-site fleet (worldwide) |
 
+**Refinery showcase:** [watch the Refinery Worldwide Rayfin demo video](apps/refinery-worldwide-rayfin/Refinery-video-demo.mp4)
+
 **Highlights (shared across the apps):**
 
 - :globe_with_meridians: **3D globe world map** — real 3D refinery / turbine / plant structures placed at their true lat/lon, colored by live status; drag to rotate, wheel to zoom, click a site to open its asset.

@@ -14,6 +14,8 @@ natural-language questions ("Ask Fabric IQ"). It ships fallback-safe: with no Fa
 configured it runs on a synthetic telemetry generator, and it lights up real data the moment the
 connection aliases are set.
 
+**Showcase:** [watch the Refinery Worldwide Rayfin demo video](Refinery-video-demo.mp4)
+
 See [ROADMAP.md](ROADMAP.md) for shipped capabilities and the forward plan,
 [../../docs/REFINERY_DEMO_BRIEF.md](../../docs/REFINERY_DEMO_BRIEF.md) for the AVEVA / industrial-platform
 positioning, ten-minute demo run-of-show, and readiness checklist, and [AGENTS.md](AGENTS.md) for

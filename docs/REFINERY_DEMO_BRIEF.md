@@ -3,6 +3,8 @@
 > Demo positioning and run-of-show for the Oil & Gas Refinery Rayfin app.
 > Last updated: 2026-08-28
 
+**Video showcase:** [Refinery Worldwide Rayfin demo](../apps/refinery-worldwide-rayfin/Refinery-video-demo.mp4)
+
 ## Demo thesis
 
 **From plant signal to governed operational decision in one Fabric experience.**
