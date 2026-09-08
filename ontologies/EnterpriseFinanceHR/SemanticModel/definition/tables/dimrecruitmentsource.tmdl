@@ -1,0 +1,15 @@
+table dimrecruitmentsource
+	column RecruitmentSourceId
+		dataType: string
+		sourceColumn: RecruitmentSourceId
+	column SourceName
+		dataType: string
+		sourceColumn: SourceName
+	column SourceCategory
+		dataType: string
+		sourceColumn: SourceCategory
+	partition dimrecruitmentsource = entity
+		mode: directLake
+		source
+			entityName: dimrecruitmentsource
+			expressionSource: DatabaseQuery

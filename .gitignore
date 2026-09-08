@@ -7,6 +7,13 @@ check_*.ps1
 cleanup*.ps1
 workspace_items.txt
 *.bak
+_*.txt
+_*.json
+.playwright-mcp/
+artifacts/
+node_modules/
+__pycache__/
+*.pyc
 
 # OS files
 Thumbs.db

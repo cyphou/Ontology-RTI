@@ -1,0 +1,39 @@
+table facttimeattendancedaily
+	column TimeAttendanceId
+		dataType: string
+		sourceColumn: TimeAttendanceId
+	column EmployeeId
+		dataType: string
+		sourceColumn: EmployeeId
+	column CalendarDateId
+		dataType: string
+		sourceColumn: CalendarDateId
+	column WorkScheduleId
+		dataType: string
+		sourceColumn: WorkScheduleId
+	column AttendanceCodeId
+		dataType: string
+		sourceColumn: AttendanceCodeId
+	column ScheduledHours
+		dataType: double
+		sourceColumn: ScheduledHours
+	column WorkedHours
+		dataType: double
+		sourceColumn: WorkedHours
+	column ApprovedHours
+		dataType: double
+		sourceColumn: ApprovedHours
+	column OvertimeHours
+		dataType: double
+		sourceColumn: OvertimeHours
+	measure 'Scheduled Hours' = SUM(facttimeattendancedaily[ScheduledHours])
+	measure 'Worked Hours' = SUM(facttimeattendancedaily[WorkedHours])
+	measure 'Approved Hours' = SUM(facttimeattendancedaily[ApprovedHours])
+	measure 'Overtime Hours' = SUM(facttimeattendancedaily[OvertimeHours])
+	measure 'Attendance Rate' = DIVIDE([Approved Hours], [Scheduled Hours], 0)
+	measure 'Overtime Rate' = DIVIDE([Overtime Hours], [Worked Hours], 0)
+	partition facttimeattendancedaily = entity
+		mode: directLake
+		source
+			entityName: facttimeattendancedaily
+			expressionSource: DatabaseQuery

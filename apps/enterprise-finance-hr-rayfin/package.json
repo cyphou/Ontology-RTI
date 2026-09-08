@@ -1,0 +1,39 @@
+{
+	"name": "enterprise-finance-hr-rayfin",
+	"private": true,
+	"version": "0.2.0",
+	"type": "module",
+	"scripts": {
+		"predev": "rayfin env --framework vite",
+		"prebuild": "rayfin env --framework vite",
+		"dev": "vite",
+		"build": "npx fabric-app-data generate -o src/fabric.generated.ts && tsc -b --noCheck && vite build",
+		"build:fabric": "npx fabric-app-data generate -o src/fabric.generated.ts && tsc -b --noCheck && vite build",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@microsoft/fabric-app-data": "1.1.0",
+		"@microsoft/fabric-app-data-embed-client": "1.0.0",
+		"@microsoft/fabric-app-data-proxy": "1.0.0",
+		"@microsoft/rayfin-auth-provider-fabric": "^1.33.1",
+		"@microsoft/rayfin-client": "^1.33.1",
+		"@microsoft/rayfin-core": "^1.33.1",
+		"@microsoft/rayfin-data": "^1.33.1",
+		"@microsoft/rayfin-lib": "^1.33.1",
+		"lucide-react": "^1.17.0",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7"
+	},
+	"devDependencies": {
+		"@microsoft/fabric-app-data-cli": "1.1.0",
+		"@microsoft/fabric-app-data-cli-proxy": "1.0.0",
+		"@microsoft/rayfin-cli": "^1.33.1",
+		"@microsoft/rayfin-mcp": "^1.33.1",
+		"@types/react": "^19.2.17",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react-swc": "^4.3.1",
+		"typescript": "~5.7.2",
+		"vite": "^8.0.16",
+		"vitest": "^4.1.8"
+	}
+}

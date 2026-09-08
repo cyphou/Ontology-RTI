@@ -1,0 +1,3 @@
+"WorkScheduleId","ScheduleName","ScheduledHoursPerDay","ScheduledDaysPerWeek"
+"WS01","Synthetic Standard Week","8","5"
+"WS02","Synthetic Flexible Week","7.5","5"

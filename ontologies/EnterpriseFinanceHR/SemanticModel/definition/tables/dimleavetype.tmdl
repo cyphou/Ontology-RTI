@@ -1,0 +1,18 @@
+table dimleavetype
+	column LeaveTypeId
+		dataType: string
+		sourceColumn: LeaveTypeId
+	column LeaveTypeName
+		dataType: string
+		sourceColumn: LeaveTypeName
+	column LeaveCategory
+		dataType: string
+		sourceColumn: LeaveCategory
+	column IsPaid
+		dataType: string
+		sourceColumn: IsPaid
+	partition dimleavetype = entity
+		mode: directLake
+		source
+			entityName: dimleavetype
+			expressionSource: DatabaseQuery

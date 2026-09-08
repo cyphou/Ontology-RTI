@@ -1,0 +1,21 @@
+table factforecastscenario
+	column ForecastId
+		dataType: string
+		sourceColumn: ForecastId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column ScenarioName
+		dataType: string
+		sourceColumn: ScenarioName
+	column ForecastAmount
+		dataType: double
+		sourceColumn: ForecastAmount
+	partition factforecastscenario = entity
+		mode: directLake
+		source
+			entityName: factforecastscenario
+			expressionSource: DatabaseQuery

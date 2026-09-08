@@ -1,0 +1,4 @@
+export interface RecruitmentMetrics { requisitions: number; openings: number; activeCandidates: number; offers: number; acceptedOffers: number; }
+export function recruitmentSummary(metrics: RecruitmentMetrics) { return { openRequisitions: metrics.requisitions, openings: metrics.openings, activeCandidates: metrics.activeCandidates, acceptanceRate: metrics.offers ? metrics.acceptedOffers / metrics.offers : 0, newHires: metrics.acceptedOffers }; }
+export function requiresAttention(metrics: RecruitmentMetrics): boolean { return metrics.openings > 0 && metrics.activeCandidates < metrics.openings * 2; }
+export const syntheticRecruitment: RecruitmentMetrics = { requisitions: 3, openings: 4, activeCandidates: 18, offers: 4, acceptedOffers: 2 };

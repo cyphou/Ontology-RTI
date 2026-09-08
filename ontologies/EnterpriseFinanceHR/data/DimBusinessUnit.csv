@@ -1,0 +1,7 @@
+BusinessUnitId,BusinessUnitName,LegalEntityId,LeaderAlias
+BU01,Synthetic Business Unit 01,LE01,Worker001
+BU02,Synthetic Business Unit 02,LE01,Worker021
+BU03,Synthetic Business Unit 03,LE02,Worker041
+BU04,Synthetic Business Unit 04,LE02,Worker061
+BU05,Synthetic Business Unit 05,LE03,Worker081
+BU06,Synthetic Business Unit 06,LE03,Worker101

@@ -1,0 +1,24 @@
+table dimemployee
+	column EmployeeId
+		dataType: string
+		sourceColumn: EmployeeId
+	column EmployeeAlias
+		dataType: string
+		sourceColumn: EmployeeAlias
+	column DepartmentId
+		dataType: string
+		sourceColumn: DepartmentId
+	column PositionId
+		dataType: string
+		sourceColumn: PositionId
+	column LocationId
+		dataType: string
+		sourceColumn: LocationId
+	column EmploymentStatus
+		dataType: string
+		sourceColumn: EmploymentStatus
+	partition dimemployee = entity
+		mode: directLake
+		source
+			entityName: dimemployee
+			expressionSource: DatabaseQuery

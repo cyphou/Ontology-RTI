@@ -1,0 +1,101 @@
+{
+  "version": "1.0",
+  "name": "Enterprise Finance + HR — End-to-End Planning",
+  "description": "Workspace task flow for the Enterprise Finance + HR solution. Shows the logical flow from ingestion to governed planning analytics. The Data Pipeline 'Enterprise Finance HR Aggregate Refresh' is the execution orchestrator; task-flow connectors show logical flow only, not data movement.",
+  "tasks": [
+    {
+      "id": "task-orchestrate",
+      "name": "Orchestrate aggregate refresh",
+      "description": "Data Pipeline that runs the end-to-end refresh: load Delta tables, refresh the five aggregate Dataflows Gen2, then run the aggregate quality gate. This is the solution orchestrator.",
+      "taskType": "General",
+      "position": { "x": 500, "y": 40 },
+      "recommendedItemTypes": ["DataPipeline"],
+      "items": ["Enterprise Finance HR Aggregate Refresh"]
+    },
+    {
+      "id": "task-ingest",
+      "name": "Ingest planning data",
+      "description": "Streams planning exceptions and loads synthetic Finance + HR CSV sources into Delta tables.",
+      "taskType": "Get data",
+      "position": { "x": 100, "y": 220 },
+      "recommendedItemTypes": ["Eventstream", "Notebook"],
+      "items": ["EnterpriseFinanceHRPlanningStream", "EnterpriseFinanceHR_LoadTables"]
+    },
+    {
+      "id": "task-store",
+      "name": "Store enterprise data",
+      "description": "Lakehouse holds the aggregate Delta source and bi_* tables; Eventhouse/KQL stores planning telemetry for real-time analytics.",
+      "taskType": "Store data",
+      "position": { "x": 350, "y": 220 },
+      "recommendedItemTypes": ["Lakehouse", "Eventhouse", "KQLDatabase"],
+      "items": ["EnterpriseFinanceHRLH", "EnterpriseFinanceHREH"]
+    },
+    {
+      "id": "task-prepare",
+      "name": "Prepare aggregate measures",
+      "description": "Five Dataflows Gen2 build aggregate-only compensation, attendance, absence, recruitment, and curated finance tables. No employee-level records are surfaced.",
+      "taskType": "Prepare data",
+      "position": { "x": 600, "y": 220 },
+      "recommendedItemTypes": ["Dataflow"],
+      "items": [
+        "Enterprise HR Compensation",
+        "Enterprise HR Attendance",
+        "Enterprise HR Absence",
+        "Enterprise HR Recruitment",
+        "EnterpriseFinanceHR BI Curated"
+      ]
+    },
+    {
+      "id": "task-quality",
+      "name": "Aggregate quality gate",
+      "description": "Notebook that validates non-empty sources, rejects negative compensation/hours, and enforces small-group suppression before analytics is published.",
+      "taskType": "Prepare data",
+      "position": { "x": 850, "y": 220 },
+      "recommendedItemTypes": ["Notebook"],
+      "items": ["EnterpriseFinanceHR_QualityGate"]
+    },
+    {
+      "id": "task-model",
+      "name": "Model ontology and semantics",
+      "description": "Ontology, graph model, graph queries, native Fabric Plan, and the Direct Lake semantic model expose governed planning entities and measures.",
+      "taskType": "Analyze and train data",
+      "position": { "x": 600, "y": 420 },
+      "recommendedItemTypes": ["Ontology", "GraphModel", "GraphQuerySet", "Plan", "SemanticModel"],
+      "items": [
+        "EnterpriseFinanceHROntology",
+        "EnterpriseFinanceHRQueries",
+        "Enterprise Finance + HR Plan",
+        "EnterpriseFinanceHRModel"
+      ]
+    },
+    {
+      "id": "task-visualize",
+      "name": "Visualize planning",
+      "description": "Real-time KQL dashboard and the Northstar Finance + HR planning app present aggregate spend, capacity, absence, and recruitment signals.",
+      "taskType": "Visualize data",
+      "position": { "x": 350, "y": 600 },
+      "recommendedItemTypes": ["KQLDashboard"],
+      "items": ["EnterpriseFinanceHRDashboard", "enterprise-finance-hr"]
+    },
+    {
+      "id": "task-agents",
+      "name": "Operational agents",
+      "description": "Data Agent and Operations Agent answer governed, aggregate-only planning questions across the lakehouse and KQL data.",
+      "taskType": "General",
+      "position": { "x": 850, "y": 600 },
+      "recommendedItemTypes": ["DataAgent"],
+      "items": ["EnterpriseFinanceHR-DataAgent", "EnterpriseFinanceHR-OperationsAgent"]
+    }
+  ],
+  "connectors": [
+    { "startTaskId": "task-orchestrate", "endTaskId": "task-ingest" },
+    { "startTaskId": "task-orchestrate", "endTaskId": "task-prepare" },
+    { "startTaskId": "task-orchestrate", "endTaskId": "task-quality" },
+    { "startTaskId": "task-ingest", "endTaskId": "task-store" },
+    { "startTaskId": "task-store", "endTaskId": "task-prepare" },
+    { "startTaskId": "task-prepare", "endTaskId": "task-quality" },
+    { "startTaskId": "task-quality", "endTaskId": "task-model" },
+    { "startTaskId": "task-model", "endTaskId": "task-visualize" },
+    { "startTaskId": "task-model", "endTaskId": "task-agents" }
+  ]
+}

@@ -1,0 +1,24 @@
+table sensortelemetry
+	column TelemetryId
+		dataType: string
+		sourceColumn: TelemetryId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column MetricName
+		dataType: string
+		sourceColumn: MetricName
+	column MetricValue
+		dataType: double
+		sourceColumn: MetricValue
+	column IsAnomaly
+		dataType: string
+		sourceColumn: IsAnomaly
+	partition sensortelemetry = entity
+		mode: directLake
+		source
+			entityName: sensortelemetry
+			expressionSource: DatabaseQuery

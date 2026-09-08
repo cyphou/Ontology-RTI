@@ -1,0 +1,6 @@
+"PayGradeId","PayGradeName","MinimumSalary","MaximumSalary"
+"PG01","Synthetic Grade 1","48000","62000"
+"PG02","Synthetic Grade 2","58000","76000"
+"PG03","Synthetic Grade 3","72000","95000"
+"PG04","Synthetic Grade 4","90000","120000"
+"PG05","Synthetic Grade 5","115000","150000"

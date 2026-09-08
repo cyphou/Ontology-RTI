@@ -1,0 +1,18 @@
+table dimcostcenter
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column CostCenterName
+		dataType: string
+		sourceColumn: CostCenterName
+	column BusinessUnitId
+		dataType: string
+		sourceColumn: BusinessUnitId
+	column DepartmentId
+		dataType: string
+		sourceColumn: DepartmentId
+	partition dimcostcenter = entity
+		mode: directLake
+		source
+			entityName: dimcostcenter
+			expressionSource: DatabaseQuery

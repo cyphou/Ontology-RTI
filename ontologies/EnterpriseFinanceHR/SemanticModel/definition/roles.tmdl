@@ -1,0 +1,5 @@
+role Finance
+	modelPermission: read
+
+role HRAnalyst
+	modelPermission: read

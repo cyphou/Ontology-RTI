@@ -1,0 +1,21 @@
+table dimposition
+	column PositionId
+		dataType: string
+		sourceColumn: PositionId
+	column PositionTitle
+		dataType: string
+		sourceColumn: PositionTitle
+	column JobFamilyId
+		dataType: string
+		sourceColumn: JobFamilyId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column Fte
+		dataType: double
+		sourceColumn: Fte
+	partition dimposition = entity
+		mode: directLake
+		source
+			entityName: dimposition
+			expressionSource: DatabaseQuery

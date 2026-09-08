@@ -1,0 +1,3 @@
+export interface CompensationMetrics { total: number; base: number; fte: number; planned: number; }
+export function compensationSummary(metrics: CompensationMetrics) { return { payrollCostPerFte: metrics.fte ? metrics.total / metrics.fte : 0, salaryPlanVariance: metrics.total - metrics.planned, baseSalaryRate: metrics.total ? metrics.base / metrics.total : 0 }; }
+export const syntheticCompensation: CompensationMetrics = { total: 10_820_000, base: 8_940_000, fte: 145.7, planned: 10_650_000 };

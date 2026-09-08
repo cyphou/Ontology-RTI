@@ -1,0 +1,15 @@
+table dimaccount
+	column AccountId
+		dataType: string
+		sourceColumn: AccountId
+	column AccountName
+		dataType: string
+		sourceColumn: AccountName
+	column AccountType
+		dataType: string
+		sourceColumn: AccountType
+	partition dimaccount = entity
+		mode: directLake
+		source
+			entityName: dimaccount
+			expressionSource: DatabaseQuery

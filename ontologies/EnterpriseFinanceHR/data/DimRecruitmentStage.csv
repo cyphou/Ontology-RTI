@@ -1,0 +1,6 @@
+"RecruitmentStageId","StageName","StageSequence","IsTerminal"
+"RS01","Applied","1","False"
+"RS02","Screened","2","False"
+"RS03","Interviewed","3","False"
+"RS04","Offer","4","False"
+"RS05","Closed","5","True"

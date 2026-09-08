@@ -1,0 +1,3 @@
+"LeaveTypeId","LeaveTypeName","LeaveCategory","IsPaid"
+"LT01","Synthetic Planned Leave","Planned","True"
+"LT02","Synthetic Unplanned Leave","Unplanned","False"

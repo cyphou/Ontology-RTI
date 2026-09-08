@@ -1,0 +1,5 @@
+# Enterprise Finance + HR Data Pipeline
+
+`Deploy-HRDataPipeline.ps1` creates or updates the Fabric DataPipeline artifact only; it does not run it or deploy any cloud resource. The generated pipeline graph is explicit so every stage is visible in the Fabric canvas: validation, notebook Delta load, compensation, attendance, absence, recruitment, and curated finance Dataflow Gen2 refreshes, followed by the aggregate quality gate.
+
+Deploy with explicit Fabric item IDs for the Lakehouse, load notebook, quality-gate notebook, five Dataflows, and semantic model. The semantic model refresh is intentionally managed as a separate Fabric operation because `SemanticModelRefresh` is not a supported Data Factory activity type in the public Fabric pipeline activity set. The pipeline has no credential, connection, or secret fallback.

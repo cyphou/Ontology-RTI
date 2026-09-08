@@ -1,0 +1,30 @@
+table factabsenceepisode
+	column AbsenceEpisodeId
+		dataType: string
+		sourceColumn: AbsenceEpisodeId
+	column EmployeeId
+		dataType: string
+		sourceColumn: EmployeeId
+	column LeaveTypeId
+		dataType: string
+		sourceColumn: LeaveTypeId
+	column AbsenceReasonCategoryId
+		dataType: string
+		sourceColumn: AbsenceReasonCategoryId
+	column StartCalendarDateId
+		dataType: string
+		sourceColumn: StartCalendarDateId
+	column EndCalendarDateId
+		dataType: string
+		sourceColumn: EndCalendarDateId
+	column AbsenceHours
+		dataType: double
+		sourceColumn: AbsenceHours
+	measure 'Absence Hours' = SUM(factabsenceepisode[AbsenceHours])
+	measure 'Absence Days' = DIVIDE([Absence Hours], 8, 0)
+	measure 'Absence Rate' = DIVIDE([Absence Hours], [Scheduled Hours], 0)
+	partition factabsenceepisode = entity
+		mode: directLake
+		source
+			entityName: factabsenceepisode
+			expressionSource: DatabaseQuery

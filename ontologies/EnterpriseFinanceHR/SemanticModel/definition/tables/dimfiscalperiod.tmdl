@@ -1,0 +1,21 @@
+table dimfiscalperiod
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column FiscalYear
+		dataType: int64
+		sourceColumn: FiscalYear
+	column FiscalQuarter
+		dataType: string
+		sourceColumn: FiscalQuarter
+	column PeriodName
+		dataType: string
+		sourceColumn: PeriodName
+	column PeriodStartDate
+		dataType: string
+		sourceColumn: PeriodStartDate
+	partition dimfiscalperiod = entity
+		mode: directLake
+		source
+			entityName: dimfiscalperiod
+			expressionSource: DatabaseQuery

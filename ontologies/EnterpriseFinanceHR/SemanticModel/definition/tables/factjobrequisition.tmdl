@@ -1,0 +1,32 @@
+table factjobrequisition
+	column JobRequisitionId
+		dataType: string
+		sourceColumn: JobRequisitionId
+	column PositionId
+		dataType: string
+		sourceColumn: PositionId
+	column DepartmentId
+		dataType: string
+		sourceColumn: DepartmentId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column OpenCalendarDateId
+		dataType: string
+		sourceColumn: OpenCalendarDateId
+	column TargetFillCalendarDateId
+		dataType: string
+		sourceColumn: TargetFillCalendarDateId
+	column RequisitionStatus
+		dataType: string
+		sourceColumn: RequisitionStatus
+	column Openings
+		dataType: double
+		sourceColumn: Openings
+	measure 'Open Requisitions' = CALCULATE(DISTINCTCOUNT(factjobrequisition[JobRequisitionId]), factjobrequisition[RequisitionStatus] = "Synthetic Open")
+	measure 'Openings Requested' = CALCULATE(SUM(factjobrequisition[Openings]), factjobrequisition[RequisitionStatus] = "Synthetic Open")
+	partition factjobrequisition = entity
+		mode: directLake
+		source
+			entityName: factjobrequisition
+			expressionSource: DatabaseQuery

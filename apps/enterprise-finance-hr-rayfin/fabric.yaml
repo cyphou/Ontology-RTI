@@ -1,0 +1,7 @@
+activeProfile: default
+profiles:
+  default:
+    semanticModels:
+      enterpriseFinanceHrModel:
+        workspaceId: "56b6ac57-a326-4c90-a040-36cabeec98ff"
+        itemId: "398930b6-ed17-4371-bfcd-d4e352e0c7b1"

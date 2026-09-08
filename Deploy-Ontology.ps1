@@ -50,7 +50,7 @@ param(
     [string]$WorkspaceId,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare", "SolarFarm")]
+    [ValidateSet("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare", "SolarFarm", "EnterpriseFinanceHR")]
     [string]$OntologyType,
 
     [switch]$SkipDataAgent,
@@ -149,6 +149,18 @@ $domains = @{
         OntologyFolder = Join-Path $scriptDir "ontologies\SolarFarm"
         Color        = "Yellow"
     }
+    EnterpriseFinanceHR = @{
+        DisplayName  = "Enterprise Finance + HR"
+        Emoji        = [char]::ConvertFromUtf32(0x1F4CA)
+        Description  = "Legal entities, cost centers, budgets, actuals, forecasts, and aggregate workforce capacity"
+        Lakehouse    = "EnterpriseFinanceHRLH"
+        Eventhouse   = "EnterpriseFinanceHREH"
+        SemanticModel = "EnterpriseFinanceHRModel"
+        OntologyName = "EnterpriseFinanceHROntology"
+        DataFolder   = Join-Path $scriptDir "ontologies\EnterpriseFinanceHR\data"
+        OntologyFolder = Join-Path $scriptDir "ontologies\EnterpriseFinanceHR"
+        Color        = "DarkCyan"
+    }
 }
 
 # ============================================================================
@@ -166,7 +178,7 @@ if (-not $OntologyType) {
 
     $index = 1
     $menuMap = @{}
-    foreach ($key in @("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare", "SolarFarm")) {
+    foreach ($key in @("OilGasRefinery", "SmartBuilding", "ManufacturingPlant", "ITAsset", "WindTurbine", "Healthcare", "SolarFarm", "EnterpriseFinanceHR")) {
         $d = $domains[$key]
         $color = $d.Color
         Write-Host "    [$index] " -NoNewline -ForegroundColor White
@@ -177,7 +189,7 @@ if (-not $OntologyType) {
     }
 
     Write-Host ""
-    $choice = Read-Host "  Enter choice (1-7)"
+    $choice = Read-Host "  Enter choice (1-8)"
     $choiceInt = [int]$choice
     if ($menuMap.ContainsKey($choiceInt)) {
         $OntologyType = $menuMap[$choiceInt]

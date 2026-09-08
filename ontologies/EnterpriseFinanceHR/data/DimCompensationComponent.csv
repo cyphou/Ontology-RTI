@@ -1,0 +1,3 @@
+"CompensationComponentId","ComponentName","ComponentCategory","IsRecurring"
+"CCMP01","Synthetic Base Salary","Base","True"
+"CCMP02","Synthetic Incentive","Variable","False"

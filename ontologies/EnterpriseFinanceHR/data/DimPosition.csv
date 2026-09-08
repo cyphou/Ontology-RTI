@@ -1,0 +1,25 @@
+PositionId,PositionTitle,JobFamilyId,CostCenterId,Fte
+PO01,Synthetic Position 01,JF01,CC01,1.0
+PO02,Synthetic Position 02,JF02,CC02,1.0
+PO03,Synthetic Position 03,JF03,CC03,1.0
+PO04,Synthetic Position 04,JF04,CC04,1.0
+PO05,Synthetic Position 05,JF05,CC05,1.0
+PO06,Synthetic Position 06,JF06,CC06,1.0
+PO07,Synthetic Position 07,JF01,CC07,1.0
+PO08,Synthetic Position 08,JF02,CC08,1.0
+PO09,Synthetic Position 09,JF03,CC09,1.0
+PO10,Synthetic Position 10,JF04,CC10,1.0
+PO11,Synthetic Position 11,JF05,CC11,1.0
+PO12,Synthetic Position 12,JF06,CC12,1.0
+PO13,Synthetic Position 13,JF01,CC13,1.0
+PO14,Synthetic Position 14,JF02,CC14,1.0
+PO15,Synthetic Position 15,JF03,CC15,1.0
+PO16,Synthetic Position 16,JF04,CC16,1.0
+PO17,Synthetic Position 17,JF05,CC17,1.0
+PO18,Synthetic Position 18,JF06,CC18,1.0
+PO19,Synthetic Position 19,JF01,CC01,1.0
+PO20,Synthetic Position 20,JF02,CC02,1.0
+PO21,Synthetic Position 21,JF03,CC03,1.0
+PO22,Synthetic Position 22,JF04,CC04,1.0
+PO23,Synthetic Position 23,JF05,CC05,1.0
+PO24,Synthetic Position 24,JF06,CC06,1.0

@@ -1,0 +1,64 @@
+{
+	"name": "Enterprise Finance HR Aggregate Refresh",
+	"properties": {
+		"description": "Refreshes synthetic Enterprise Finance + HR planning aggregates. Workforce data remains aggregate-only.",
+		"activities": [
+			{
+				"name": "Prepare aggregate planning refresh",
+				"type": "Wait",
+				"dependsOn": [],
+				"typeProperties": { "waitTimeInSeconds": 1 }
+			},
+			{
+				"name": "Load Finance and HR Delta tables",
+				"type": "TridentNotebook",
+				"dependsOn": [{ "activity": "Prepare aggregate planning refresh", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "notebookId": "@pipeline().parameters.NotebookId", "workspaceId": "@pipeline().parameters.WorkspaceId" }
+			},
+			{
+				"name": "Refresh compensation aggregates",
+				"type": "Dataflow",
+				"dependsOn": [{ "activity": "Load Finance and HR Delta tables", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "dataflowId": "8bd68629-9e34-476f-b1d3-2d212570d23a", "workspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff" }
+			},
+			{
+				"name": "Refresh attendance aggregates",
+				"type": "Dataflow",
+				"dependsOn": [{ "activity": "Refresh compensation aggregates", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "dataflowId": "0eeeaa5b-f7cd-4117-99ec-91d3be0cc30e", "workspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff" }
+			},
+			{
+				"name": "Refresh absence aggregates",
+				"type": "Dataflow",
+				"dependsOn": [{ "activity": "Refresh attendance aggregates", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "dataflowId": "7f5b6f21-7f7c-4e9b-801d-0b45620c8277", "workspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff" }
+			},
+			{
+				"name": "Refresh recruitment aggregates",
+				"type": "Dataflow",
+				"dependsOn": [{ "activity": "Refresh absence aggregates", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "dataflowId": "cd63e824-ee3d-42d9-9d29-0d4851ac3f6a", "workspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff" }
+			},
+			{
+				"name": "Refresh curated finance aggregates",
+				"type": "Dataflow",
+				"dependsOn": [{ "activity": "Refresh recruitment aggregates", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "dataflowId": "27ecf698-1a95-42a0-b464-672c668ef675", "workspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff" }
+			},
+			{
+				"name": "Run aggregate quality gate",
+				"type": "TridentNotebook",
+				"dependsOn": [{ "activity": "Refresh curated finance aggregates", "dependencyConditions": ["Succeeded"] }],
+				"typeProperties": { "notebookId": "9aa8dd31-cd77-425c-9a2d-100f3164f079", "workspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff" }
+			}
+		],
+		"parameters": {
+			"WorkspaceId": { "type": "string", "defaultValue": "56b6ac57-a326-4c90-a040-36cabeec98ff" },
+			"LakehouseId": { "type": "string", "defaultValue": "f0d3e873-0303-4977-a0e9-954c441495dd" },
+			"NotebookId": { "type": "string", "defaultValue": "77da34de-6281-4a08-bd6c-98b871c10374" },
+			"QualityGateNotebookId": { "type": "string", "defaultValue": "9aa8dd31-cd77-425c-9a2d-100f3164f079" },
+			"DataflowIds": { "type": "array", "defaultValue": ["8bd68629-9e34-476f-b1d3-2d212570d23a", "0eeeaa5b-f7cd-4117-99ec-91d3be0cc30e", "7f5b6f21-7f7c-4e9b-801d-0b45620c8277", "cd63e824-ee3d-42d9-9d29-0d4851ac3f6a", "27ecf698-1a95-42a0-b464-672c668ef675"] },
+			"SemanticModelId": { "type": "string", "defaultValue": "398930b6-ed17-4371-bfcd-d4e352e0c7b1" }
+		}
+	}
+}

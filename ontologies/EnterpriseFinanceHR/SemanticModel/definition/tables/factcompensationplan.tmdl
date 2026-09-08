@@ -1,0 +1,18 @@
+table factcompensationplan
+	column CompensationPlanId
+		dataType: string
+		sourceColumn: CompensationPlanId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column PlannedCompensation
+		dataType: string
+		sourceColumn: PlannedCompensation
+	partition factcompensationplan = entity
+		mode: directLake
+		source
+			entityName: factcompensationplan
+			expressionSource: DatabaseQuery

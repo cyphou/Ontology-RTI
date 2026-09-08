@@ -1,0 +1,27 @@
+table factoffer
+	column OfferId
+		dataType: string
+		sourceColumn: OfferId
+	column CandidateId
+		dataType: string
+		sourceColumn: CandidateId
+	column JobRequisitionId
+		dataType: string
+		sourceColumn: JobRequisitionId
+	column OfferCalendarDateId
+		dataType: string
+		sourceColumn: OfferCalendarDateId
+	column OfferStatus
+		dataType: string
+		sourceColumn: OfferStatus
+	column OfferedAnnualAmount
+		dataType: double
+		sourceColumn: OfferedAnnualAmount
+	measure Offers = DISTINCTCOUNT(factoffer[OfferId])
+	measure 'Acceptance Rate' = DIVIDE(CALCULATE([Offers], factoffer[OfferStatus] = "Synthetic Accepted"), [Offers], 0)
+	measure 'New Hires' = CALCULATE([Offers], factoffer[OfferStatus] = "Synthetic Accepted")
+	partition factoffer = entity
+		mode: directLake
+		source
+			entityName: factoffer
+			expressionSource: DatabaseQuery

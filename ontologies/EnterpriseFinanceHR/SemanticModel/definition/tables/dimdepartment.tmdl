@@ -1,0 +1,18 @@
+table dimdepartment
+	column DepartmentId
+		dataType: string
+		sourceColumn: DepartmentId
+	column DepartmentName
+		dataType: string
+		sourceColumn: DepartmentName
+	column BusinessUnitId
+		dataType: string
+		sourceColumn: BusinessUnitId
+	column LocationId
+		dataType: string
+		sourceColumn: LocationId
+	partition dimdepartment = entity
+		mode: directLake
+		source
+			entityName: dimdepartment
+			expressionSource: DatabaseQuery

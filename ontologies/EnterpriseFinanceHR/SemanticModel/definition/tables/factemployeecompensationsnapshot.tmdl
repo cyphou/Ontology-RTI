@@ -1,0 +1,31 @@
+table factemployeecompensationsnapshot
+	column CompensationSnapshotId
+		dataType: string
+		sourceColumn: CompensationSnapshotId
+	column EmployeeId
+		dataType: string
+		sourceColumn: EmployeeId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column PayGradeId
+		dataType: string
+		sourceColumn: PayGradeId
+	column CompensationComponentId
+		dataType: string
+		sourceColumn: CompensationComponentId
+	column AnnualizedAmount
+		dataType: double
+		sourceColumn: AnnualizedAmount
+	column Fte
+		dataType: double
+		sourceColumn: Fte
+	measure 'Total Compensation' = SUM(factemployeecompensationsnapshot[AnnualizedAmount])
+	measure 'Base Salary' = CALCULATE([Total Compensation], dimcompensationcomponent[ComponentCategory] = "Base Salary")
+	measure 'Payroll Cost per FTE' = DIVIDE([Total Compensation], SUM(factemployeecompensationsnapshot[Fte]), 0)
+	measure 'Salary Plan Variance' = [Total Compensation] - SUM(factcompensationplan[PlannedCompensation])
+	partition factemployeecompensationsnapshot = entity
+		mode: directLake
+		source
+			entityName: factemployeecompensationsnapshot
+			expressionSource: DatabaseQuery

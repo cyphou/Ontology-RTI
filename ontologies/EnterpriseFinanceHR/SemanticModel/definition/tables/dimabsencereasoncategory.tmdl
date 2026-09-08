@@ -1,0 +1,15 @@
+table dimabsencereasoncategory
+	column AbsenceReasonCategoryId
+		dataType: string
+		sourceColumn: AbsenceReasonCategoryId
+	column ReasonCategoryName
+		dataType: string
+		sourceColumn: ReasonCategoryName
+	column ReasonGroup
+		dataType: string
+		sourceColumn: ReasonGroup
+	partition dimabsencereasoncategory = entity
+		mode: directLake
+		source
+			entityName: dimabsencereasoncategory
+			expressionSource: DatabaseQuery

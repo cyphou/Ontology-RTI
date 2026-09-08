@@ -1,0 +1,4 @@
+"AbsenceEpisodeId","EmployeeId","LeaveTypeId","AbsenceReasonCategoryId","StartCalendarDateId","EndCalendarDateId","AbsenceHours"
+"AE001","E006","LT01","AR01","D20250113","D20250114","16"
+"AE002","E024","LT02","AR02","D20250310","D20250310","8"
+"AE003","E067","LT01","AR01","D20250616","D20250618","24"

@@ -8,7 +8,7 @@
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
     [Parameter(Mandatory=$false)] [string]$LakehouseId,
-    [Parameter(Mandatory=$false)] [string]$LakehouseName,
+    [Parameter(Mandatory=$false)] [string]$LakehouseName = "SolarFarmLH",
     [Parameter(Mandatory=$false)] [string]$OntologyId,
     [Parameter(Mandatory=$false)] [string]$AgentName = "SolarFarm-DataAgent"
 )
@@ -23,8 +23,12 @@ Write-Host "=== Deploying Data Agent: $AgentName ===" -ForegroundColor Cyan
 
 if (-not $LakehouseId) {
     $allItems = (Invoke-RestMethod -Uri "$apiBase/workspaces/$WorkspaceId/items" -Headers $headers).value
-    $lh = $allItems | Where-Object { $_.type -eq 'Lakehouse' } | Select-Object -First 1
-    if ($lh) { $LakehouseId = $lh.id; $LakehouseName = $lh.displayName } else { Write-Host "[ERROR] No Lakehouse found." -ForegroundColor Red; exit 1 }
+    $lh = $allItems | Where-Object { $_.type -eq 'Lakehouse' -and $_.displayName -eq $LakehouseName } | Select-Object -First 1
+    if ($lh) {
+        $LakehouseId = $lh.id
+    } else {
+        throw "Lakehouse '$LakehouseName' was not found. Deploy the SolarFarm data first or pass -LakehouseId explicitly."
+    }
 }
 
 $aiInstructions = @"
@@ -71,13 +75,13 @@ This ontology contains the following entity types:
 "@
 
 $dataAgentJson = @{
-    "`$schema" = "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/data_agent/2.1.0/schema.json"
+    "`$schema" = "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataAgent/2.1.0/schema.json"
     name = $AgentName
     description = "AI agent for Solar Farm Fleet ontology — energy production, maintenance, weather, and performance analytics."
 } | ConvertTo-Json -Depth 5
 
 $stageConfig = @{
-    "`$schema" = "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/stageConfig/1.0.0/schema.json"
+    "`$schema" = "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/stageConfiguration/1.0.0/schema.json"
     dataSources = @( @{ type = "Lakehouse"; workspaceId = $WorkspaceId; artifactId = $LakehouseId } )
     aiInstructions = $aiInstructions
 } | ConvertTo-Json -Depth 5

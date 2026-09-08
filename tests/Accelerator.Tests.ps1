@@ -3,7 +3,7 @@
     Pester tests for the IQ Ontology Accelerator project.
 .DESCRIPTION
     Validates project structure, CSV schemas, GQL syntax, PowerShell parsing,
-    and ontology definition consistency across all 7 domains.
+    and ontology definition consistency across all 8 domains.
 
     Run with: Invoke-Pester ./tests/Accelerator.Tests.ps1 -Output Detailed
 #>
@@ -16,7 +16,7 @@ BeforeAll {
 # Discovery-time data (Pester 5 evaluates -ForEach collections during discovery)
 # ----------------------------------------------------------------------------
 $discoRoot = Split-Path -Parent $PSScriptRoot
-$domains = @("Healthcare", "ITAsset", "ManufacturingPlant", "OilGasRefinery", "SmartBuilding", "WindTurbine", "SolarFarm")
+$domains = @("Healthcare", "ITAsset", "ManufacturingPlant", "OilGasRefinery", "SmartBuilding", "WindTurbine", "SolarFarm", "EnterpriseFinanceHR")
 $requiredFiles = @(
     "Build-Ontology.ps1",
     "Deploy-DataAgent.ps1",
@@ -198,5 +198,44 @@ Describe "Shared Helpers Module" {
     It "Deploy-GenericOntology.ps1 dot-sources helpers.ps1" {
         $generic = Get-Content (Join-Path $script:rootDir "deploy\Deploy-GenericOntology.ps1") -Raw
         $generic | Should -Match 'helpers\.ps1'
+    }
+}
+
+# ============================================================================
+# TEST 6: Enterprise Finance + HR Expansion
+# ============================================================================
+Describe "Enterprise Finance + HR Expansion" {
+    BeforeAll {
+        $script:enterprisePath = Join-Path $script:rootDir "ontologies\EnterpriseFinanceHR"
+        $script:enterpriseData = Join-Path $script:enterprisePath "data"
+        $script:enterpriseTables = @(
+            "DimCalendarDate.csv", "DimPayGrade.csv", "DimCompensationComponent.csv", "FactEmployeeCompensationSnapshot.csv",
+            "DimWorkSchedule.csv", "DimAttendanceCode.csv", "FactTimeAttendanceDaily.csv", "DimLeaveType.csv",
+            "DimAbsenceReasonCategory.csv", "FactAbsenceEpisode.csv", "DimRecruitmentStage.csv", "DimRecruitmentSource.csv",
+            "DimCandidate.csv", "FactJobRequisition.csv", "FactRecruitmentStageEvent.csv", "FactOffer.csv"
+        )
+    }
+
+    It "has all expanded synthetic source tables" {
+        foreach ($table in $script:enterpriseTables) { Join-Path $script:enterpriseData $table | Should -Exist }
+    }
+
+    It "has the expected cross-domain foreign key columns" {
+        (Get-Content (Join-Path $script:enterpriseData "FactEmployeeCompensationSnapshot.csv") -First 1) | Should -Match 'EmployeeId"\s*,\s*"FiscalPeriodId"\s*,\s*"PayGradeId"\s*,\s*"CompensationComponentId'
+        (Get-Content (Join-Path $script:enterpriseData "FactTimeAttendanceDaily.csv") -First 1) | Should -Match 'EmployeeId"\s*,\s*"CalendarDateId"\s*,\s*"WorkScheduleId"\s*,\s*"AttendanceCodeId'
+        (Get-Content (Join-Path $script:enterpriseData "FactAbsenceEpisode.csv") -First 1) | Should -Match 'EmployeeId"\s*,\s*"LeaveTypeId"\s*,\s*"AbsenceReasonCategoryId'
+        (Get-Content (Join-Path $script:enterpriseData "FactJobRequisition.csv") -First 1) | Should -Match 'PositionId"\s*,\s*"DepartmentId"\s*,\s*"CostCenterId'
+    }
+
+    It "defines all expanded ontology entities and aggregate dataflow artifacts" {
+        $ontology = Get-Content (Join-Path $script:enterprisePath "Build-Ontology.ps1") -Raw
+        foreach ($entity in @("CalendarDate", "PayGrade", "EmployeeCompensationSnapshot", "TimeAttendanceDaily", "AbsenceEpisode", "Candidate", "JobRequisition", "Offer")) { $ontology | Should -Match "'$entity'" }
+        foreach ($flow in @("compensation", "attendance", "absence", "recruitment")) {
+            Join-Path $script:enterprisePath "datafactory\$flow\mashup.pq" | Should -Exist
+            (Get-Content (Join-Path $script:enterprisePath "datafactory\$flow\mashup.pq") -Raw) | Should -Match "bi_"
+        }
+        Join-Path $script:enterprisePath "Deploy-HRDataflowsGen2.ps1" | Should -Exist
+        Join-Path $script:enterprisePath "Deploy-HRDataPipeline.ps1" | Should -Exist
+        Join-Path $script:enterprisePath "DataPipeline\definition\pipeline-content.json" | Should -Exist
     }
 }

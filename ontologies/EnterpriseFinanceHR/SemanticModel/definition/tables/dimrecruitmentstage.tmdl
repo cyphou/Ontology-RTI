@@ -1,0 +1,18 @@
+table dimrecruitmentstage
+	column RecruitmentStageId
+		dataType: string
+		sourceColumn: RecruitmentStageId
+	column StageName
+		dataType: string
+		sourceColumn: StageName
+	column StageSequence
+		dataType: int64
+		sourceColumn: StageSequence
+	column IsTerminal
+		dataType: string
+		sourceColumn: IsTerminal
+	partition dimrecruitmentstage = entity
+		mode: directLake
+		source
+			entityName: dimrecruitmentstage
+			expressionSource: DatabaseQuery

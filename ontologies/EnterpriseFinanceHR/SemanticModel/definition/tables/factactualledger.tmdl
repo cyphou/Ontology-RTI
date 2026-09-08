@@ -1,0 +1,32 @@
+table factactualledger
+	column LedgerEntryId
+		dataType: string
+		sourceColumn: LedgerEntryId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column AccountId
+		dataType: string
+		sourceColumn: AccountId
+	column ActualAmount
+		dataType: double
+		sourceColumn: ActualAmount
+	partition factactualledger = entity
+		mode: directLake
+		source
+			entityName: factactualledger
+			expressionSource: DatabaseQuery
+	measure Budget = SUM(factbudgetplan[BudgetAmount])
+	measure Actual = SUM(factactualledger[ActualAmount])
+	measure Variance = [Actual] - [Budget]
+	measure 'Variance %' = DIVIDE([Variance], [Budget], 0)
+	measure Forecast = SUM(factforecastscenario[ForecastAmount])
+	measure 'Forecast Variance' = [Forecast] - [Actual]
+	measure Headcount = SUM(factheadcountsnapshot[Headcount])
+	measure FTE = SUM(factheadcountsnapshot[Fte])
+	measure 'Cost per FTE' = DIVIDE([Actual], [FTE], 0)
+	measure 'Vacancy Rate' = DIVIDE(SUM(factheadcountsnapshot[OpenPositions]), [Headcount] + SUM(factheadcountsnapshot[OpenPositions]), 0)
+	measure 'Voluntary Attrition Rate' = DIVIDE(CALCULATE(SUM(factworkforcemovement[MovementCount]), factworkforcemovement[MovementType] = "Voluntary Exit"), [Headcount], 0)

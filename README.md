@@ -11,14 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/domains-7%20industries-742774?style=flat-square" alt="7 Domains"/>
-  <img src="https://img.shields.io/badge/entity%20types-80-blue?style=flat-square" alt="80 Entity Types"/>
-  <img src="https://img.shields.io/badge/CSV%20tables-104-green?style=flat-square" alt="104 Tables"/>
-  <img src="https://img.shields.io/badge/sample%20rows-3%2C100%2B-orange?style=flat-square" alt="3100+ Rows"/>
-  <img src="https://img.shields.io/badge/KQL%20tables-30-0078D4?style=flat-square" alt="30 KQL Tables"/>
-  <img src="https://img.shields.io/badge/dashboard%20tiles-62-0078D4?style=flat-square" alt="62 Tiles"/>
-  <img src="https://img.shields.io/badge/GQL%20queries-113%2B-107C10?style=flat-square" alt="GQL Queries"/>
-  <img src="https://img.shields.io/badge/AI%20agents-12-FF6F00?style=flat-square" alt="AI Agents"/>
+  <img src="https://img.shields.io/badge/domains-8%20industries-742774?style=flat-square" alt="8 Domains"/>
   <img src="https://img.shields.io/badge/copilot%20agents-7-5391FE?style=flat-square" alt="7 Copilot Agents"/>
   <img src="https://img.shields.io/badge/Rayfin%20apps-3-0078D4?style=flat-square" alt="3 Rayfin Apps"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
@@ -70,6 +63,8 @@ flowchart LR
 ```
 
 Each domain ships a **complete, ready-to-deploy package**: CSV sample data, ontology definition, graph queries, KQL enrichment tables, an eventstream for real-time ingestion, a real-time dashboard, and two AI agents --- all wired together and deployed with a single PowerShell command.
+
+The **Enterprise Finance + HR** package additionally includes 16 HR planning entities, four aggregate-only Dataflow Gen2 templates for curated `bi_*` Lakehouse tables, and an optional DataPipeline definition for ordered load, quality-gate, and semantic-model refresh orchestration. See [DATAFLOW_GEN2_GUIDE.md](ontologies/EnterpriseFinanceHR/DATAFLOW_GEN2_GUIDE.md) and [HR_DATA_PIPELINE_GUIDE.md](ontologies/EnterpriseFinanceHR/HR_DATA_PIPELINE_GUIDE.md). It also ships a shiny, multi-page Power BI report generator ([Deploy-Report.ps1](ontologies/EnterpriseFinanceHR/Deploy-Report.ps1)) with GenAI visuals (Decomposition Tree, Key Influencers), plus an M365 Cowork pipeline that asks business questions against the model, forecasts spend, generates a branded PowerPoint deck, and schedules a Teams review meeting --- see [COWORK_SCENARIO.md](ontologies/EnterpriseFinanceHR/COWORK_SCENARIO.md) for the manual runbook.
 
 ---
 
@@ -151,6 +146,11 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 <td><sub>Solar plants, PV arrays, inverters, strings, trackers, energy production, weather</sub></td>
 </tr>
 </table>
+
+### Enterprise Finance + HR
+
+**Finance and workforce planning**: 33 ontology entities and 35 CSV tables for explicitly synthetic finance, compensation, attendance, absence, and recruitment planning data. The included [local planning app](apps/enterprise-finance-hr-rayfin/README.md) renders aggregate-only views and contains no actual PII. This package is not for automated HR decisions; RTI and Eventhouse capabilities are optional extensions.
+
 ---
 
 ## :zap: Quick Start
@@ -175,6 +175,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
   |    [5]  Wind Turbine / Wind Farm                              |
   |    [6]  Healthcare                                            |
   |    [7]  Solar Farm                                            |
+    |    [8]  Enterprise Finance + HR                               |
   |                                                               |
   +==============================================================+
 ```
@@ -185,6 +186,7 @@ Each domain ships a **complete, ready-to-deploy package**: CSV sample data, onto
 # Deploy a specific domain
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType SmartBuilding
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType Healthcare
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType EnterpriseFinanceHR
 
 # Skip optional components
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset -SkipDataAgent -SkipDashboard

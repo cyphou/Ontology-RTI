@@ -1,0 +1,18 @@
+table dimlegalentity
+	column LegalEntityId
+		dataType: string
+		sourceColumn: LegalEntityId
+	column LegalEntityName
+		dataType: string
+		sourceColumn: LegalEntityName
+	column CountryCode
+		dataType: string
+		sourceColumn: CountryCode
+	column CurrencyCode
+		dataType: string
+		sourceColumn: CurrencyCode
+	partition dimlegalentity = entity
+		mode: directLake
+		source
+			entityName: dimlegalentity
+			expressionSource: DatabaseQuery

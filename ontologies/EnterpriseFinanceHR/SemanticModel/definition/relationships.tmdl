@@ -1,0 +1,155 @@
+relationship dimbusinessunit_LegalEntityId_dimlegalentity
+	fromColumn: dimbusinessunit.LegalEntityId
+	toColumn: dimlegalentity.LegalEntityId
+
+relationship dimdepartment_BusinessUnitId_dimbusinessunit
+	fromColumn: dimdepartment.BusinessUnitId
+	toColumn: dimbusinessunit.BusinessUnitId
+
+relationship dimcostcenter_DepartmentId_dimdepartment
+	fromColumn: dimcostcenter.DepartmentId
+	toColumn: dimdepartment.DepartmentId
+
+relationship dimemployee_PositionId_dimposition
+	fromColumn: dimemployee.PositionId
+	toColumn: dimposition.PositionId
+
+relationship dimposition_JobFamilyId_dimjobfamily
+	fromColumn: dimposition.JobFamilyId
+	toColumn: dimjobfamily.JobFamilyId
+
+relationship dimposition_CostCenterId_dimcostcenter
+	fromColumn: dimposition.CostCenterId
+	toColumn: dimcostcenter.CostCenterId
+
+relationship factbudgetplan_FiscalPeriodId_dimfiscalperiod
+	fromColumn: factbudgetplan.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factbudgetplan_CostCenterId_dimcostcenter
+	fromColumn: factbudgetplan.CostCenterId
+	toColumn: dimcostcenter.CostCenterId
+
+relationship factbudgetplan_AccountId_dimaccount
+	fromColumn: factbudgetplan.AccountId
+	toColumn: dimaccount.AccountId
+
+relationship factactualledger_FiscalPeriodId_dimfiscalperiod
+	fromColumn: factactualledger.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factactualledger_CostCenterId_dimcostcenter
+	fromColumn: factactualledger.CostCenterId
+	toColumn: dimcostcenter.CostCenterId
+
+relationship factactualledger_AccountId_dimaccount
+	fromColumn: factactualledger.AccountId
+	toColumn: dimaccount.AccountId
+
+relationship factforecastscenario_FiscalPeriodId_dimfiscalperiod
+	fromColumn: factforecastscenario.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factforecastscenario_CostCenterId_dimcostcenter
+	fromColumn: factforecastscenario.CostCenterId
+	toColumn: dimcostcenter.CostCenterId
+
+relationship factheadcountsnapshot_FiscalPeriodId_dimfiscalperiod
+	fromColumn: factheadcountsnapshot.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factheadcountsnapshot_DepartmentId_dimdepartment
+	fromColumn: factheadcountsnapshot.DepartmentId
+	toColumn: dimdepartment.DepartmentId
+
+relationship factworkforcemovement_FiscalPeriodId_dimfiscalperiod
+	fromColumn: factworkforcemovement.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factworkforcemovement_DepartmentId_dimdepartment
+	fromColumn: factworkforcemovement.DepartmentId
+	toColumn: dimdepartment.DepartmentId
+
+relationship dimcalendardate_FiscalPeriodId_dimfiscalperiod
+	fromColumn: dimcalendardate.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factemployeecompensationsnapshot_EmployeeId_dimemployee
+	fromColumn: factemployeecompensationsnapshot.EmployeeId
+	toColumn: dimemployee.EmployeeId
+
+relationship factemployeecompensationsnapshot_FiscalPeriodId_dimfiscalperiod
+	fromColumn: factemployeecompensationsnapshot.FiscalPeriodId
+	toColumn: dimfiscalperiod.FiscalPeriodId
+
+relationship factemployeecompensationsnapshot_PayGradeId_dimpaygrade
+	fromColumn: factemployeecompensationsnapshot.PayGradeId
+	toColumn: dimpaygrade.PayGradeId
+
+relationship factemployeecompensationsnapshot_CompensationComponentId_dimcompensationcomponent
+	fromColumn: factemployeecompensationsnapshot.CompensationComponentId
+	toColumn: dimcompensationcomponent.CompensationComponentId
+
+relationship facttimeattendancedaily_EmployeeId_dimemployee
+	fromColumn: facttimeattendancedaily.EmployeeId
+	toColumn: dimemployee.EmployeeId
+
+relationship facttimeattendancedaily_CalendarDateId_dimcalendardate
+	fromColumn: facttimeattendancedaily.CalendarDateId
+	toColumn: dimcalendardate.CalendarDateId
+
+relationship facttimeattendancedaily_WorkScheduleId_dimworkschedule
+	fromColumn: facttimeattendancedaily.WorkScheduleId
+	toColumn: dimworkschedule.WorkScheduleId
+
+relationship facttimeattendancedaily_AttendanceCodeId_dimattendancecode
+	fromColumn: facttimeattendancedaily.AttendanceCodeId
+	toColumn: dimattendancecode.AttendanceCodeId
+
+relationship factabsenceepisode_EmployeeId_dimemployee
+	fromColumn: factabsenceepisode.EmployeeId
+	toColumn: dimemployee.EmployeeId
+
+relationship factabsenceepisode_LeaveTypeId_dimleavetype
+	fromColumn: factabsenceepisode.LeaveTypeId
+	toColumn: dimleavetype.LeaveTypeId
+
+relationship factabsenceepisode_AbsenceReasonCategoryId_dimabsencereasoncategory
+	fromColumn: factabsenceepisode.AbsenceReasonCategoryId
+	toColumn: dimabsencereasoncategory.AbsenceReasonCategoryId
+
+relationship factjobrequisition_PositionId_dimposition
+	fromColumn: factjobrequisition.PositionId
+	toColumn: dimposition.PositionId
+
+relationship dimcandidate_RecruitmentSourceId_dimrecruitmentsource
+	fromColumn: dimcandidate.RecruitmentSourceId
+	toColumn: dimrecruitmentsource.RecruitmentSourceId
+
+relationship factrecruitmentstageevent_CandidateId_dimcandidate
+	fromColumn: factrecruitmentstageevent.CandidateId
+	toColumn: dimcandidate.CandidateId
+
+relationship factrecruitmentstageevent_JobRequisitionId_factjobrequisition
+	fromColumn: factrecruitmentstageevent.JobRequisitionId
+	toColumn: factjobrequisition.JobRequisitionId
+
+relationship factrecruitmentstageevent_RecruitmentStageId_dimrecruitmentstage
+	fromColumn: factrecruitmentstageevent.RecruitmentStageId
+	toColumn: dimrecruitmentstage.RecruitmentStageId
+
+relationship factrecruitmentstageevent_CalendarDateId_dimcalendardate
+	fromColumn: factrecruitmentstageevent.CalendarDateId
+	toColumn: dimcalendardate.CalendarDateId
+
+relationship factoffer_CandidateId_dimcandidate
+	fromColumn: factoffer.CandidateId
+	toColumn: dimcandidate.CandidateId
+
+relationship factoffer_JobRequisitionId_factjobrequisition
+	fromColumn: factoffer.JobRequisitionId
+	toColumn: factjobrequisition.JobRequisitionId
+
+relationship factoffer_OfferCalendarDateId_dimcalendardate
+	fromColumn: factoffer.OfferCalendarDateId
+	toColumn: dimcalendardate.CalendarDateId

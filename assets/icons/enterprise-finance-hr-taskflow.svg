@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Enterprise Finance HR taskflow</title>
+  <desc id="desc">Northstar taskflow mark showing an ordered path from data to decision.</desc>
+  <rect width="512" height="512" rx="96" fill="#f7fbf7"/>
+  <path d="M112 128h116v82H112zM284 302h116v82H284z" fill="#087174"/>
+  <path d="M228 169h56v174h-56z" fill="#f5b65b"/>
+  <path d="m256 343-42-42h84l-42 42Z" fill="#df653c"/>
+  <path d="M170 169h58M284 343h-58" stroke="#063f48" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="170" cy="169" r="18" fill="#a9ddd4"/>
+  <circle cx="342" cy="343" r="18" fill="#a9ddd4"/>
+</svg>

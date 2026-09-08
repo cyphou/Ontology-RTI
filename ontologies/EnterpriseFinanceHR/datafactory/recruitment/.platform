@@ -1,0 +1,1 @@
+{"$schema":"https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json","metadata":{"type":"Dataflow","displayName":"Enterprise HR Recruitment"},"config":{"version":"2.0","logicalId":"f7c231a9-9c21-4c9e-a5ee-90843e12fb51"}}

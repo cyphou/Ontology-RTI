@@ -68,6 +68,9 @@ if (-not (Test-Path $DataFolder)) { Write-Error "Data folder not found: $DataFol
 $allCsvFiles = Get-ChildItem -Path $DataFolder -Filter "*.csv" -File
 $telemetryFile = $allCsvFiles | Where-Object { $_.Name -eq "SensorTelemetry.csv" } | Select-Object -First 1
 $lakehouseFiles = $allCsvFiles | Where-Object { $_.Name -ne "SensorTelemetry.csv" }
+if ($OntologyType -eq "EnterpriseFinanceHR" -and $telemetryFile) {
+    $lakehouseFiles += $telemetryFile
+}
 Write-Info "Found $($lakehouseFiles.Count) lakehouse CSV files + $(if ($telemetryFile) { '1 telemetry file' } else { 'no telemetry file' })"
 
 # ------------------------------------------------------------------
@@ -515,7 +518,13 @@ if (-not $SkipDataAgent) {
     $daScript = Join-Path $OntologyFolder "Deploy-DataAgent.ps1"
     if (-not (Test-Path $daScript)) { $daScript = Join-Path $scriptDir "Deploy-DataAgent.ps1" }
     if (Test-Path $daScript) {
-        try { $agentParams = @{ WorkspaceId = $WorkspaceId }; if ($ontologyId) { $agentParams['OntologyId'] = $ontologyId }; & $daScript @agentParams; Write-Success "Data Agent deployed" }
+        try {
+            $agentParams = @{ WorkspaceId = $WorkspaceId }
+            if ($lakehouseId) { $agentParams['LakehouseId'] = $lakehouseId; $agentParams['LakehouseName'] = $LakehouseName }
+            if ($ontologyId) { $agentParams['OntologyId'] = $ontologyId }
+            & $daScript @agentParams
+            Write-Success "Data Agent deployed"
+        }
         catch { Write-Warn "Data Agent issue (requires F64+): $_" }
     }
 } else { Write-Info "Skipping Data Agent (--SkipDataAgent)" }

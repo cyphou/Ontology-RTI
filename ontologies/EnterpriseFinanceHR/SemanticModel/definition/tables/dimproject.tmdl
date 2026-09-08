@@ -1,0 +1,18 @@
+table dimproject
+	column ProjectId
+		dataType: string
+		sourceColumn: ProjectId
+	column ProjectName
+		dataType: string
+		sourceColumn: ProjectName
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column ProjectStatus
+		dataType: string
+		sourceColumn: ProjectStatus
+	partition dimproject = entity
+		mode: directLake
+		source
+			entityName: dimproject
+			expressionSource: DatabaseQuery

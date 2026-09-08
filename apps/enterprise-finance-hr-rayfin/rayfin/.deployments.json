@@ -1,0 +1,15 @@
+{
+  "deployments": {
+    "pde-demo-hr": {
+      "fabricItemId": "b5b97737-9976-4931-9799-5130eec6a751",
+      "fabricApiUrl": "https://pbipmsitwcus2-msit.pbidedicated.windows.net/webapi/capacities/BF9A6BCA-CCAF-47FB-A776-EA5BF7D1074F/workloads/BaaS/BaaSService/automatic/v1/workspaces/56b6ac57-a326-4c90-a040-36cabeec98ff/appbackends/b5b97737-9976-4931-9799-5130eec6a751/",
+      "fabricWorkspaceId": "56b6ac57-a326-4c90-a040-36cabeec98ff",
+      "fabricTenantId": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+      "publishableKey": "pk-gCzIFK3jDtHhkLKCdKCA",
+      "hostingUrl": "https://extra-reach-179d6557f8-westcentralus.webapp.msit.fabricapps.net",
+      "fabricDeepLink": "https://app.fabric.microsoft.com/groups/56b6ac57-a326-4c90-a040-36cabeec98ff/appbackends/b5b97737-9976-4931-9799-5130eec6a751?ctid=72f988bf-86f1-41af-91ab-2d7cd011db47",
+      "deployedAt": "2026-09-08T07:58:28.989Z"
+    }
+  },
+  "active": "pde-demo-hr"
+}

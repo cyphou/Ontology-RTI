@@ -1,0 +1,18 @@
+table dimworkschedule
+	column WorkScheduleId
+		dataType: string
+		sourceColumn: WorkScheduleId
+	column ScheduleName
+		dataType: string
+		sourceColumn: ScheduleName
+	column ScheduledHoursPerDay
+		dataType: double
+		sourceColumn: ScheduledHoursPerDay
+	column ScheduledDaysPerWeek
+		dataType: double
+		sourceColumn: ScheduledDaysPerWeek
+	partition dimworkschedule = entity
+		mode: directLake
+		source
+			entityName: dimworkschedule
+			expressionSource: DatabaseQuery

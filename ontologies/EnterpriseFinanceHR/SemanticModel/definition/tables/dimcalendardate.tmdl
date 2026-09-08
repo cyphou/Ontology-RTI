@@ -1,0 +1,21 @@
+table dimcalendardate
+	column CalendarDateId
+		dataType: string
+		sourceColumn: CalendarDateId
+	column CalendarDate
+		dataType: string
+		sourceColumn: CalendarDate
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column DayOfWeek
+		dataType: string
+		sourceColumn: DayOfWeek
+	column IsWorkingDay
+		dataType: string
+		sourceColumn: IsWorkingDay
+	partition dimcalendardate = entity
+		mode: directLake
+		source
+			entityName: dimcalendardate
+			expressionSource: DatabaseQuery

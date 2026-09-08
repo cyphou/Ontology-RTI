@@ -1,0 +1,21 @@
+table factworkforcemovement
+	column MovementId
+		dataType: string
+		sourceColumn: MovementId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column DepartmentId
+		dataType: string
+		sourceColumn: DepartmentId
+	column MovementType
+		dataType: string
+		sourceColumn: MovementType
+	column MovementCount
+		dataType: double
+		sourceColumn: MovementCount
+	partition factworkforcemovement = entity
+		mode: directLake
+		source
+			entityName: factworkforcemovement
+			expressionSource: DatabaseQuery

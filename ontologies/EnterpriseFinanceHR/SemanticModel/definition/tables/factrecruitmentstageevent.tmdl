@@ -1,0 +1,22 @@
+table factrecruitmentstageevent
+	column RecruitmentStageEventId
+		dataType: string
+		sourceColumn: RecruitmentStageEventId
+	column CandidateId
+		dataType: string
+		sourceColumn: CandidateId
+	column JobRequisitionId
+		dataType: string
+		sourceColumn: JobRequisitionId
+	column RecruitmentStageId
+		dataType: string
+		sourceColumn: RecruitmentStageId
+	column CalendarDateId
+		dataType: string
+		sourceColumn: CalendarDateId
+	measure 'Active Candidates' = DISTINCTCOUNT(factrecruitmentstageevent[CandidateId])
+	partition factrecruitmentstageevent = entity
+		mode: directLake
+		source
+			entityName: factrecruitmentstageevent
+			expressionSource: DatabaseQuery

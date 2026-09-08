@@ -1,0 +1,18 @@
+table dimpaygrade
+	column PayGradeId
+		dataType: string
+		sourceColumn: PayGradeId
+	column PayGradeName
+		dataType: string
+		sourceColumn: PayGradeName
+	column MinimumSalary
+		dataType: double
+		sourceColumn: MinimumSalary
+	column MaximumSalary
+		dataType: double
+		sourceColumn: MaximumSalary
+	partition dimpaygrade = entity
+		mode: directLake
+		source
+			entityName: dimpaygrade
+			expressionSource: DatabaseQuery

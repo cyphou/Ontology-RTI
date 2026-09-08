@@ -1,0 +1,3 @@
+export interface AttendanceMetrics { scheduled: number; worked: number; approved: number; overtime: number; }
+export function attendanceSummary(metrics: AttendanceMetrics) { return { attendanceRate: metrics.scheduled ? metrics.approved / metrics.scheduled : 0, overtimeRate: metrics.worked ? metrics.overtime / metrics.worked : 0 }; }
+export const syntheticAttendance: AttendanceMetrics = { scheduled: 5_824, worked: 5_911, approved: 5_788, overtime: 188 };

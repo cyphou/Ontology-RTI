@@ -1,0 +1,18 @@
+table dimcandidate
+	column CandidateId
+		dataType: string
+		sourceColumn: CandidateId
+	column CandidateAlias
+		dataType: string
+		sourceColumn: CandidateAlias
+	column RecruitmentSourceId
+		dataType: string
+		sourceColumn: RecruitmentSourceId
+	column CandidateStatus
+		dataType: string
+		sourceColumn: CandidateStatus
+	partition dimcandidate = entity
+		mode: directLake
+		source
+			entityName: dimcandidate
+			expressionSource: DatabaseQuery

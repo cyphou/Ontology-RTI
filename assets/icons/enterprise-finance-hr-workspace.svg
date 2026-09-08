@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Enterprise Finance HR workspace</title>
+  <desc id="desc">Northstar workspace mark combining finance and workforce planning.</desc>
+  <rect width="512" height="512" rx="96" fill="#063f48"/>
+  <path d="M96 352V160h74v192H96Zm123 0V112h74v240h-74Zm123 0V208h74v144h-74Z" fill="#f5b65b"/>
+  <path d="M95 385h322" stroke="#df653c" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="133" cy="124" r="28" fill="#a9ddd4"/>
+  <circle cx="256" cy="76" r="28" fill="#a9ddd4"/>
+  <circle cx="379" cy="172" r="28" fill="#a9ddd4"/>
+  <path d="m133 124 123-48 123 96" fill="none" stroke="#a9ddd4" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

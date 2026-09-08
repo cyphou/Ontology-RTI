@@ -1,0 +1,24 @@
+table factheadcountsnapshot
+	column SnapshotId
+		dataType: string
+		sourceColumn: SnapshotId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column DepartmentId
+		dataType: string
+		sourceColumn: DepartmentId
+	column Headcount
+		dataType: double
+		sourceColumn: Headcount
+	column Fte
+		dataType: double
+		sourceColumn: Fte
+	column OpenPositions
+		dataType: string
+		sourceColumn: OpenPositions
+	partition factheadcountsnapshot = entity
+		mode: directLake
+		source
+			entityName: factheadcountsnapshot
+			expressionSource: DatabaseQuery

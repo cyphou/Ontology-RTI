@@ -1,0 +1,21 @@
+table factbudgetplan
+	column BudgetPlanId
+		dataType: string
+		sourceColumn: BudgetPlanId
+	column FiscalPeriodId
+		dataType: string
+		sourceColumn: FiscalPeriodId
+	column CostCenterId
+		dataType: string
+		sourceColumn: CostCenterId
+	column AccountId
+		dataType: string
+		sourceColumn: AccountId
+	column BudgetAmount
+		dataType: double
+		sourceColumn: BudgetAmount
+	partition factbudgetplan = entity
+		mode: directLake
+		source
+			entityName: factbudgetplan
+			expressionSource: DatabaseQuery

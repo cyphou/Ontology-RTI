@@ -1,0 +1,18 @@
+table dimattendancecode
+	column AttendanceCodeId
+		dataType: string
+		sourceColumn: AttendanceCodeId
+	column AttendanceCodeName
+		dataType: string
+		sourceColumn: AttendanceCodeName
+	column AttendanceCategory
+		dataType: string
+		sourceColumn: AttendanceCategory
+	column IsApprovedWork
+		dataType: string
+		sourceColumn: IsApprovedWork
+	partition dimattendancecode = entity
+		mode: directLake
+		source
+			entityName: dimattendancecode
+			expressionSource: DatabaseQuery

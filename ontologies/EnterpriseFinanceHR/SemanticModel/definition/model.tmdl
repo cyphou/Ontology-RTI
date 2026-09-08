@@ -1,0 +1,43 @@
+model Model
+  culture: en-US
+  defaultPowerBIDataSourceVersion: powerBI_V3
+  dataAccessOptions
+    legacyRedirects
+    returnErrorValuesAsNull
+
+ref table dimabsencereasoncategory
+ref table dimaccount
+ref table dimattendancecode
+ref table dimbusinessunit
+ref table dimcalendardate
+ref table dimcandidate
+ref table dimcompensationcomponent
+ref table dimcostcenter
+ref table dimdepartment
+ref table dimemployee
+ref table dimfiscalperiod
+ref table dimjobfamily
+ref table dimleavetype
+ref table dimlegalentity
+ref table dimlocation
+ref table dimpaygrade
+ref table dimposition
+ref table dimproject
+ref table dimrecruitmentsource
+ref table dimrecruitmentstage
+ref table dimworkschedule
+ref table factabsenceepisode
+ref table factactualledger
+ref table factbudgetplan
+ref table factcompensationplan
+ref table factemployeecompensationsnapshot
+ref table factforecastscenario
+ref table factheadcountsnapshot
+ref table factjobrequisition
+ref table factoffer
+ref table factrecruitmentstageevent
+ref table facttimeattendancedaily
+ref table factworkforcemovement
+ref table sensortelemetry
+
+annotation PBI_QueryRelationships = []

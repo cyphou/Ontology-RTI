@@ -1,0 +1,15 @@
+table dimjobfamily
+	column JobFamilyId
+		dataType: string
+		sourceColumn: JobFamilyId
+	column JobFamilyName
+		dataType: string
+		sourceColumn: JobFamilyName
+	column JobLevel
+		dataType: string
+		sourceColumn: JobLevel
+	partition dimjobfamily = entity
+		mode: directLake
+		source
+			entityName: dimjobfamily
+			expressionSource: DatabaseQuery

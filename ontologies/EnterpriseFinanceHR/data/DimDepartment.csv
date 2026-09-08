@@ -1,0 +1,25 @@
+DepartmentId,DepartmentName,BusinessUnitId,LocationId
+DP01,Synthetic Department 01,BU01,LO01
+DP02,Synthetic Department 02,BU01,LO02
+DP03,Synthetic Department 03,BU01,LO03
+DP04,Synthetic Department 04,BU01,LO04
+DP05,Synthetic Department 05,BU02,LO05
+DP06,Synthetic Department 06,BU02,LO06
+DP07,Synthetic Department 07,BU02,LO01
+DP08,Synthetic Department 08,BU02,LO02
+DP09,Synthetic Department 09,BU03,LO03
+DP10,Synthetic Department 10,BU03,LO04
+DP11,Synthetic Department 11,BU03,LO05
+DP12,Synthetic Department 12,BU03,LO06
+DP13,Synthetic Department 13,BU04,LO01
+DP14,Synthetic Department 14,BU04,LO02
+DP15,Synthetic Department 15,BU04,LO03
+DP16,Synthetic Department 16,BU04,LO04
+DP17,Synthetic Department 17,BU05,LO05
+DP18,Synthetic Department 18,BU05,LO06
+DP19,Synthetic Department 19,BU05,LO01
+DP20,Synthetic Department 20,BU05,LO02
+DP21,Synthetic Department 21,BU06,LO03
+DP22,Synthetic Department 22,BU06,LO04
+DP23,Synthetic Department 23,BU06,LO05
+DP24,Synthetic Department 24,BU06,LO06

@@ -1,0 +1,5 @@
+"OfferId","CandidateId","JobRequisitionId","OfferCalendarDateId","OfferStatus","OfferedAnnualAmount"
+"OFF001","CAN001","REQ001","D20250315","Synthetic Accepted","72000"
+"OFF002","CAN007","REQ002","D20250409","Synthetic Accepted","78000"
+"OFF003","CAN013","REQ004","D20250513","Synthetic Declined","86000"
+"OFF004","CAN019","REQ005","D20250617","Synthetic Extended","91000"

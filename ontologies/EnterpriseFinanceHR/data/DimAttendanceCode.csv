@@ -1,0 +1,4 @@
+"AttendanceCodeId","AttendanceCodeName","AttendanceCategory","IsApprovedWork"
+"AC01","Scheduled Work","Work","True"
+"AC02","Approved Overtime","Work","True"
+"AC03","Approved Leave","Leave","False"

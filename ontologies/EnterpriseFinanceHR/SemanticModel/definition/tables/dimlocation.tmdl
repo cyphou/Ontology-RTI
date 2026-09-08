@@ -1,0 +1,18 @@
+table dimlocation
+	column LocationId
+		dataType: string
+		sourceColumn: LocationId
+	column LocationName
+		dataType: string
+		sourceColumn: LocationName
+	column CountryCode
+		dataType: string
+		sourceColumn: CountryCode
+	column Region
+		dataType: string
+		sourceColumn: Region
+	partition dimlocation = entity
+		mode: directLake
+		source
+			entityName: dimlocation
+			expressionSource: DatabaseQuery

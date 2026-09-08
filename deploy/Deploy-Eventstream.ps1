@@ -36,6 +36,7 @@ $domainConfig = @{
     ITAsset            = @{ Name = "ITTelemetryStream";           EH = "ITTelemetryEH";           Table = "ServerMetric" }
     WindTurbine        = @{ Name = "WindTelemetryStream";         EH = "WindTelemetryEH";         Table = "TurbineReading" }
     Healthcare         = @{ Name = "HealthcareTelemetryStream";  EH = "HealthcareTelemetryEH";   Table = "PatientVitals" }
+    EnterpriseFinanceHR = @{ Name = "EnterpriseFinanceHRPlanningStream"; EH = "EnterpriseFinanceHREH"; Table = "PlanningException" }
 }
 
 $config = $domainConfig[$OntologyType]

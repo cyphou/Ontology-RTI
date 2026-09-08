@@ -1,0 +1,18 @@
+table dimcompensationcomponent
+	column CompensationComponentId
+		dataType: string
+		sourceColumn: CompensationComponentId
+	column ComponentName
+		dataType: string
+		sourceColumn: ComponentName
+	column ComponentCategory
+		dataType: string
+		sourceColumn: ComponentCategory
+	column IsRecurring
+		dataType: string
+		sourceColumn: IsRecurring
+	partition dimcompensationcomponent = entity
+		mode: directLake
+		source
+			entityName: dimcompensationcomponent
+			expressionSource: DatabaseQuery
