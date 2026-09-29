@@ -1,6 +1,6 @@
 ---
 name: "Report Mockup"
-description: "Use when: customizing or designing a Power BI report through its report.spec.json, previewing it as an HTML mockup on live semantic-model data before report creation, adding/moving/removing pages or visuals, changing the report theme, 'maquette HTML', 'report mockup', 'customize the report', 'make the report sexier'."
+description: "Use when: customizing or designing a Power BI report through its report.spec.json, previewing it as an HTML mockup on live semantic-model data before report creation, adding/moving/removing pages or visuals, changing the report theme, 'maquette HTML', 'report mockup', 'customize the report', 'make the report shiny', 'polish the report'."
 tools: [read, edit, search, execute, web, todo, playwright/*]
 argument-hint: "Domain (e.g. OilGasRefinery), workspace ID, semantic model ID, and what to change in the report"
 handoffs:
@@ -29,14 +29,23 @@ The deployment chain (`Deploy-Ontology.ps1` -> `deploy/Deploy-GenericOntology.ps
 
 ## Spec Format (report.spec.json)
 
-- `reportName`, `theme` (accent, dataColors, foreground, mutedText, border, visualBackground, pageBackground, outspace, good, neutral, bad).
+- `reportName`, and `domain` (defaults to the folder name). The `theme` and the logo are resolved from
+  `deploy/domain-branding.json` for that domain, so a spec normally carries **no** `theme` block. Override a
+  single key only with a reason.
 - `pages[]`: `name`, optional `storyNote` (headline insight, shown in the mockup only), `visuals[]`.
-- Visual: `type` = `card | bar | column | line | donut | combo | map | table | gauge`, `title`, `x`, `y`, `w`, `h` (1280x720 canvas, no overlaps), `measures: ["table[Measure]"]`, plus per type:
-  - `bar`/`column`/`line`/`donut`/`combo`/`map`: `category: "table[Column]"`; `combo` adds `lineMeasures`; `map` adds `latitude`/`longitude` columns. `column`/`line`/`table` accept several measures (e.g. Budget vs Actual). `line` axes always start at zero.
+- Visual: `type` = `card | kpi | bar | column | line | donut | combo | funnel | waterfall | map | table | gauge | slicer | textbox | logo`,
+  `title`, `x`, `y`, `w`, `h` (1280x720 canvas, 4px grid, 16px margin, no overlaps), `altText` (required by the
+  lint on every non-decorative visual), `measures: ["table[Measure]"]`, plus per type:
+  - `bar`/`column`/`line`/`donut`/`combo`/`funnel`/`waterfall`/`map`/`kpi`/`slicer`: `category: "table[Column]"`.
+  - `kpi`: `goalMeasures` (without it the KPI is just a number, so use a `card`), optional `lowerIsBetter`.
+  - `combo`: `lineMeasures` for the second axis. `map`: `latitude`/`longitude`.
   - `table`: `columns: [...]`, optional `fontSize`, `maxRows`.
   - `card`: optional `precision` (decimals for large numbers).
   - `gauge`: optional `min`, `max`, `target` (in the measure's own units, e.g. 0.85 for 85% on a 0-1 measure).
+  - `textbox`: `text`, optional `subtext`, `fontSize`, `subFontSize`, `background`.
+  - `logo`: `image` (path under the repo root; generate with `deploy/New-DomainLogos.ps1`), `plain: true`.
   - `sort: "desc"` sorts by the first measure; `sort: "asc"` sorts by the category (use it for time periods).
+  - `hideCategoryLabels: true` when a dense axis of long names rotates into unreadable stubs.
 - `reportName` must not collide with a report you do not own: deploying replaces any report with the same name in the workspace (e.g. the legacy 6-page HR report built by `ontologies/EnterpriseFinanceHR/Deploy-Report.ps1`).
 
 ## Constraints
@@ -51,12 +60,11 @@ The deployment chain (`Deploy-Ontology.ps1` -> `deploy/Deploy-GenericOntology.ps
 ## Approach
 
 1. Read the domain's `report.spec.json` and the measures in `SemanticModel/definition/tables/*.tmdl` (check `formatString`: a value already in % units with a `0.00%` format renders ×100 — report it).
-2. Apply the requested customization to the spec. Keep the layout on the 16px grid used by existing visuals. Pick the visual to fit the data:
-   - fewer than ~6 time points: no trend chart;
-   - one category above ~80% of the total: sorted bar, not donut/treemap;
-   - coordinates available: `map`;
-   - targets or thresholds: `gauge`.
-3. Run the gate: `deploy\Deploy-ReportFromSpec.ps1 -SpecPath ontologies\<Domain>\report.spec.json -WorkspaceId <ws> -SemanticModelId <model> -MockupOnly`. Fix every `[SPEC]` or `[FAIL]` line. Transient network errors are retried automatically; a persistent `[FAIL]` is a real model/DAX problem.
+2. Apply the requested customization to the spec. Keep the 4px grid and the 16px margin used by existing
+   visuals. Choose the visual from `deploy/visual-mapping.json`, which is the authoritative need → visual
+   table; do not improvise a chart type. `Test-ReportLayout` checks the static rules and `Test-VisualFit`
+   checks the choice against the live row counts, so both will tell you when a visual does not fit.
+3. Run the gate: `deploy\Deploy-ReportFromSpec.ps1 -SpecPath ontologies\<Domain>\report.spec.json -WorkspaceId <ws> -SemanticModelId <model> -MockupOnly`. Fix every `[SPEC]` or `[FAIL]` line, and read the `[LAYOUT]` and `[FIT]` warnings: they are advisory, not noise. Transient network errors are retried automatically; a persistent `[FAIL]` is a real model/DAX problem.
 4. Review visually. Playwright blocks `file://`, so start `python -m http.server 8765 --bind 127.0.0.1` from `artifacts/` (async) and screenshot `#page` for each tab. Tabs have `data-page="0"`, `"1"`, and so on. Run browser actions sequentially. Fix clipping, overlaps, and empty space in the spec, then stop the server.
 5. Present the result and wait for approval. Then deploy, without `-MockupOnly`, or hand off to **@deployer**. Confirm the rendering with a Power BI `ExportTo` PNG export: Playwright cannot see inside embedded reports.
 

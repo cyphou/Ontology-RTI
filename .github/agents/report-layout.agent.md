@@ -1,6 +1,6 @@
 ---
 name: "Report Layout"
-description: "Use when: designing or reworking the layout and visual design of a Power BI report spec: page grid, header band, KPI row, visual hierarchy, storytelling titles, colour palette, 'the report looks basic', 'looks AI-generated', 'make the layout professional', 'redesign the pages', 'mise en page', 'layout du rapport'."
+description: "Use when: designing or reworking the layout and visual design of a Power BI report spec: page grid, identity strip, KPI row, visual hierarchy, storytelling titles, colour palette, 'the report looks basic', 'looks AI-generated', 'make the layout professional', 'make it shiny', 'redesign the pages', 'mise en page', 'layout du rapport'."
 tools: [read, edit, search, execute, todo, playwright/*]
 argument-hint: "Domain (e.g. EnterpriseFinanceHR) and the design goal (audience, tone, what feels wrong today)"
 handoffs:
