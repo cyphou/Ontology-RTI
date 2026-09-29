@@ -22,6 +22,7 @@ param(
     [switch]$SkipDataAgent,
     [switch]$SkipOperationsAgent,
     [switch]$SkipDashboard,
+    [switch]$SkipReport,
     # Service Principal auth (optional — falls back to interactive Connect-AzAccount)
     [string]$ClientId,
     [string]$ClientSecret,
@@ -570,6 +571,23 @@ if (-not $SkipOperationsAgent) {
 } else { Write-Info "Skipping Operations Agent (--SkipOperationsAgent)" }
 
 # ------------------------------------------------------------------
+# Step 11: Report mockup (gate) then Power BI report, when the domain has a report spec
+# ------------------------------------------------------------------
+$reportSpec = Join-Path $OntologyFolder "report.spec.json"
+$reportResult = $null
+if ($SkipReport) { Write-Info "Skipping report (--SkipReport)" }
+elseif (-not (Test-Path $reportSpec)) { Write-Info "No report.spec.json in $OntologyFolder - skipping report." }
+elseif (-not $semanticModelId) { Write-Warn "Semantic model not available - skipping report." }
+else {
+    Write-Step "Step 11: Report mockup (validation gate) and Power BI report"
+    try {
+        $reportResult = & (Join-Path $scriptDir "Deploy-ReportFromSpec.ps1") -SpecPath $reportSpec -WorkspaceId $WorkspaceId -SemanticModelId $semanticModelId -SemanticModelFolder (Join-Path $OntologyFolder "SemanticModel")
+        Write-Success "Report deployed: $($reportResult.ReportId)"
+    }
+    catch { Write-Warn "Report not created: $_" }
+}
+
+# ------------------------------------------------------------------
 # Summary
 # ------------------------------------------------------------------
 Write-Host ""
@@ -582,6 +600,7 @@ Write-Host "  Lakehouse     : $LakehouseName ($lakehouseId)" -ForegroundColor Wh
 Write-Host "  Eventhouse    : $EventhouseName ($eventhouseId)" -ForegroundColor White
 if ($semanticModelId) { Write-Host "  Semantic Model: $SemanticModelName ($semanticModelId)" -ForegroundColor White }
 if ($ontologyId) { Write-Host "  Ontology      : $OntologyName ($ontologyId)" -ForegroundColor White }
+if ($reportResult) { Write-Host "  Report        : $($reportResult.ReportId) (mockup: $($reportResult.MockupFile))" -ForegroundColor White }
 Write-Host ""
 Write-Host "  Graph Queries : ontologies\$OntologyType\GraphQueries.gql" -ForegroundColor Cyan
 Write-Host ""

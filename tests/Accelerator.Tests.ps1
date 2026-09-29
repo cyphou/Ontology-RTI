@@ -202,6 +202,79 @@ Describe "Shared Helpers Module" {
 }
 
 # ============================================================================
+# TEST 5b: Spec-driven reports (HTML mockup gate before report creation)
+# ============================================================================
+$reportSpecCases = foreach ($domain in $domains) {
+    $specFile = Join-Path $discoRoot "ontologies\$domain\report.spec.json"
+    if (Test-Path $specFile) { @{ Domain = $domain; SpecFile = $specFile; ModelFolder = (Join-Path $discoRoot "ontologies\$domain\SemanticModel") } }
+}
+
+Describe "Spec-driven Reports" {
+    BeforeAll {
+        . (Join-Path $script:rootDir "deploy\ReportSpec.ps1")
+        $script:template = Get-Content (Join-Path $script:rootDir "deploy\report-mockup.template.html") -Raw
+    }
+
+    It "mockup template has the spec, data and format placeholders" {
+        foreach ($token in @('__SPEC__', '__DATA__', '__FORMATS__', '__GENERATED__')) { $script:template | Should -Match $token }
+    }
+
+    It "deployment chain runs the report step after the mockup gate" {
+        $generic = Get-Content (Join-Path $script:rootDir "deploy\Deploy-GenericOntology.ps1") -Raw
+        $generic | Should -Match 'Deploy-ReportFromSpec\.ps1'
+        $builder = Get-Content (Join-Path $script:rootDir "deploy\Deploy-ReportFromSpec.ps1") -Raw
+        $builder.IndexOf('New-ReportMockup.ps1') | Should -BeLessThan $builder.IndexOf('workspaces/$WorkspaceId/items"')
+    }
+
+    It "uses the definition.pbir schema URL the service accepts" {
+        $builder = Get-Content (Join-Path $script:rootDir "deploy\Deploy-ReportFromSpec.ps1") -Raw
+        $builder | Should -Match 'fabric/item/report/definitionProperties/2\.\d+\.\d+/schema\.json'
+        $builder | Should -Not -Match 'report/definition/definitionProperties'
+    }
+
+    It "orders ascending by category and descending by measure" {
+        $asc = [pscustomobject]@{ type = 'line'; category = 'dimfiscalperiod[PeriodName]'; measures = @('factactualledger[Actual]'); sort = 'asc' }
+        Get-VisualDax $asc | Should -Match "ORDER BY 'dimfiscalperiod'\[PeriodName\]$"
+        $desc = [pscustomobject]@{ type = 'column'; category = 'dimjobfamily[JobFamilyName]'; measures = @('factactualledger[Actual]'); sort = 'desc' }
+        Get-VisualDax $desc | Should -Match 'ORDER BY \[m0\] DESC$'
+    }
+
+    It "layout lint flags generic titles, off-grid boxes and missing KPI rows" {
+        $spec = [pscustomobject]@{ reportName = 'x'; pages = @([pscustomobject]@{ name = 'p'; visuals = @(
+                    [pscustomobject]@{ type = 'bar'; title = 'Revenue by Region'; x = 17; y = 16; w = 400; h = 300; category = 'a[b]'; measures = @('a[m]') }) }) }
+        $warnings = @(Test-ReportLayout $spec) -join ' '
+        $warnings | Should -Match "generic 'X by Y' title"
+        $warnings | Should -Match 'off the 4px grid'
+        $warnings | Should -Match 'no KPI/card row'
+    }
+
+    It "rejects unknown measures and overlapping visuals" {
+        $bad = [pscustomobject]@{ reportName = 'x'; pages = @([pscustomobject]@{ name = 'p'; visuals = @(
+                    [pscustomobject]@{ type = 'card'; title = 'a'; x = 0; y = 0; w = 200; h = 100; measures = @('factproduction[Does Not Exist]') },
+                    [pscustomobject]@{ type = 'card'; title = 'b'; x = 100; y = 50; w = 200; h = 100; measures = @('factproduction[Total Output Barrels]') }) }) }
+        $problems = @(Test-ReportSpec $bad (Join-Path $script:rootDir "ontologies\OilGasRefinery\SemanticModel"))
+        ($problems -join ' ') | Should -Match 'unknown measure'
+        ($problems -join ' ') | Should -Match 'overlaps'
+    }
+
+    Context "<Domain> report.spec.json" -ForEach $reportSpecCases {
+        It "is valid against the semantic model TMDL" {
+            $problems = @(Test-ReportSpec (Read-ReportSpec $SpecFile) $ModelFolder)
+            $problems -join "`n" | Should -BeNullOrEmpty
+        }
+
+        It "produces a DAX query for every data-bound visual" {
+            foreach ($page in (Read-ReportSpec $SpecFile).pages) {
+                foreach ($v in $page.visuals) {
+                    if ($v.type -eq 'textbox') { Get-VisualDax $v | Should -BeNullOrEmpty; continue }
+                    Get-VisualDax $v | Should -Match '^EVALUATE '
+                }
+            }
+        }
+    }
+}
+
+# ============================================================================
 # TEST 6: Enterprise Finance + HR Expansion
 # ============================================================================
 Describe "Enterprise Finance + HR Expansion" {

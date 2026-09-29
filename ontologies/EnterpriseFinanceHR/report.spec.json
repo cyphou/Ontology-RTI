@@ -1,0 +1,68 @@
+{
+  "reportName": "Enterprise Finance + HR Overview",
+  "theme": {
+    "name": "EnterpriseFinanceHRTheme",
+    "accent": "#0B2545",
+    "dataColors": ["#0B2545", "#13A89E", "#E8A33D", "#8DA9C4", "#D1495B", "#5C6B7A", "#2E86AB", "#B9C4D0", "#6A994E", "#9E7B5A"],
+    "foreground": "#0B2545",
+    "mutedText": "#5C6B7A",
+    "border": "#E3E8EF",
+    "visualBackground": "#FFFFFF",
+    "pageBackground": "#F2F4F7",
+    "outspace": "#E6EAF0",
+    "good": "#13A89E",
+    "neutral": "#E8A33D",
+    "bad": "#D1495B"
+  },
+  "pages": [
+    {
+      "name": "Spend vs plan",
+      "storyNote": "Are we spending to plan? Spend is 4.0% under budget overall, but FY2026 spend is up 11% on FY2025 and the forecast runs 951K above actuals.",
+      "visuals": [
+        { "type": "textbox", "x": 0, "y": 0, "w": 1280, "h": 72, "background": "#0B2545", "plain": true, "text": "Finance & Workforce Overview", "color": "#FFFFFF", "fontSize": 18, "subtext": "Spend vs plan  |  Synthetic enterprise data, FY2025-FY2026", "subColor": "#8DA9C4", "subFontSize": 10 },
+        { "type": "slicer", "title": "Fiscal year", "x": 872, "y": 8, "w": 184, "h": 60, "category": "dimfiscalperiod[FiscalYear]", "background": "#FFFFFF" },
+        { "type": "slicer", "title": "Legal entity", "x": 1072, "y": 8, "w": 192, "h": 60, "category": "dimlegalentity[LegalEntityName]", "background": "#FFFFFF" },
+        { "type": "kpi", "title": "Actual spend vs budget", "x": 16, "y": 88, "w": 300, "h": 128, "category": "dimfiscalperiod[PeriodName]", "measures": ["factactualledger[Actual]"], "goalMeasures": ["factactualledger[Budget]"], "lowerIsBetter": true },
+        { "type": "kpi", "title": "Forecast vs actual", "x": 332, "y": 88, "w": 300, "h": 128, "category": "dimfiscalperiod[PeriodName]", "measures": ["factactualledger[Forecast]"], "goalMeasures": ["factactualledger[Actual]"], "lowerIsBetter": true },
+        { "type": "kpi", "title": "Headcount (latest period)", "x": 648, "y": 88, "w": 300, "h": 128, "category": "dimfiscalperiod[PeriodName]", "measures": ["factactualledger[Headcount]"] },
+        { "type": "card", "title": "Budget variance", "x": 964, "y": 88, "w": 300, "h": 128, "measures": ["factactualledger[Variance %]"] },
+        { "type": "line", "title": "Forecast runs consistently above actual spend", "x": 16, "y": 232, "w": 824, "h": 240, "category": "dimfiscalperiod[PeriodName]", "measures": ["factactualledger[Actual]", "factactualledger[Forecast]"], "sort": "asc" },
+        { "type": "waterfall", "title": "Every business unit is under budget", "x": 856, "y": 232, "w": 408, "h": 240, "category": "dimbusinessunit[BusinessUnitName]", "measures": ["factactualledger[Variance]"], "sort": "asc" },
+        { "type": "column", "title": "FY2026 spend is 11% above FY2025", "x": 16, "y": 488, "w": 408, "h": 216, "category": "dimfiscalperiod[FiscalYear]", "measures": ["factactualledger[Budget]", "factactualledger[Actual]"], "sort": "asc" },
+        { "type": "table", "title": "Cost center detail", "x": 440, "y": 488, "w": 824, "h": 216, "columns": ["dimcostcenter[CostCenterName]"], "measures": ["factactualledger[Budget]", "factactualledger[Actual]", "factactualledger[Variance]", "factactualledger[Variance %]"], "sort": "desc", "fontSize": 9 }
+      ]
+    },
+    {
+      "name": "Workforce & pay",
+      "storyNote": "Is the workforce stable and fairly paid? Headcount holds around 145; payroll cost per FTE ranges 93.6K-97.1K (3.7%) across job families.",
+      "visuals": [
+        { "type": "textbox", "x": 0, "y": 0, "w": 1280, "h": 72, "background": "#0B2545", "plain": true, "text": "Finance & Workforce Overview", "color": "#FFFFFF", "fontSize": 18, "subtext": "Workforce & pay  |  Aggregate views only, no individual records", "subColor": "#8DA9C4", "subFontSize": 10 },
+        { "type": "slicer", "title": "Fiscal year", "x": 872, "y": 8, "w": 184, "h": 60, "category": "dimfiscalperiod[FiscalYear]", "background": "#FFFFFF" },
+        { "type": "slicer", "title": "Legal entity", "x": 1072, "y": 8, "w": 192, "h": 60, "category": "dimlegalentity[LegalEntityName]", "background": "#FFFFFF" },
+        { "type": "kpi", "title": "Headcount (latest period)", "x": 16, "y": 88, "w": 300, "h": 128, "category": "dimfiscalperiod[PeriodName]", "measures": ["factactualledger[Headcount]"] },
+        { "type": "card", "title": "Total compensation", "x": 332, "y": 88, "w": 300, "h": 128, "measures": ["factemployeecompensationsnapshot[Total Compensation]"], "precision": 2 },
+        { "type": "card", "title": "Payroll cost per FTE", "x": 648, "y": 88, "w": 300, "h": 128, "measures": ["factemployeecompensationsnapshot[Payroll Cost per FTE]"], "precision": 1 },
+        { "type": "card", "title": "Overtime share of worked hours", "x": 964, "y": 88, "w": 300, "h": 128, "measures": ["facttimeattendancedaily[Overtime Rate]"] },
+        { "type": "line", "title": "Headcount is stable across both fiscal years", "x": 16, "y": 232, "w": 824, "h": 240, "category": "dimfiscalperiod[PeriodName]", "measures": ["factactualledger[Headcount]"], "sort": "asc" },
+        { "type": "donut", "title": "Planned leave dominates absence", "x": 856, "y": 232, "w": 408, "h": 240, "category": "dimleavetype[LeaveCategory]", "measures": ["factabsenceepisode[Absence Days]"] },
+        { "type": "bar", "title": "Pay per FTE varies only 3.7% across job families", "x": 16, "y": 488, "w": 616, "h": 216, "category": "dimjobfamily[JobFamilyName]", "measures": ["factemployeecompensationsnapshot[Payroll Cost per FTE]"], "sort": "desc" },
+        { "type": "column", "title": "Compensation is evenly spread across job families", "x": 648, "y": 488, "w": 616, "h": 216, "category": "dimjobfamily[JobFamilyName]", "measures": ["factemployeecompensationsnapshot[Total Compensation]"], "sort": "desc" }
+      ]
+    },
+    {
+      "name": "Talent pipeline",
+      "storyNote": "Where do candidates drop off? 30 applied and 12 reached offer stage; 2 of 4 offers were accepted.",
+      "visuals": [
+        { "type": "textbox", "x": 0, "y": 0, "w": 1280, "h": 72, "background": "#0B2545", "plain": true, "text": "Finance & Workforce Overview", "color": "#FFFFFF", "fontSize": 18, "subtext": "Talent pipeline  |  Candidate counts are aggregates", "subColor": "#8DA9C4", "subFontSize": 10 },
+        { "type": "slicer", "title": "Fiscal year", "x": 1072, "y": 8, "w": 192, "h": 60, "category": "dimfiscalperiod[FiscalYear]", "background": "#FFFFFF" },
+        { "type": "card", "title": "Offers made", "x": 16, "y": 88, "w": 300, "h": 128, "measures": ["factoffer[Offers]"] },
+        { "type": "card", "title": "New hires", "x": 332, "y": 88, "w": 300, "h": 128, "measures": ["factoffer[New Hires]"] },
+        { "type": "card", "title": "Offer acceptance rate", "x": 648, "y": 88, "w": 300, "h": 128, "measures": ["factoffer[Acceptance Rate]"] },
+        { "type": "card", "title": "Open requisitions", "x": 964, "y": 88, "w": 300, "h": 128, "measures": ["factjobrequisition[Open Requisitions]"] },
+        { "type": "funnel", "title": "Candidate funnel: 30 applied, 12 reached offer", "x": 16, "y": 232, "w": 824, "h": 472, "category": "dimrecruitmentstage[StageName]", "measures": ["factrecruitmentstageevent[Active Candidates]"], "sort": "desc" },
+        { "type": "donut", "title": "Sourcing is evenly split across channels", "x": 856, "y": 232, "w": 408, "h": 224, "category": "dimrecruitmentsource[SourceCategory]", "measures": ["factrecruitmentstageevent[Active Candidates]"] },
+        { "type": "column", "title": "Offers are sparse: 4 across four periods", "x": 856, "y": 472, "w": 408, "h": 232, "category": "dimfiscalperiod[PeriodName]", "measures": ["factoffer[Offers]"], "sort": "asc" }
+      ]
+    }
+  ]
+}

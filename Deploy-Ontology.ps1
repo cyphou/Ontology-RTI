@@ -31,6 +31,9 @@
 .PARAMETER SkipDashboard
     Skip RTI Dashboard deployment.
 
+.PARAMETER SkipReport
+    Skip the report step (HTML mockup gate + Power BI report) for domains with a report.spec.json.
+
 .EXAMPLE
     # Interactive menu
     .\Deploy-Ontology.ps1 -WorkspaceId "your-workspace-guid"
@@ -55,7 +58,8 @@ param(
 
     [switch]$SkipDataAgent,
     [switch]$SkipOperationsAgent,
-    [switch]$SkipDashboard
+    [switch]$SkipDashboard,
+    [switch]$SkipReport
 )
 
 $ErrorActionPreference = "Stop"
@@ -236,6 +240,7 @@ $deployParams = @{
     SkipDataAgent     = $SkipDataAgent.IsPresent
     SkipOperationsAgent = $SkipOperationsAgent.IsPresent
     SkipDashboard     = $SkipDashboard.IsPresent
+    SkipReport        = $SkipReport.IsPresent
 }
 
 & $engineScript @deployParams

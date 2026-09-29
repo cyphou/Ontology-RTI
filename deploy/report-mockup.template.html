@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report mockup</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", Aptos, Calibri, -apple-system, sans-serif; background: var(--outspace); color: var(--fg); }
+.toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--border); background: var(--visual-bg); }
+.toolbar h1 { margin: 0; font-size: 16px; font-weight: 600; }
+.toolbar .sub { font-size: 12px; color: var(--muted); }
+.spacer { flex: 1; }
+.btn { border: 1px solid var(--border); background: var(--visual-bg); color: var(--fg); border-radius: 10px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.btn[aria-selected="true"], .btn[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.status { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); }
+.status.ok { color: var(--good); border-color: var(--good); }
+.status.ko { color: var(--bad); border-color: var(--bad); }
+.stage { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; }
+.note { width: 1280px; font-size: 13px; background: var(--visual-bg); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 8px; }
+.page { position: relative; width: 1280px; height: 720px; background: var(--page-bg); border: 1px solid var(--border); overflow: hidden; }
+.visual { position: absolute; background: var(--visual-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 2px 3px 6px rgba(0,0,0,0.12); padding: 10px 12px; display: flex; flex-direction: column; }
+.visual h3 { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chart { flex: 1; min-height: 0; overflow: hidden; }
+.chart svg { width: 100%; height: 100%; display: block; }
+.card-value { font-size: 28px; font-weight: 600; margin-top: auto; margin-bottom: auto; }
+.badge { margin-top: 4px; font-family: Consolas, monospace; font-size: 10px; color: #0078D4; border: 1px dashed #919191; border-radius: 6px; padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.hide-badges .badge { display: none; }
+.error { color: var(--bad); font-size: 11px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--accent); color: #fff; text-align: left; padding: 4px; font-weight: 600; }
+td { padding: 4px; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) td { background: rgba(0,0,0,0.03); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.lbl { fill: var(--fg); font-size: 11px; }
+.axis { fill: var(--muted); font-size: 10px; }
+.grid { stroke: var(--border); stroke-width: 1; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <div><h1 id="title"></h1><div class="sub">Live semantic-model data · generated __GENERATED__ · each page = 1280x720 Power BI page</div></div>
+  <div class="spacer"></div>
+  <span id="status" class="status"></span>
+  <div id="tabs"></div>
+  <button class="btn" id="badgeToggle" aria-pressed="true">PBIR mapping</button>
+</div>
+<div class="stage" id="stage"></div>
+<script>
+const SPEC = __SPEC__;
+const DATA = __DATA__;
+const FORMATS = __FORMATS__;
+const LAYOUT_WARNINGS = __LAYOUT__;
+
+const theme = SPEC.theme || {};
+const root = document.documentElement.style;
+[["--accent", theme.accent || "#B11F4B"], ["--fg", theme.foreground || "#242424"], ["--muted", theme.mutedText || "#5C5C5C"],
+ ["--border", theme.border || "#DEDEDE"], ["--visual-bg", theme.visualBackground || "#FFFFFF"], ["--page-bg", theme.pageBackground || "#F7F4EF"],
+ ["--outspace", theme.outspace || "#FCFBF8"], ["--good", theme.good || "#16A34A"], ["--bad", theme.bad || "#DC2626"]].forEach(([k, v]) => root.setProperty(k, v));
+const COLORS = theme.dataColors || ["#B11F4B", "#E07A93", "#F59E0B", "#242424", "#16A34A", "#0078D4"];
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const short = (ref) => { const m = /\[([^\]]+)\]/.exec(ref || ""); return m ? m[1] : ref; };
+const compact = (n, d) => { const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toFixed(d) + "bn"; if (a >= 1e6) return (n / 1e6).toFixed(d) + "M"; if (a >= 1e3) return (n / 1e3).toFixed(d) + "K";
+  return Number.isInteger(n) ? String(n) : n.toFixed(Math.max(d, 1)); };
+const decimals = (fmt) => { const m = /\.(0+)/.exec(fmt || ""); return m ? m[1].length : 0; };
+
+// Mirrors how Power BI applies the model formatString (percent scaling, currency, literal suffix).
+function fmt(measureRef, value, precision) {
+  if (value === null || value === undefined) return "(blank)";
+  const f = FORMATS[measureRef] || "";
+  const p = precision ?? 1;
+  if (/"\s*%\s*"/.test(f)) return value.toFixed(decimals(f)) + " %";
+  if (f.includes("%")) return (value * 100).toFixed(Math.min(decimals(f), 1)) + "%";
+  if (f.includes("$")) return "$" + compact(value, p);
+  if (/0\.0{3,}/.test(f)) return value.toFixed(decimals(f));
+  return compact(value, p);
+}
+
+function badge(v) {
+  const pbi = { card: "card", kpi: "kpi", bar: "clusteredBarChart", column: "clusteredColumnChart", line: "lineChart", donut: "donutChart", combo: "lineClusteredColumnComboChart", funnel: "funnel", waterfall: "waterfallChart", map: "azureMap", table: "tableEx", gauge: "gauge", slicer: "slicer (dropdown)", textbox: "textbox" }[v.type];
+  const parts = [pbi, v.category && short(v.category), ...(v.columns || []).map(short), ...(v.measures || []).map((m) => `[${short(m)}]`), ...(v.lineMeasures || []).map((m) => `line [${short(m)}]`), ...(v.goalMeasures || []).map((m) => `goal [${short(m)}]`)];
+  return parts.filter(Boolean).join(" · ") + (v.sort ? ` · sort ${v.sort}` : "");
+}
+
+function hbar(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, m = v.measures[0], cat = v.category;
+  const labelW = Math.min(150, W * 0.38), max = Math.max(...rows.map((r) => r.m0 || 0), 1), rowH = H / Math.max(rows.length, 1);
+  const bars = rows.map((r, i) => {
+    const w = (W - labelW - 70) * (r.m0 || 0) / max, y = i * rowH, bh = Math.min(22, rowH * 0.65);
+    return `<text class="lbl" x="${labelW - 6}" y="${y + rowH / 2 + 4}" text-anchor="end">${esc(r[cat])}</text>
+      <rect x="${labelW}" y="${y + (rowH - bh) / 2}" width="${Math.max(1, w)}" height="${bh}" rx="3" fill="${i === 0 ? COLORS[0] : COLORS[0] + "B3"}"/>
+      <text class="axis" x="${labelW + w + 5}" y="${y + rowH / 2 + 4}">${esc(fmt(m, r.m0, v.precision))}</text>`;
+  }).join("");
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${bars}</svg>`;
+}
+
+function donut(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, total = rows.reduce((a, r) => a + (r.m0 || 0), 0) || 1, legendH = rows.length * 20 + 10;
+  // Legend sits under the ring so narrow cards never clip it.
+  const R = Math.max(20, Math.min(W / 2 - 10, (H - legendH) / 2 - 6)), r0 = R * 0.62, cx = W / 2, cy = R + 6;
+  const pt = (a, rr) => `${cx + rr * Math.cos(a)},${cy + rr * Math.sin(a)}`;
+  let a0 = -Math.PI / 2, s = "";
+  rows.forEach((r, i) => { const a1 = a0 + 2 * Math.PI * (r.m0 || 0) / total, big = a1 - a0 > Math.PI ? 1 : 0, ly = cy + R + 18 + i * 20;
+    s += `<path d="M${pt(a0, R)} A${R},${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r0)} A${r0},${r0} 0 ${big} 0 ${pt(a0, r0)} Z" fill="${COLORS[i % COLORS.length]}"/>`;
+    s += `<rect x="8" y="${ly - 9}" width="10" height="10" rx="2" fill="${COLORS[i % COLORS.length]}"/>
+      <text class="lbl" x="24" y="${ly}">${esc(r[v.category])} · ${esc(fmt(v.measures[0], r.m0))} (${Math.round(100 * (r.m0 || 0) / total)}%)</text>`; a0 = a1; });
+  s += `<text x="${cx}" y="${cy + 8}" text-anchor="middle" style="font-size:24px;font-weight:600;fill:var(--fg)">${esc(fmt(v.measures[0], total))}</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+function combo(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, pl = 50, pr = 44, pt = 10, pb = 90, cw = (W - pl - pr) / Math.max(rows.length, 1);
+  const maxC = Math.max(...rows.map((r) => r.m0 || 0), 1), maxL = Math.max(...rows.map((r) => r.l0 || 0), 1);
+  const yc = (x) => pt + (H - pt - pb) * (1 - x / maxC), yl = (x) => pt + (H - pt - pb) * (1 - x / maxL);
+  let s = "";
+  [0, 0.5, 1].forEach((f) => { const y = pt + (H - pt - pb) * (1 - f);
+    s += `<line class="grid" x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}"/><text class="axis" x="${pl - 4}" y="${y + 3}" text-anchor="end">${esc(fmt(v.measures[0], maxC * f, 0))}</text>
+      <text class="axis" x="${W - pr + 4}" y="${y + 3}">${esc(fmt(v.lineMeasures[0], maxL * f, 0))}</text>`; });
+  rows.forEach((r, i) => { const x = pl + i * cw + cw * 0.18, bw = cw * 0.64;
+    s += `<rect x="${x}" y="${yc(r.m0 || 0)}" width="${bw}" height="${H - pb - yc(r.m0 || 0)}" rx="2" fill="${COLORS[0]}"/>
+      <text class="axis" transform="translate(${x + bw / 2},${H - pb + 10}) rotate(-40)" text-anchor="end">${esc(r[v.category])}</text>`; });
+  s += `<polyline fill="none" stroke="${COLORS[3]}" stroke-width="2" points="${rows.map((r, i) => `${pl + i * cw + cw / 2},${yl(r.l0 || 0)}`).join(" ")}"/>`;
+  rows.forEach((r, i) => { s += `<circle cx="${pl + i * cw + cw / 2}" cy="${yl(r.l0 || 0)}" r="3" fill="${COLORS[3]}"/>`; });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+function map(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, px = (lon) => (lon + 180) / 360 * W, py = (lat) => 12 + (75 - lat) / 135 * (H - 24);
+  const max = Math.max(...rows.map((r) => r.m0 || 0), 1);
+  let s = `<rect width="${W}" height="${H}" rx="8" fill="rgba(0,0,0,0.04)"/>`;
+  for (let lon = -150; lon <= 150; lon += 30) s += `<line class="grid" x1="${px(lon)}" x2="${px(lon)}" y1="0" y2="${H}" stroke-dasharray="2 4"/>`;
+  for (let lat = -45; lat <= 60; lat += 15) s += `<line class="grid" y1="${py(lat)}" y2="${py(lat)}" x1="0" x2="${W}" stroke-dasharray="2 4"/>`;
+  [...rows].sort((a, b) => (b.m0 || 0) - (a.m0 || 0)).forEach((r) => {
+    const x = px(r.lon), y = py(r.lat), rad = 6 + 16 * Math.sqrt((r.m0 || 0) / max);
+    const near = rows.find((o) => o !== r && Math.hypot(px(o.lon) - x, py(o.lat) - y) < 40);
+    const below = near && r.lon > near.lon;
+    s += `<circle cx="${x}" cy="${y}" r="${rad}" fill="${COLORS[0]}" fill-opacity="0.3" stroke="${COLORS[0]}"><title>${esc(r[v.category])}: ${esc(fmt(v.measures[0], r.m0))}</title></circle>
+      <text class="axis" x="${x}" y="${below ? y + rad + 11 : y - rad - 4}" text-anchor="middle">${esc(r[v.category])}</text>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+function gauge(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, val = rows[0]?.m0 ?? 0, lo = v.min ?? 0, hi = v.max ?? 1;
+  const cx = W / 2, cy = H * 0.62, R = Math.min(W / 2 - 20, H * 0.5), sw = R * 0.2;
+  const ang = (x) => Math.PI * (1 - (x - lo) / (hi - lo)), pt = (x, rr) => `${cx + rr * Math.cos(ang(x))},${cy - rr * Math.sin(ang(x))}`;
+  const arc = (a, b, c) => `<path d="M${pt(a, R)} A${R},${R} 0 0 1 ${pt(b, R)}" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+  let s = arc(lo, hi, "rgba(0,0,0,0.08)") + arc(lo, Math.min(Math.max(val, lo), hi), COLORS[0]);
+  if (v.target !== undefined) { const [x1, y1] = pt(v.target, R - sw / 2 - 4).split(","), [x2, y2] = pt(v.target, R + sw / 2 + 4).split(",");
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--bad)" stroke-width="3"/>`; }
+  s += `<text x="${cx}" y="${cy - 8}" text-anchor="middle" style="font-size:34px;font-weight:600;fill:var(--fg)">${esc(fmt(v.measures[0], val))}</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+function table(el, v, rows) {
+  const cols = v.columns || [], ms = v.measures || [], size = v.fontSize ? `${v.fontSize + 3}px` : "12px";
+  el.style.overflow = "auto";
+  el.innerHTML = `<table style="font-size:${size}"><thead><tr>${cols.map((c) => `<th>${esc(short(c))}</th>`).join("")}${ms.map((m) => `<th style="text-align:right">${esc(short(m))}</th>`).join("")}</tr></thead><tbody>${
+    rows.map((r) => `<tr>${cols.map((c) => `<td>${esc(r[c])}</td>`).join("")}${ms.map((m, i) => `<td class="num">${esc(fmt(m, r["m" + i], 2))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+// Shared vertical axis frame for column and line charts; multiple measures share one scale.
+function frame(el, v, rows) {
+  const longest = Math.max(0, ...rows.map((r) => String(r[v.category] ?? "").length));
+  const rotated = rows.length > 8 || longest * 6 > (el.clientWidth - 70) / Math.max(rows.length, 1);
+  // Rotated labels extend left of their tick, so the first ones need extra room.
+  const W = el.clientWidth, H = el.clientHeight, keys = v.measures.map((_, i) => "m" + i), pl = rotated ? Math.max(58, Math.min(150, longest * 4.2)) : 58, pr = 12, pt = 22, pb = rotated ? Math.min(110, 20 + longest * 4.2) : 40;
+  const max = Math.max(...rows.flatMap((r) => keys.map((k) => r[k] || 0)), 1), cw = (W - pl - pr) / Math.max(rows.length, 1);
+  const y = (x) => pt + (H - pt - pb) * (1 - x / max);
+  let s = keys.map((k, i) => `<rect x="${pl + i * 110}" y="4" width="10" height="10" rx="2" fill="${COLORS[i % COLORS.length]}"/><text class="axis" x="${pl + i * 110 + 14}" y="13">${esc(short(v.measures[i]))}</text>`).join("");
+  [0, 0.5, 1].forEach((f) => { const yy = y(max * f);
+    s += `<line class="grid" x1="${pl}" x2="${W - pr}" y1="${yy}" y2="${yy}"/><text class="axis" x="${pl - 4}" y="${yy + 3}" text-anchor="end">${esc(fmt(v.measures[0], max * f, 1))}</text>`; });
+  const step = Math.ceil(rows.length / 12);
+  rows.forEach((r, i) => { if (i % step) return; const x = pl + i * cw + cw / 2;
+    s += rotated ? `<text class="axis" transform="translate(${x},${H - pb + 10}) rotate(-40)" text-anchor="end">${esc(r[v.category])}</text>`
+      : `<text class="axis" x="${x}" y="${H - pb + 14}" text-anchor="middle">${esc(r[v.category])}</text>`; });
+  return { W, H, keys, pl, cw, y, pb, s };
+}
+
+function column(el, v, rows) {
+  const f = frame(el, v, rows), gw = f.cw * 0.7 / f.keys.length;
+  let s = f.s;
+  rows.forEach((r, i) => f.keys.forEach((k, j) => { const x = f.pl + i * f.cw + f.cw * 0.15 + j * gw;
+    s += `<rect x="${x}" y="${f.y(r[k] || 0)}" width="${Math.max(1, gw - 1)}" height="${f.H - f.pb - f.y(r[k] || 0)}" rx="2" fill="${COLORS[j % COLORS.length]}"><title>${esc(r[v.category])}: ${esc(fmt(v.measures[j], r[k]))}</title></rect>`; }));
+  el.innerHTML = `<svg viewBox="0 0 ${f.W} ${f.H}">${s}</svg>`;
+}
+
+function line(el, v, rows) {
+  const f = frame(el, v, rows);
+  let s = f.s;
+  f.keys.forEach((k, j) => {
+    const pts = rows.map((r, i) => r[k] == null ? null : `${f.pl + i * f.cw + f.cw / 2},${f.y(r[k])}`).filter(Boolean).join(" ");
+    s += `<polyline fill="none" stroke="${COLORS[j % COLORS.length]}" stroke-width="2.5" points="${pts}"/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${f.W} ${f.H}">${s}</svg>`;
+}
+
+function kpi(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, last = rows[rows.length - 1] || {}, val = last.m0, goal = last.g0;
+  const pts = rows.filter((r) => r.m0 != null), max = Math.max(...pts.map((r) => r.m0), 1), min = Math.min(...pts.map((r) => r.m0), 0);
+  const sx = (i) => 4 + i * (W - 8) / Math.max(pts.length - 1, 1), sy = (x) => H - 4 - (H * 0.45) * (x - min) / Math.max(max - min, 1e-9);
+  const area = pts.length > 1 ? `<path d="M${sx(0)},${H - 4} ${pts.map((r, i) => `L${sx(i)},${sy(r.m0)}`).join(" ")} L${sx(pts.length - 1)},${H - 4} Z" fill="${COLORS[0]}" fill-opacity="0.12"/>
+    <polyline fill="none" stroke="${COLORS[0]}" stroke-width="1.5" points="${pts.map((r, i) => `${sx(i)},${sy(r.m0)}`).join(" ")}"/>` : "";
+  let delta = "";
+  if (goal != null && goal !== 0) { const d = (val - goal) / Math.abs(goal), good = v.lowerIsBetter ? d <= 0 : d >= 0;
+    delta = `<text x="4" y="52" style="font-size:11px;fill:${good ? "var(--good)" : "var(--bad)"}">${d >= 0 ? "▲" : "▼"} ${esc((d * 100).toFixed(1))}% vs ${esc(short(v.goalMeasures[0]))}</text>`; }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${area}<text x="4" y="30" style="font-size:26px;font-weight:600;fill:var(--fg)">${esc(fmt(v.measures[0], val, v.precision))}</text>${delta}</svg>`;
+}
+
+function funnel(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, max = Math.max(...rows.map((r) => r.m0 || 0), 1), rowH = H / Math.max(rows.length, 1);
+  let s = "";
+  rows.forEach((r, i) => { const w = (W - 160) * (r.m0 || 0) / max, x = 150 + (W - 160 - w) / 2, y = i * rowH, bh = Math.min(30, rowH * 0.7);
+    const conv = i > 0 && rows[i - 1].m0 ? ` (${Math.round(100 * (r.m0 || 0) / rows[i - 1].m0)}%)` : "";
+    s += `<text class="lbl" x="140" y="${y + rowH / 2 + 4}" text-anchor="end">${esc(r[v.category])}</text>
+      <rect x="${x}" y="${y + (rowH - bh) / 2}" width="${Math.max(2, w)}" height="${bh}" rx="3" fill="${COLORS[0]}" fill-opacity="${1 - i * 0.12}"/>
+      <text x="${150 + (W - 160) / 2}" y="${y + rowH / 2 + 4}" text-anchor="middle" style="font-size:11px;font-weight:600;fill:#fff">${esc(fmt(v.measures[0], r.m0))}${esc(conv)}</text>`; });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+function waterfall(el, v, rows) {
+  const W = el.clientWidth, H = el.clientHeight, pl = 58, pb = 60, pt = 10, total = rows.reduce((a, r) => a + (r.m0 || 0), 0);
+  let run = 0; const steps = rows.map((r) => { const a = run; run += r.m0 || 0; return { r, a, b: run }; });
+  const lo = Math.min(0, ...steps.map((s) => Math.min(s.a, s.b))), hi = Math.max(0, ...steps.map((s) => Math.max(s.a, s.b)));
+  const y = (x) => pt + (H - pt - pb) * (hi - x) / Math.max(hi - lo, 1e-9), cw = (W - pl - 10) / (rows.length + 1);
+  let s = `<line class="grid" x1="${pl}" x2="${W - 10}" y1="${y(0)}" y2="${y(0)}"/><text class="axis" x="${pl - 4}" y="${y(lo) + 3}" text-anchor="end">${esc(fmt(v.measures[0], lo, 1))}</text>`;
+  steps.forEach((st, i) => { const x = pl + i * cw + cw * 0.15, top = y(Math.max(st.a, st.b)), h = Math.abs(y(st.a) - y(st.b));
+    s += `<rect x="${x}" y="${top}" width="${cw * 0.7}" height="${Math.max(1, h)}" fill="${(st.r.m0 || 0) < 0 ? "var(--bad)" : "var(--good)"}"/>
+      <text class="axis" transform="translate(${x + cw * 0.35},${H - pb + 10}) rotate(-35)" text-anchor="end">${esc(st.r[v.category])}</text>`; });
+  const xt = pl + rows.length * cw + cw * 0.15;
+  s += `<rect x="${xt}" y="${y(Math.max(0, total))}" width="${cw * 0.7}" height="${Math.abs(y(0) - y(total))}" fill="${COLORS[0]}"/>
+    <text class="axis" transform="translate(${xt + cw * 0.35},${H - pb + 10}) rotate(-35)" text-anchor="end">Total</text>
+    <text class="lbl" x="${xt + cw * 0.35}" y="${y(Math.min(0, total)) + 14}" text-anchor="middle">${esc(fmt(v.measures[0], total, 1))}</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+function slicer(el, v, rows) {
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;display:flex;justify-content:space-between;background:var(--visual-bg);color:var(--fg)"><span>All (${rows.length})</span><span>▾</span></div>`;
+}
+
+const RENDER = { bar: hbar, column, line, donut, combo, map, gauge, table, kpi, funnel, waterfall, slicer };
+
+function renderPage(pi) {
+  const page = SPEC.pages[pi], stage = document.getElementById("stage");
+  stage.innerHTML = (page.storyNote ? `<div class="note"><b>Story</b> · ${esc(page.storyNote)} <span style="color:var(--muted)">(mockup annotation)</span></div>` : "") + `<div class="page" id="page"></div>`;
+  const host = document.getElementById("page");
+  page.visuals.forEach((v, vi) => {
+    const d = DATA[`p${pi}-v${vi}`] || {}, box = document.createElement("div");
+    box.className = "visual";
+    Object.assign(box.style, { left: v.x + "px", top: v.y + "px", width: v.w + "px", height: v.h + "px" });
+    if (v.background) box.style.background = v.background;
+    if (v.plain) Object.assign(box.style, { border: "none", boxShadow: "none", borderRadius: "0" });
+    if (v.plain && !v.background) box.style.background = "transparent";
+    box.innerHTML = `${v.title ? `<h3 style="${v.background ? "color:rgba(255,255,255,0.8)" : ""}">${esc(v.title)}</h3>` : ""}<div class="chart"></div><div class="badge">${esc(badge(v))}</div>`;
+    host.appendChild(box);
+    const chart = box.querySelector(".chart");
+    if (v.type === "textbox") {
+      chart.innerHTML = `<div style="font-size:${(v.fontSize || 14) * 1.33}px;font-weight:600;color:${esc(v.color || "var(--fg)")}">${esc(v.text)}</div>` +
+        (v.subtext ? `<div style="font-size:${(v.subFontSize || 10) * 1.33}px;color:${esc(v.subColor || "var(--muted)")};margin-top:2px">${esc(v.subtext)}</div>` : "");
+      return;
+    }
+    if (d.error) { chart.innerHTML = `<div class="error">Query failed: ${esc(d.error)}</div>`; return; }
+    const rows = d.rows || [];
+    if (v.type === "card") { chart.innerHTML = `<div class="card-value">${esc(fmt(v.measures[0], rows[0]?.m0, v.precision))}</div>`; chart.style.display = "flex"; return; }
+    RENDER[v.type](chart, v, rows);
+  });
+}
+
+const RENDER_STATIC = new Set();
+SPEC.pages.forEach((p, pi) => p.visuals.forEach((v, vi) => { if (v.type === "textbox") RENDER_STATIC.add(`p${pi}-v${vi}`); }));
+const isStatic = (k) => RENDER_STATIC.has(k);
+
+document.getElementById("title").textContent = SPEC.reportName + " - mockup";
+const failures = Object.entries(DATA).filter(([k, d]) => d.error || (!(d.rows || []).length && !isStatic(k))).length;
+const status = document.getElementById("status");
+status.textContent = failures ? `${failures} visual(s) failing - report creation blocked` : "All visuals validated on live data";
+status.className = "status " + (failures ? "ko" : "ok");
+if (LAYOUT_WARNINGS.length) {
+  const lw = document.createElement("span");
+  lw.className = "status"; lw.style.color = "#B26A00"; lw.style.borderColor = "#B26A00";
+  lw.textContent = `${LAYOUT_WARNINGS.length} layout warning(s)`; lw.title = LAYOUT_WARNINGS.join("\n");
+  status.after(lw);
+}
+const tabs = document.getElementById("tabs");
+SPEC.pages.forEach((p, i) => {
+  const b = document.createElement("button");
+  b.className = "btn"; b.textContent = `${i + 1} · ${p.name}`; b.dataset.page = String(i); b.setAttribute("aria-selected", String(i === 0));
+  b.addEventListener("click", () => { tabs.querySelectorAll(".btn").forEach((t) => t.setAttribute("aria-selected", String(t === b))); renderPage(i); });
+  tabs.appendChild(b);
+});
+document.getElementById("badgeToggle").addEventListener("click", (e) => {
+  const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+  e.currentTarget.setAttribute("aria-pressed", String(on));
+  document.body.classList.toggle("hide-badges", !on);
+});
+renderPage(0);
+</script>
+</body>
+</html>
