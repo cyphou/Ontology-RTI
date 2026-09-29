@@ -7,9 +7,12 @@
 
 This app visualizes live solar telemetry on a 3D geospatial map of France, exposes
 per-plant digital twins, forecasts power output, writes operational notes back to the
-Fabric ontology, and answers natural-language questions ("Ask Fabric IQ"). It ships
-fallback-safe: with no Fabric connection configured it runs on a synthetic telemetry
-generator, and it lights up real data the moment the connection aliases are set.
+Fabric ontology, and answers natural-language questions ("Ask Fabric IQ"). The command
+center also prioritizes PV-array incidents, provides an array-to-grid schematic, coordinates
+field repair orders, compares tariff-aware generation scenarios, and records governed
+simulation approval decisions. It ships fallback-safe: with no Fabric connection configured it
+runs on a synthetic telemetry generator, and it lights up real data the moment the connection
+aliases are set.
 
 See [ROADMAP.md](ROADMAP.md) for shipped capabilities and the forward plan, and
 [AGENTS.md](AGENTS.md) for build/agent guidance.

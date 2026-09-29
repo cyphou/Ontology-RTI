@@ -32,6 +32,25 @@ import { canManageDispatch, normalizeOperatorRole, type OperatorRole } from "@/s
 import { HISTORY_WINDOWS, historyPointLimit, type HistoryWindow } from "@/services/history-window.service";
 import { SceneErrorBoundary } from "@/components/SceneErrorBoundary";
 import { isTeamsAlertConfigured, postTeamsAlert } from "@/services/teams-alert.service";
+import { buildIncidentQueue } from "@/services/incident-queue.service";
+import { compareScenarios, summarizeComparison, type ScenarioSpec } from "@/services/scenario-lab.service";
+import { approveSimulationRun, createSimulationRun, loadSimulationRuns, persistSimulationRun, type SimulationObjective, type SimulationPurpose, type SimulationRun } from "@/services/simulation-run.service";
+import { importScenarios } from "@/services/scenario-import.service";
+import { SolarArraySchematic } from "@/components/SolarArraySchematic";
+
+type DemoScriptStepId = "story" | "locate" | "twin" | "schematic" | "graph" | "dispatch" | "support" | "simulation" | "ask";
+const DEMO_STEP_ORDER: DemoScriptStepId[] = ["story", "locate", "twin", "schematic", "graph", "dispatch", "support", "simulation", "ask"];
+const SOLAR_DEMO_STEPS: Record<DemoScriptStepId, { title: string; caption: string }> = {
+    story: { title: "From detection to resolution", caption: "Frame the highest-priority PV array incident and its recommended response." },
+    locate: { title: "Locate the solar array", caption: "Use the France fleet map to establish site context." },
+    twin: { title: "Inspect the digital twin", caption: "Review module temperature, irradiance, inverter load, and AC output." },
+    schematic: { title: "Follow the generation path", caption: "Trace PV modules through the combiner, inverter, and grid export." },
+    graph: { title: "Analyze relationships", caption: "Confirm the affected array and plant dependencies." },
+    dispatch: { title: "Dispatch field support", caption: "Assign the best-matched photovoltaic technician and create a repair order." },
+    support: { title: "Coordinate field support", caption: "Track the operational handoff and escalation state." },
+    simulation: { title: "Compare operating plans", caption: "Evaluate curtailment and maintenance options against generation baseline." },
+    ask: { title: "Ask Fabric IQ", caption: "Use natural language to prioritize the next photovoltaic operation." },
+};
 
 type PlantStatus = "healthy" | "warning" | "alarm";
 
@@ -1390,6 +1409,7 @@ function RelationshipGraph({ turbines, sites, selectedId, statusFilter, onSelect
 }
 
 function App() {
+    const [demoStep, setDemoStep] = useState<DemoScriptStepId>("story");
     const initialRoute = parseHash();
     const [seed, setSeed] = useState(0);
     const [selectedId, setSelectedId] = useState(initialRoute.selectedId ?? "CESTAS-PV-01");
@@ -1443,6 +1463,10 @@ function App() {
     const [repairSummary, setRepairSummary] = useState("");
     const [repairEvidenceId, setRepairEvidenceId] = useState(MOCK_REPAIR_EVIDENCE[0]?.id ?? "");
     const [repairOrderMessage, setRepairOrderMessage] = useState<string | null>(null);
+    const [scenarioPlans, setScenarioPlans] = useState<ScenarioSpec[]>([]);
+    const [simulationPurpose, setSimulationPurpose] = useState<SimulationPurpose>("maintenance");
+    const [simulationObjective, setSimulationObjective] = useState<SimulationObjective>("availability");
+    const [simulationRuns, setSimulationRuns] = useState<SimulationRun[]>(() => loadSimulationRuns());
     const canWriteback = canManageDispatch(operatorRole);
     const historyLimit = historyPointLimit(historyWindow);
 
@@ -1786,6 +1810,13 @@ function App() {
     const siteSummaries = useMemo(() => summarizeSites(turbines, sites), [turbines, sites]);
 
     const scenario = simulateScenario({ baselineKw: selected.powerKw, curtailmentPct: simCurtail, downtimeTicks: simDowntime, horizonTicks: simHorizon });
+    const incidentQueue = useMemo(() => buildIncidentQueue(turbines.map((t) => ({ ...t, anomalyScore: anomalyScore(t), acknowledged: Boolean(ackLog[t.id]), hasOpenOrder: notes.some((note) => note.turbineId === t.id && note.note.includes("RepairOrder")), detectedAt: ackLog[t.id]?.at ?? new Date().toISOString() }))), [ackLog, notes, turbines]);
+    const scenarioComparison = useMemo(() => compareScenarios(selected.powerKw, scenarioPlans), [scenarioPlans, selected.powerKw]);
+
+    const saveScenarioRun = useCallback(() => {
+        const run = createSimulationRun({ arrayId: selected.id, plantId: selected.siteId, purpose: simulationPurpose, objective: simulationObjective, horizon: simHorizon, timeUnit: "hour", baselineSource: isLiveTelemetryConfigured() ? "live" : "simulated" });
+        setSimulationRuns(persistSimulationRun(run));
+    }, [selected.id, selected.siteId, simHorizon, simulationObjective, simulationPurpose]);
 
     const runAsk = useCallback(async (override?: string) => {
         setAskLoading(true);
@@ -2635,6 +2666,22 @@ function App() {
                                         <div className="flex justify-between"><dt className="text-slate-400">Running</dt><dd>{scenario.runningTicks}/{simHorizon} t</dd></div>
                                         <div className="col-span-2 flex justify-between border-t border-slate-700/60 pt-1"><dt className="text-slate-400">Energy vs baseline</dt><dd className={scenario.energyDeltaKwt < 0 ? "text-red-300" : "text-emerald-300"}>{scenario.energyDeltaKwt >= 0 ? "+" : ""}{scenario.energyDeltaKwt.toLocaleString()} kW·t</dd></div>
                                     </dl>
+                                    <button type="button" onClick={() => setScenarioPlans((plans) => [...plans, { id: `plan-${Date.now()}`, label: `${selected.id} ${simDowntime > 0 ? "service window" : "operating plan"}`, curtailmentPct: simCurtail, downtimeTicks: simDowntime, horizonTicks: simHorizon }])} className="mt-3 w-full rounded border border-cyan-700 bg-[#08213d] px-3 py-2 text-xs font-medium text-cyan-100 hover:border-cyan-400">Add to scenario comparison</button>
+                                    <label className="mt-2 block cursor-pointer rounded border border-slate-700 px-3 py-2 text-center text-xs text-slate-300 hover:border-cyan-500">Import planning CSV or JSON<input type="file" accept=".csv,.json,text/csv,application/json" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void file.text().then((text) => setScenarioPlans((plans) => [...plans, ...importScenarios(text, file.name)])); }} /></label>
+                                </Panel>
+
+                                <Panel title={`Incident queue (${incidentQueue.length})`}>
+                                    {incidentQueue.length === 0 ? <p className="text-xs text-slate-400">No active array incidents in the current telemetry view.</p> : <ul className="space-y-2">{incidentQueue.slice(0, 5).map((incident) => <li key={incident.id} className="rounded border border-slate-700 bg-[#08142a] p-2 text-xs"><div className="flex items-center justify-between gap-2"><button type="button" onClick={() => { setSelectedId(incident.id); setView("operations"); }} className="font-semibold text-cyan-200 hover:text-cyan-100">{incident.id}</button><span className={incident.severity === "Critical" ? "text-rose-300" : incident.severity === "High" ? "text-amber-300" : "text-slate-300"}>{incident.severity} · {incident.ageMinutes}m</span></div><p className="mt-1 text-slate-400">Likely {incident.probableAsset} · score {Math.round(incident.anomalyScore * 100)}% · {incident.nextAction}</p>{incident.nextAction === "Acknowledge" && <button type="button" disabled={!canWriteback} onClick={() => void acknowledgeAlert(turbines.find((item) => item.id === incident.id) ?? selected)} className="mt-2 rounded bg-amber-700 px-2 py-1 text-[11px] text-white disabled:opacity-50">Acknowledge</button>}</li>)}</ul>}
+                                </Panel>
+
+                                <div className="lg:col-span-2"><Panel title="Scenario lab and governed simulation runs"><div className="grid gap-3 md:grid-cols-[1fr_auto]"><div><p className="text-[11px] text-slate-400">Compare curtailment and planned maintenance against {selected.id}'s live generation baseline. Imported CSV/Excel rows can be translated to these plans when a file connector is configured.</p><div className="mt-2 flex flex-wrap gap-2 text-xs"><label>Purpose <select value={simulationPurpose} onChange={(event) => setSimulationPurpose(event.target.value as SimulationPurpose)} className="ml-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1"><option value="maintenance">Maintenance</option><option value="yield">Yield</option><option value="curtailment">Curtailment</option><option value="incident">Incident</option></select></label><label>Objective <select value={simulationObjective} onChange={(event) => setSimulationObjective(event.target.value as SimulationObjective)} className="ml-1 rounded border border-slate-700 bg-[#08142a] px-2 py-1"><option value="availability">Availability</option><option value="generation">Generation</option><option value="revenue">Revenue</option><option value="risk">Risk</option></select></label></div></div><button type="button" disabled={!canWriteback} onClick={saveScenarioRun} className="h-fit rounded bg-emerald-600 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">Persist simulation for review</button></div>{scenarioPlans.length > 0 && <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead className="text-slate-400"><tr><th>Plan</th><th>Projected output</th><th>Energy delta</th><th>Rank</th></tr></thead><tbody>{scenarioComparison.scenarios.map((plan) => <tr key={plan.id} className="border-t border-slate-800"><td className="py-1 text-slate-200">{plan.label}{plan.isBest ? " · recommended" : ""}</td><td>{plan.projectedPowerKw.toLocaleString()} kW</td><td className={plan.energyDeltaKwt < 0 ? "text-rose-300" : "text-emerald-300"}>{plan.energyDeltaKwt.toLocaleString()} kW·t</td><td>#{plan.rank}</td></tr>)}</tbody></table><p className="mt-2 text-[11px] text-cyan-200">{summarizeComparison(scenarioComparison)}</p></div>}<div className="mt-3 space-y-1 text-xs">{simulationRuns.slice(0, 4).map((run) => <div key={run.runId} className="flex flex-wrap items-center justify-between gap-2 rounded bg-[#08142a] px-2 py-1"><span>{run.arrayId} · {run.purpose} · {run.objective}</span>{run.approval ? <span className={run.approval.decision === "approved" ? "text-emerald-300" : "text-rose-300"}>{run.approval.decision}</span> : <span className="flex gap-1"><button type="button" disabled={!canWriteback} onClick={() => setSimulationRuns(approveSimulationRun(run.runId, "approved", "Operational review approved"))} className="text-emerald-300 disabled:opacity-50">Approve</button><button type="button" disabled={!canWriteback} onClick={() => setSimulationRuns(approveSimulationRun(run.runId, "rejected", "Operational review rejected"))} className="text-rose-300 disabled:opacity-50">Reject</button></span>}</div>)}</div></Panel></div>
+
+                                <div className="lg:col-span-2 h-[360px]"><SolarArraySchematic arrayId={selected.id} siteName={selected.siteName} status={selected.status} irradianceWm2={selected.irradianceWm2} moduleTempC={selected.moduleTempC} inverterLoadPct={selected.inverterLoadPct} powerKw={selected.powerKw} onCreateRepairOrder={() => { setRepairSummary(`Inspect ${selected.id} PV array and ${selected.inverterLoadPct >= 90 ? "inverter" : "module string"}.`); }} /></div>
+                                <Panel title="Guided solar mission report">
+                                    <p className="text-sm font-semibold text-slate-100">{SOLAR_DEMO_STEPS[demoStep].title}</p>
+                                    <p className="mt-1 text-xs text-slate-400">{SOLAR_DEMO_STEPS[demoStep].caption}</p>
+                                    <div className="mt-3 flex flex-wrap gap-1">{DEMO_STEP_ORDER.map((step) => <button key={step} type="button" onClick={() => setDemoStep(step)} className={`rounded px-2 py-1 text-[11px] ${demoStep === step ? "bg-cyan-600 text-white" : "bg-[#08142a] text-slate-300"}`}>{step}</button>)}</div>
+                                    <div className="mt-3 rounded border border-slate-700 bg-[#08142a] p-2 text-xs text-slate-300">Mission report: {selected.id} at {selected.siteName} is {selected.status}; {incidentQueue.length} active incident(s), {scenarioPlans.length} scenario plan(s), and {simulationRuns.filter((run) => run.approval?.decision === "approved").length} approved simulation run(s).</div>
                                 </Panel>
 
                                 <Panel title="Repair order dispatch (technicians)">

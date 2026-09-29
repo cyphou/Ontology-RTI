@@ -21,7 +21,7 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 | **Digital Twin view** | Single scaled‑up solar‑plant scene, ontology entity panel, live signal meters, related dispatch notes, plant picker (dropdown + prev/next) |
 | **Zoom** | Mouse‑wheel + ＋/－/⟳ controls on map and twin scenes; zoom works while paused |
 | **Analytics view** | Fleet KPIs, output by site, fleet health, top performers, average irradiance by site |
-| **Operations view** | Telemetry detail, sparkline with forecast overlay (predicted value + confidence band), power forecast (linear regression), writeback form (acknowledge/setpoint/note) |
+| **Operations view** | Telemetry detail, sparkline with forecast overlay (predicted value + confidence band), power forecast (linear regression), writeback form (acknowledge/setpoint/note), PV-array incident queue, repair-order handoff, tariff-aware scenario comparison, and governed simulation approvals |
 | **Alerts view** | Active alarms/warnings list, acknowledge workflow persisted with who/when, show‑acknowledged toggle, unacknowledged badge on the nav rail, predictive anomaly watch |
 | **Graph view** | Interactive ontology relationship graph (Fleet → Site → Plant) with zoom, pan, hover edge‑tracing, status filter, and reset |
 | **Forecasting** | Linear‑regression forecast with confidence bands, multi‑horizon (3/6/12), sparkline overlay |
@@ -29,6 +29,8 @@ ontology, and natural‑language operations ("Ask Fabric IQ").
 | **Deep‑linking** | `view` + `selectedId` encoded in the URL hash for shareable views |
 | **Ask Fabric IQ** | Grounded NL Q&A over telemetry + sites + notes, suggested questions |
 | **Ontology backend** | `SolarSite` + `DispatchNote` entities, ensure‑sites bootstrap, dispatch note persistence |
+| **Simulation governance** | Versioned `SimulationRun` and append-only `SimulationApproval` entities; records baseline provenance, planned horizon, decision package, and approval/rejection |
+| **PV generation schematic** | Interactive Solar Array Schematic traces irradiance through module strings, combiner box, inverter, and grid export with live signal values |
 | **Shell** | Menu‑driven nav rail (with badges), KPI header strip, pause/resume, refresh interval, plant detail modal |
 | **Bundle** | Three.js split into its own cached chunk via `manualChunks` |
 | **Quality** | 56 passing tests, clean `build:fabric`, one‑command `rayfin up` deploy |
