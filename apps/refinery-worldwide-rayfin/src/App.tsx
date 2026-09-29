@@ -1539,9 +1539,9 @@ export function parseHash(): { view?: ViewKey; selectedId?: string } {
 }
 
 const ASK_PROPOSALS = [
-    { label: "Prioritize risk", question: "Which units are at highest risk right now, and what should we prioritize?" },
-    { label: "Explain this alert", question: "What evidence supports the selected alert, and what should I check next?" },
-    { label: "Review maintenance", question: "Which open work order should the duty manager review first, and why?" },
+    { label: "Trace an alarm", question: "Which equipment and process unit are connected to the selected safety alarm, and what should I check next?" },
+    { label: "Assess maintenance", question: "Which critical equipment has both recent alarms and open maintenance work, and which refinery unit is affected?" },
+    { label: "Follow production", question: "Which process units produce each refined product, and where are the downstream storage and pipeline constraints?" },
 ];
 
 function NavRail({ view, onChange, badges }: { view: ViewKey; onChange: (v: ViewKey) => void; badges?: Partial<Record<ViewKey, number>> }) {
