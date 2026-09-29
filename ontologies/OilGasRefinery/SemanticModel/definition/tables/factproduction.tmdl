@@ -7,7 +7,7 @@ table factproduction
 		lineageTag: 10000012-0001-0001-0001-100000000001
 
 	measure 'Avg Yield %' = AVERAGE(factproduction[YieldPercent])
-		formatString: 0.00%
+		formatString: #,0.0" %"
 		displayFolder: Measures
 		lineageTag: 10000012-0001-0001-0001-100000000002
 

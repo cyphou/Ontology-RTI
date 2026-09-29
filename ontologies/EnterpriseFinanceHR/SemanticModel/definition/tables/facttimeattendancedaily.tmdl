@@ -31,7 +31,9 @@ table facttimeattendancedaily
 	measure 'Approved Hours' = SUM(facttimeattendancedaily[ApprovedHours])
 	measure 'Overtime Hours' = SUM(facttimeattendancedaily[OvertimeHours])
 	measure 'Attendance Rate' = DIVIDE([Approved Hours], [Scheduled Hours], 0)
+		formatString: 0.0%
 	measure 'Overtime Rate' = DIVIDE([Overtime Hours], [Worked Hours], 0)
+		formatString: 0.0%
 	partition facttimeattendancedaily = entity
 		mode: directLake
 		source

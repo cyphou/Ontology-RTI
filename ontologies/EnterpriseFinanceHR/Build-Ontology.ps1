@@ -16,7 +16,8 @@ function DeterministicGuid([string]$Seed) {
     ([guid]::new($hash)).ToString()
 }
 function PropertyType([string]$Name) {
-    if ($Name -match 'FiscalYear') { return 'Int32' }
+    if ($Name -match 'Id$') { return 'String' }
+    if ($Name -match 'FiscalYear') { return 'BigInt' }
     if ($Name -match 'Amount|Compensation|Headcount|Fte|Count|Positions|MetricValue') { return 'Double' }
     return 'String'
 }
@@ -85,7 +86,7 @@ for ($index = 0; $index -lt $relationshipDefinitions.Count; $index++) {
 }
 
 $parts = @()
-$platform = '{"metadata":{"type":"Ontology","displayName":"EnterpriseFinanceHROntology","description":"Explicitly synthetic enterprise finance and aggregate workforce planning ontology"},"config":{"version":"2.0","logicalId":"' + (DeterministicGuid 'EnterpriseFinanceHROntology') + '"}}'
+$platform = '{"metadata":{"type":"Ontology","displayName":"EnterpriseFinanceHROntology","description":"Explicitly synthetic enterprise finance and aggregate workforce planning ontology"},"config":{"version":"2.0","logicalId":"00000000-0000-0000-0000-000000000000"}}'
 $parts += @{ path = '.platform'; payload = ToBase64 $platform; payloadType = 'InlineBase64' }
 $parts += @{ path = 'definition.json'; payload = ToBase64 '{}'; payloadType = 'InlineBase64' }
 foreach ($entity in $entityTypes) {
@@ -101,6 +102,19 @@ foreach ($entity in $entityTypes) {
 foreach ($relationship in $relationships) {
     $relationshipJson = '{"namespace":"usertypes","id":"' + $relationship.id + '","name":"' + $relationship.name + '","namespaceType":"Custom","source":{"entityTypeId":"' + $relationship.sourceId + '"},"target":{"entityTypeId":"' + $relationship.targetId + '"}}'
     $parts += @{ path = "RelationshipTypes/$($relationship.id)/definition.json"; payload = ToBase64 $relationshipJson; payloadType = 'InlineBase64' }
+
+    $sourceEntity = $entityTypes | Where-Object { $_.id -eq $relationship.sourceId }
+    $targetEntity = $entityTypes | Where-Object { $_.id -eq $relationship.targetId }
+    $sourceKeyId = $sourceEntity.entityIdParts[0]
+    $targetKeyId = $targetEntity.entityIdParts[0]
+    $sourceKeyName = ($sourceEntity.properties | Where-Object { $_.id -eq $sourceKeyId }).name
+    $targetKeyName = ($targetEntity.properties | Where-Object { $_.id -eq $targetKeyId }).name
+    $foreignKey = $sourceEntity.properties | Where-Object { $_.name -eq $targetKeyName }
+    if ($foreignKey) {
+        $contextId = DeterministicGuid "EnterpriseFinanceHR-Context-$($relationship.id)"
+        $contextJson = '{"id":"' + $contextId + '","dataBindingTable":{"workspaceId":"' + $WorkspaceId + '","itemId":"' + $LakehouseId + '","sourceTableName":"' + $sourceEntity.tableName + '","sourceType":"LakehouseTable"},"sourceKeyRefBindings":[{"sourceColumnName":"' + $sourceKeyName + '","targetPropertyId":"' + $sourceKeyId + '"}],"targetKeyRefBindings":[{"sourceColumnName":"' + $foreignKey.name + '","targetPropertyId":"' + $targetKeyId + '"}]}'
+        $parts += @{ path = "RelationshipTypes/$($relationship.id)/Contextualizations/$contextId.json"; payload = ToBase64 $contextJson; payloadType = 'InlineBase64' }
+    }
 }
 if (-not $WorkspaceId -or -not $LakehouseId -or -not $OntologyId -or -not $FabricToken) { throw 'WorkspaceId, LakehouseId, OntologyId, and FabricToken are required to deploy the ontology definition.' }
 $partsJson = ($parts | ForEach-Object { '{"path":"' + $_.path + '","payload":"' + $_.payload + '","payloadType":"InlineBase64"}' }) -join ','

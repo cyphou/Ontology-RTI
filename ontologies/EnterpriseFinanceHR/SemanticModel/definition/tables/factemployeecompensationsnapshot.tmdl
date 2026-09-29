@@ -21,9 +21,13 @@ table factemployeecompensationsnapshot
 		dataType: double
 		sourceColumn: Fte
 	measure 'Total Compensation' = SUM(factemployeecompensationsnapshot[AnnualizedAmount])
+		formatString: #,0
 	measure 'Base Salary' = CALCULATE([Total Compensation], dimcompensationcomponent[ComponentCategory] = "Base Salary")
+		formatString: #,0
 	measure 'Payroll Cost per FTE' = DIVIDE([Total Compensation], SUM(factemployeecompensationsnapshot[Fte]), 0)
+		formatString: #,0
 	measure 'Salary Plan Variance' = [Total Compensation] - SUM(factcompensationplan[PlannedCompensation])
+		formatString: #,0
 	partition factemployeecompensationsnapshot = entity
 		mode: directLake
 		source

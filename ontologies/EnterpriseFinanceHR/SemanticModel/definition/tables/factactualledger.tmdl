@@ -20,13 +20,24 @@ table factactualledger
 			entityName: factactualledger
 			expressionSource: DatabaseQuery
 	measure Budget = SUM(factbudgetplan[BudgetAmount])
+		formatString: #,0
 	measure Actual = SUM(factactualledger[ActualAmount])
+		formatString: #,0
 	measure Variance = [Actual] - [Budget]
+		formatString: #,0
 	measure 'Variance %' = DIVIDE([Variance], [Budget], 0)
+		formatString: 0.0%
 	measure Forecast = SUM(factforecastscenario[ForecastAmount])
+		formatString: #,0
 	measure 'Forecast Variance' = [Forecast] - [Actual]
+		formatString: #,0
 	measure Headcount = SUM(factheadcountsnapshot[Headcount])
+		formatString: #,0
 	measure FTE = SUM(factheadcountsnapshot[Fte])
+		formatString: #,0.0
 	measure 'Cost per FTE' = DIVIDE([Actual], [FTE], 0)
+		formatString: #,0
 	measure 'Vacancy Rate' = DIVIDE(SUM(factheadcountsnapshot[OpenPositions]), [Headcount] + SUM(factheadcountsnapshot[OpenPositions]), 0)
+		formatString: 0.0%
 	measure 'Voluntary Attrition Rate' = DIVIDE(CALCULATE(SUM(factworkforcemovement[MovementCount]), factworkforcemovement[MovementType] = "Voluntary Exit"), [Headcount], 0)
+		formatString: 0.0%

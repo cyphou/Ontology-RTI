@@ -54,6 +54,7 @@ $targetByName = @{
     'EnterpriseFinanceHR BI Curated' = '03 Analytics'
     'EnterpriseFinanceHRDashboard' = '03 Analytics'
     'EnterpriseFinanceHR-OperationsAgent' = '04 Automation'
+    'Enterprise Finance + HR Executive Report' = '03 Analytics'
 }
 
 $systemNames = @('__fabric_plan_sys')
@@ -67,8 +68,13 @@ foreach ($item in $items) {
         $rootSystem++
         continue
     }
+    # SQLEndpoint / KQLDatabase items are auto-managed children of their Lakehouse/Eventhouse and move with it.
+    if ($item.type -in @('SQLEndpoint', 'KQLDatabase')) { continue }
 
     $targetName = $targetByName[$item.displayName]
+    if (-not $targetName -and $item.displayName -match '^EnterpriseFinanceHROntology_(lh|graph)_') {
+        $targetName = '02 Planning'
+    }
     if (-not $targetName) {
         $unmapped += "$($item.displayName) [$($item.type)]"
         continue

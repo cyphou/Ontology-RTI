@@ -19,6 +19,7 @@ table factoffer
 		sourceColumn: OfferedAnnualAmount
 	measure Offers = DISTINCTCOUNT(factoffer[OfferId])
 	measure 'Acceptance Rate' = DIVIDE(CALCULATE([Offers], factoffer[OfferStatus] = "Synthetic Accepted"), [Offers], 0)
+		formatString: 0.0%
 	measure 'New Hires' = CALCULATE([Offers], factoffer[OfferStatus] = "Synthetic Accepted")
 	partition factoffer = entity
 		mode: directLake

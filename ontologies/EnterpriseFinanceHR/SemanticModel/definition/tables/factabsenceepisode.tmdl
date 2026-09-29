@@ -23,6 +23,7 @@ table factabsenceepisode
 	measure 'Absence Hours' = SUM(factabsenceepisode[AbsenceHours])
 	measure 'Absence Days' = DIVIDE([Absence Hours], 8, 0)
 	measure 'Absence Rate' = DIVIDE([Absence Hours], [Scheduled Hours], 0)
+		formatString: 0.0%
 	partition factabsenceepisode = entity
 		mode: directLake
 		source
