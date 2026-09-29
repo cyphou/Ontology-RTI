@@ -72,8 +72,17 @@ foreach ($page in $spec.pages) {
 
 # JSON is embedded in a <script>; neutralise "</" so data can never close the tag.
 $toJs = { param($o) $json = ConvertTo-Json -InputObject $o -Depth 20 -Compress; if (-not $json) { $json = '[]' }; $json.Replace('</', '<\/') }
+# Logos are embedded as data URIs: the mockup has to stay a single portable file.
+$images = @{}
+foreach ($img in @($spec.pages.visuals | Where-Object { $_.type -eq 'logo' -and $_.image } | Select-Object -ExpandProperty image -Unique)) {
+    $p = if ([IO.Path]::IsPathRooted($img)) { $img } else { Join-Path (Split-Path $PSScriptRoot -Parent) $img }
+    if (Test-Path $p) {
+        $ext = ([IO.Path]::GetExtension($p)).TrimStart('.').ToLower()
+        $images[$img] = "data:image/$ext;base64," + [Convert]::ToBase64String([IO.File]::ReadAllBytes($p))
+    }
+}
 $template = Get-Content (Join-Path $PSScriptRoot 'report-mockup.template.html') -Raw
-$html = $template.Replace('__SPEC__', (& $toJs $spec)).Replace('__DATA__', (& $toJs $visualData)).Replace('__FORMATS__', (& $toJs $formats)).Replace('__LAYOUT__', (& $toJs @($layoutWarnings))).Replace('__GENERATED__', (Get-Date -Format 'yyyy-MM-dd HH:mm'))
+$html = $template.Replace('__SPEC__', (& $toJs $spec)).Replace('__DATA__', (& $toJs $visualData)).Replace('__FORMATS__', (& $toJs $formats)).Replace('__IMAGES__', (& $toJs $images)).Replace('__LAYOUT__', (& $toJs @($layoutWarnings))).Replace('__GENERATED__', (Get-Date -Format 'yyyy-MM-dd HH:mm'))
 New-Item -ItemType Directory -Force -Path (Split-Path $OutFile -Parent) | Out-Null
 [IO.File]::WriteAllText($OutFile, $html, (New-Object Text.UTF8Encoding($false)))
 Write-Host "  Mockup written: $OutFile" -ForegroundColor Cyan
