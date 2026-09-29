@@ -2,8 +2,8 @@
 
 ## Target workspace
 
-1. Workspace URL: https://msit.powerbi.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/list?experience=power-bi
-2. Workspace ID: c4e0ab47-88d2-452d-ac98-ad101b574cf3
+1. Workspace URL: https://app.powerbi.com/groups/<workspace-id>/list?experience=power-bi
+2. Workspace ID: <workspace-id>
 3. Workspace name resolved by Rayfin: pde_windturbine
 
 ## Prepared project
@@ -14,9 +14,9 @@
 
 ## Deployment result
 
-1. Fabric AppBackend item ID: 118dd6c4-e00b-4b99-84f9-5571ec7a8b97
-2. Fabric deep link: https://app.fabric.microsoft.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/118dd6c4-e00b-4b99-84f9-5571ec7a8b97?ctid=72f988bf-86f1-41af-91ab-2d7cd011db47
-3. Static hosting URL: https://naive-cave-f911045ee7-westcentralus.webapp.msit.fabricapps.net
+1. Fabric AppBackend item ID: <wind-appbackend-id>
+2. Fabric deep link: https://app.fabric.microsoft.com/groups/<workspace-id>/appbackends/<wind-appbackend-id>?ctid=<tenant-id>
+3. Static hosting URL: https://<wind-app-host>
 4. Deployment metadata file: apps/wind-turbine-rayfin/rayfin/.deployments.json
 
 ## Commands used
@@ -24,11 +24,11 @@
 1. Sign in:
    npx --yes @microsoft/rayfin-cli@latest login
 2. Scaffold:
-   npx --yes @microsoft/rayfin-cli@latest --yes init "apps/wind-turbine-rayfin" --template dataapp --project-name "wind-turbine-rayfin" --workspace-id "c4e0ab47-88d2-452d-ac98-ad101b574cf3"
+   npx --yes @microsoft/rayfin-cli@latest --yes init "apps/wind-turbine-rayfin" --template dataapp --project-name "wind-turbine-rayfin" --workspace-id "<workspace-id>"
 3. Dry run deploy:
-   npx rayfin up --workspace-id "c4e0ab47-88d2-452d-ac98-ad101b574cf3" --dry-run --yes
+   npx rayfin up --workspace-id "<workspace-id>" --dry-run --yes
 4. Actual deploy:
-   npx rayfin up --workspace-id "c4e0ab47-88d2-452d-ac98-ad101b574cf3" --yes
+   npx rayfin up --workspace-id "<workspace-id>" --yes
 
 ## Validation performed
 

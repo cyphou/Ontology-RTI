@@ -32,9 +32,7 @@
    🎥 <a href="Rayfin-Windturbine-AutoDemo.mp4"><b>Auto-demo video</b></a>
    &nbsp;·&nbsp;
    📊 <a href="Fabric-Rayfin-Wind-Turbine.pptx"><b>Explainer deck (PPTX)</b></a>
-   &nbsp;·&nbsp;
-   🌐 <a href="https://naive-cave-f911045ee7-westcentralus.webapp.msit.fabricapps.net"><b>Live app</b></a>
-</p>
+
 
 <table>
 <tr><td>🏷️ <b>Stack</b></td><td>React 19 · Vite · TypeScript · Three.js · Vitest</td></tr>

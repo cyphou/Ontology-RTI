@@ -2,7 +2,7 @@
 
 Production-oriented Rayfin dashboard for aggregate finance and workforce planning. It includes Enterprise Overview, Finance, Workforce, Planning, Exceptions, Graph, and Ask Fabric IQ views. Finance, compensation, attendance, absence, and recruitment are represented only through grouped measures; the app never renders individual salary, absence, attendance, or candidate records. All data is synthetic and contains no PII. The app must not support automated HR decisions.
 
-The intended Fabric workspace is `56b6ac57-a326-4c90-a040-36cabeec98ff`. Its Lakehouse is documented for deployment coordination, not stored in browser configuration. Configure an approved semantic-model connection alias in `.env.local` only after the Enterprise Finance + HR semantic model is deployed; the app uses synthetic aggregate planning data until then.
+The intended Fabric workspace is `<workspace-id>`. Its Lakehouse is documented for deployment coordination, not stored in browser configuration. Configure an approved semantic-model connection alias in `.env.local` only after the Enterprise Finance + HR semantic model is deployed; the app uses synthetic aggregate planning data until then.
 
 The semantic model query uses its actual `Budget`, `Actual`, `Forecast`, `Headcount`, `FTE`, `Variance`, and `Variance %` measures. Local synthetic fallbacks demonstrate total compensation, payroll cost per FTE, scheduled/worked/approved/overtime rates, absence rates, requisitions, openings, candidate pipeline, offers, acceptance, and hires without revealing detail rows. The optional Data Agent endpoint must be an authenticated gateway or Fabric-hosted service. RTI is optional. No token, secret, employee data, or personal identifier belongs in a `VITE_` variable.
 

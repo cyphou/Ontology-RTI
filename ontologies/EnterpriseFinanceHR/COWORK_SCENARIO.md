@@ -11,7 +11,7 @@ Tous les scripts se trouvent dans `ontologies/EnterpriseFinanceHR/` et
 ## Prerequis
 
 - PowerShell 7+ (`pwsh`) avec le module Az deja connecte a la souscription
-  `pde-demo-hr` (`Connect-AzAccount -Tenant 72f988bf-86f1-41af-91ab-2d7cd011db47`).
+  `pde-demo-hr` (`Connect-AzAccount -Tenant <tenant-id>`).
 - Node.js 18+ (verifie : `node -v`).
 - Une reunion Teams necessite le module `Microsoft.Graph.Calendar`
   (installe automatiquement par le script si absent).
@@ -19,7 +19,7 @@ Tous les scripts se trouvent dans `ontologies/EnterpriseFinanceHR/` et
 ## Etape 1 — Authentification Power BI (si le token a expire)
 
 ```powershell
-Connect-AzAccount -Tenant "72f988bf-86f1-41af-91ab-2d7cd011db47"
+Connect-AzAccount -Tenant "<tenant-id>"
 ```
 
 Les scripts utilisent `Get-AzAccessToken -ResourceUrl 'https://analysis.windows.net/powerbi/api'`

@@ -9,7 +9,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$WorkspaceId = '56b6ac57-a326-4c90-a040-36cabeec98ff'
+    [string]$WorkspaceId = '<workspace-id>'
 )
 
 $ErrorActionPreference = 'Stop'

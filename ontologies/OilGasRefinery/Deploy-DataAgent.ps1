@@ -19,7 +19,7 @@
 #>
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
-    [Parameter(Mandatory=$false)] [string]$OntologyId = "e7facc37-0bc8-4c69-b40a-4cee32ef6474",
+    [Parameter(Mandatory=$false)] [string]$OntologyId,
     [Parameter(Mandatory=$false)] [string]$AgentName  = "OilGasRefineryAgent"
 )
 

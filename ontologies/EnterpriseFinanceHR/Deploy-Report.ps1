@@ -17,8 +17,8 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$WorkspaceId = '56b6ac57-a326-4c90-a040-36cabeec98ff',
-    [string]$SemanticModelId = '398930b6-ed17-4371-bfcd-d4e352e0c7b1',
+    [Parameter(Mandatory = $true)][string]$WorkspaceId,
+    [Parameter(Mandatory = $true)][string]$SemanticModelId,
     [string]$ReportName = 'Enterprise Finance + HR Executive Report',
     [string]$WorkspaceName = '',
     [string]$ModelName = '',

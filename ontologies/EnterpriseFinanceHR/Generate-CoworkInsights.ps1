@@ -13,7 +13,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$SemanticModelId = '398930b6-ed17-4371-bfcd-d4e352e0c7b1',
+    [string]$SemanticModelId = '<semantic-model-id>',
     [int]$ForecastPeriods = 3,
     [string]$OutFile = 'C:\GitHub Project\OntologyAccelerator\artifacts\cowork-insights.json'
 )

@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $tok = (Get-AzAccessToken -ResourceUrl "https://api.fabric.microsoft.com" -WarningAction SilentlyContinue).Token
-$ws = "c4e0ab47-88d2-452d-ac98-ad101b574cf3"
+$ws = "<workspace-id>"
 $h = @{ Authorization = "Bearer $tok"; "Content-Type" = "application/json" }
 $base = "https://api.fabric.microsoft.com/v1/workspaces/$ws"
 

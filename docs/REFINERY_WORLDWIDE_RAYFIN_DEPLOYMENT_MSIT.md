@@ -2,8 +2,8 @@
 
 ## Target workspace
 
-1. Workspace URL: https://msit.powerbi.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/list?experience=power-bi
-2. Workspace ID: c4e0ab47-88d2-452d-ac98-ad101b574cf3
+1. Workspace URL: https://app.powerbi.com/groups/<workspace-id>/list?experience=power-bi
+2. Workspace ID: <workspace-id>
 3. Workspace name resolved by Rayfin: pde_windturbine (sanitized: pde-windturbine)
 
 ## Prepared project
@@ -15,18 +15,18 @@
 
 ## Deployment result
 
-1. Fabric AppBackend item ID: c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e
-2. Fabric deep link: https://app.fabric.microsoft.com/groups/c4e0ab47-88d2-452d-ac98-ad101b574cf3/appbackends/c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e?ctid=72f988bf-86f1-41af-91ab-2d7cd011db47
-3. Static hosting URL: https://quiet-smoke-721dc7405e-westcentralus.webapp.msit.fabricapps.net
+1. Fabric AppBackend item ID: <refinery-appbackend-id>
+2. Fabric deep link: https://app.fabric.microsoft.com/groups/<workspace-id>/appbackends/<refinery-appbackend-id>?ctid=<tenant-id>
+3. Static hosting URL: https://<refinery-app-host>
 4. Deployment metadata file: apps/refinery-worldwide-rayfin/rayfin/.deployments.json
 
 This item is distinct from the sibling geo-twin apps in the same workspace:
 
 | App | Rayfin id | Fabric item ID | Hosting URL |
 | --- | --- | --- | --- |
-| Solar (France) | solar-france | e5931e9b-dccd-4d0d-a482-3c450e13e5f9 | large-lemon-474679a745-westcentralus.webapp.msit.fabricapps.net |
-| Wind turbine | wind-turbine-rayfin | 118dd6c4-e00b-4b99-84f9-5571ec7a8b97 | naive-cave-f911045ee7-westcentralus.webapp.msit.fabricapps.net |
-| Refinery (worldwide) | refinery-worldwide | c5d7bfb0-3e4e-40cd-80f6-f67dbcca733e | quiet-smoke-721dc7405e-westcentralus.webapp.msit.fabricapps.net |
+| Solar (France) | solar-france | <solar-appbackend-id> | <solar-app-host> |
+| Wind turbine | wind-turbine-rayfin | <wind-appbackend-id> | <wind-app-host> |
+| Refinery (worldwide) | refinery-worldwide | <refinery-appbackend-id> | <refinery-app-host> |
 
 ## Domain model
 
@@ -46,7 +46,7 @@ The app reuses the geospatial twin shell and rebinds it to an oil & gas refinery
 3. Fabric build:
    npm run build:fabric
 4. Deploy:
-   npx rayfin up --workspace-id "c4e0ab47-88d2-452d-ac98-ad101b574cf3" --yes
+   npx rayfin up --workspace-id "<workspace-id>" --yes
 
 ## Validation performed
 
