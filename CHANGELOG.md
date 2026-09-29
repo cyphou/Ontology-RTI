@@ -29,4 +29,10 @@
 
 ---
 
+### Security
+- Stopped tracking `.env`, `.env.local`, `rayfin/.env`, `rayfin/.deployments.json` and `rayfin/.temp/` across the Rayfin apps (48 files). On a public repository these carried Fabric workspace, capacity and tenant identifiers plus Rayfin publishable keys. Added matching `.gitignore` rules and a `.env.example` template per app. The files remain on disk, so local development and `rayfin up` are unaffected.
+  - **Action still required:** the previously committed values remain in git history. Rotate the exposed Rayfin publishable keys, and rewrite history if the identifiers must be purged.
+
+---
+
 _This changelog follows [Keep a Changelog](https://keepachangelog.com/) format._

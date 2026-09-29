@@ -22,3 +22,12 @@ Thumbs.db
 # Editor
 .vscode/
 *.code-workspace
+# Secrets and environment. These carry Fabric workspace, capacity and tenant
+# identifiers plus Rayfin publishable keys, so they must stay out of a public repo.
+.env
+.env.*
+!.env.example
+
+# Rayfin CLI generated state and build output
+apps/*/rayfin/.temp/
+apps/*/rayfin/.deployments.json
