@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Added
+- Spec-driven Power BI report chain: `ontologies/<Domain>/report.spec.json` drives both an HTML mockup (`deploy/New-ReportMockup.ps1`) and the deployed PBIR report (`deploy/Deploy-ReportFromSpec.ps1`), with a blocking validation gate against the TMDL model and one live DAX query per visual
+- Report specs for Oil & Gas Refinery (Executive overview, Safety & maintenance, Storage & assets) and Enterprise Finance + HR (Spend vs plan, Workforce & pay, Talent pipeline)
+- `Test-ReportLayout` non-blocking layout lint: 4px grid, margins, KPI row consistency, page density, and generic "X by Y" titles
+- `Report Layout` and `Report Mockup` Copilot agents, bringing the agent set to 11
+- Report visual types: `kpi` (with goal and trend), `funnel`, `waterfall`, `slicer`, `textbox`, `column`, `line`
+- Enterprise Finance + HR browser planning app (`apps/enterprise-finance-hr-rayfin`) with aggregate-only views on synthetic data
 - Solar Farm domain as a first-class deployable ontology (12 entities, 12 relationships, 26 CSVs, 6 KQL tables) with full deploy-script parity, registered in `Deploy-Ontology.ps1` and the Pester test suite
 - Wind Turbine Rayfin twin hierarchy persistence via a new `TurbineDevice` backend entity, with runtime load and fallback to bundled device graph defaults
 - Wind Turbine Rayfin Twin Graph Admin for in-app backend editing of twin device metadata (save/reset/add/delete) with live scene updates
@@ -12,7 +18,8 @@
 - Initial documentation synchronization from template project
 
 ### Changed
-- Documentation updated across README, SETUP_GUIDE, SEMANTIC_MODEL_GUIDE, AGENTS, and diagrams to reflect 7 industry domains
+- Documentation updated across README, SETUP_GUIDE, SEMANTIC_MODEL_GUIDE, AGENTS, and diagrams to reflect 8 industry domains, 11 Copilot agents, 4 Rayfin apps, and the spec-driven report chain, including full coverage of the Enterprise Finance + HR package (ontology, report, dataflows, pipeline, Cowork scenario) and its aggregate-only, synthetic-data constraints
+- Corrected stale per-domain entity, CSV and row counts in README and SETUP_GUIDE
 - Wind Turbine Data Agent runtime seam now supports configurable auth/header modes for public API-era integrations (`bearer`, `api-key`, or `none`) while preserving MCP/legacy fallback behavior
 - Rewrote `tests/Accelerator.Tests.ps1` for Pester 5 compatibility (`-ForEach` data binding); suite is 519/519 green
 - Aligned agent topology with standard multi-agent architecture

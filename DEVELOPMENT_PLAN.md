@@ -181,11 +181,13 @@ gantt
 
 ---
 
-### Sprint 11 — Fabric Apps (Browser Digital Twins) `Jul–Oct 2026`
+### Sprint 11 — Fabric Apps (Browser Front-Ends) `Jul–Oct 2026`
 
-> Three domains ship a browser digital-twin app under `apps/` on **Fabric Rayfin**
+> Four domains ship a browser app under `apps/` on **Fabric Rayfin**
 > (React 19 + Vite + Three.js + Vitest): `wind-turbine-rayfin` (WindTurbine),
-> `solar-france-rayfin` (SolarFarm, France), and `refinery-worldwide-rayfin` (OilGasRefinery).
+> `solar-france-rayfin` (SolarFarm, France), `refinery-worldwide-rayfin` (OilGasRefinery),
+> and `enterprise-finance-hr-rayfin` (EnterpriseFinanceHR — aggregate-only planning views
+> on synthetic data, no 3D twin).
 
 **Shipped (v1):**
 
@@ -225,8 +227,8 @@ gantt
 ### Sprint 12 — Fabric Apps Enhancements `Aug–Oct 2026`
 
 > Builds on the shipped live-telemetry + history seam. Focus: finish app parity,
-> then performance, ontology-driven config, and responsive layout across all three
-> twins. Each item lands as an individually-tested, per-app conventional commit.
+> then performance, ontology-driven config, and responsive layout across the three
+> industrial twins. Each item lands as an individually-tested, per-app conventional commit.
 
 | | Task | Priority | Status |
 |:---:|------|:--------:|:------:|
@@ -251,21 +253,43 @@ gantt
 
 ---
 
+### Sprint 13 — Spec-Driven Power BI Reports `Sep 2026`
+
+> Reports stopped being hand-written PBIR. One `report.spec.json` per domain now drives both the
+> HTML mockup and the deployed report, so the approved preview is exactly what ships.
+
+| | Task | Status |
+|:---:|------|:------:|
+| 📋 | `report.spec.json` format + shared parser/validator (`deploy/ReportSpec.ps1`) | ✅ |
+| 🔍 | Blocking gate: spec vs TMDL + one live DAX query per visual (`New-ReportMockup.ps1`) | ✅ |
+| 🎨 | HTML mockup renderer with PBIR mapping badges and model format strings | ✅ |
+| 🚀 | PBIR builder from the same spec, safe same-name replace, PBIP output (`Deploy-ReportFromSpec.ps1`) | ✅ |
+| 🔌 | Wired into the deployment chain as Step 11 with `-SkipReport` | ✅ |
+| 📐 | Non-blocking layout lint (grid, margins, KPI row, page density, generic titles) | ✅ |
+| 🤖 | `Report Layout` + `Report Mockup` Copilot agents with mutual handoffs | ✅ |
+| 📄 | Specs shipped for Oil & Gas Refinery and Enterprise Finance + HR | ✅ |
+| 📊 | Specs for the remaining six domains | ⏳ Backlog |
+
+---
+
 ## 📊 Project Statistics
 
 | Metric | Count |
 |--------|------:|
-| 🏭 Industry domains | 7 |
-| 🧬 Entity types (total) | 59 |
-| 📊 CSV data files | 64 |
-| 📝 Sample data rows | 2,800+ |
-| 📡 KQL tables | 25 |
-| 📊 Dashboard tiles | 52 |
-| 🕸️ GQL queries | 100+ |
-| 🤖 AI agents (Data + Ops) | 10 |
-| 🤖 Copilot agents | 7 |
+| 🏭 Industry domains | 8 |
+| 🧬 Entity types (total) | 116 |
+| 🔗 Relationships (total) | 136 |
+| 📊 CSV data files | 152 |
+| 📝 Sample data rows | 16,000+ |
+| 📡 KQL tables | 40 |
+| 📊 Dashboard tiles | 77 |
+| 🕸️ GQL queries | 160+ |
+| 📈 Spec-driven Power BI reports | 2 |
+| 🖥️ Rayfin browser apps | 4 |
+| 🤖 AI agents (Data + Ops) | 16 |
+| 🤖 Copilot agents | 11 |
 | 📄 Documentation files | 5 |
-| 📐 TMDL semantic models | 7 |
+| 📐 TMDL semantic models | 8 |
 | ⚡ PowerShell scripts | 30+ |
 | 🖥️ Fabric Rayfin apps | 3 |
 | 🧪 App tests (Vitest) | 201 (67 × 3 apps) |

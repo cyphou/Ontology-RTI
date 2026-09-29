@@ -3,21 +3,21 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Copilot%20Agents-9-5391FE?style=for-the-badge&logo=github&logoColor=white" alt="9 Agents"/>
+  <img src="https://img.shields.io/badge/Copilot%20Agents-11-5391FE?style=for-the-badge&logo=github&logoColor=white" alt="11 Agents"/>
   <img src="https://img.shields.io/badge/Multi--Agent-Architecture-742774?style=for-the-badge" alt="Multi-Agent"/>
 </p>
 
 <h1 align="center">:robot: Multi-Agent Architecture</h1>
 
 <p align="center">
-  <b>9 specialized Copilot agents for ontology design, deployment, and Fabric app engineering</b>
+  <b>11 specialized Copilot agents for ontology design, deployment, reporting, and Fabric app engineering</b>
 </p>
 
 ---
 
 ## :globe_with_meridians: Overview
 
-This project uses a **multi-agent architecture** with 9 specialized GitHub Copilot agents and a shared instruction set. Each agent has deep expertise in a specific phase of ontology design, deployment, and Fabric app engineering across **7 industry domains**: Oil & Gas Refinery, Smart Building, Manufacturing Plant, IT Asset Management, Wind Turbine, Healthcare, and Solar Farm.
+This project uses a **multi-agent architecture** with 11 specialized GitHub Copilot agents and a shared instruction set. Each agent has deep expertise in a specific phase of ontology design, deployment, reporting, and Fabric app engineering across **8 industry domains**: Oil & Gas Refinery, Smart Building, Manufacturing Plant, IT Asset Management, Wind Turbine, Healthcare, Solar Farm, and Enterprise Finance + HR.
 
 ```mermaid
 flowchart TB
@@ -31,8 +31,12 @@ flowchart TB
     ORCH --> DEP["Deployer\nFabric REST API\nLakehouse / Eventhouse\nNotebook / Semantic Model"]
     ORCH --> DB["Dashboard Builder\nKQL tiles\nreal-time visuals\nauto-refresh"]
     ORCH --> AB["Agent Builder\nData Agent\nOperations Agent\nTeams integration"]
+    ORCH --> RL["Report Layout\ngrid, header band\nKPI row\nstorytelling titles"]
+    ORCH --> RM["Report Mockup\nspec validation\nlive DAX preview\nHTML mockup"]
     ORCH --> FAB["Fabric Apps\nRayfin apps\nlive telemetry\nscene performance"]
     ORCH --> UIW["UI Wow\nInterface QA\nvisual polish\nwow interactions"]
+
+    RL <--> RM
 
     style USER fill:#333,color:#fff
     style ORCH fill:#742774,color:#fff
@@ -42,26 +46,29 @@ flowchart TB
     style DEP fill:#FF6F00,color:#fff
     style DB fill:#0078D4,color:#fff
     style AB fill:#FF6F00,color:#fff
+    style RL fill:#F2C811,color:#000
+    style RM fill:#F2C811,color:#000
     style FAB fill:#1f6feb,color:#fff
     style UIW fill:#C43A31,color:#fff
 ```
 
 ---
 
-## :desktop_computer: Fabric Apps (browser digital twins)
+## :desktop_computer: Fabric Apps (browser front-ends)
 
-Beyond the seven ontology/deployment domains, three of them also ship a **browser
-digital-twin app** under `apps/`, built on **Fabric Rayfin** (React 19 + Vite + Three.js +
-Vitest). Each renders live telemetry on a 3D geospatial map, exposes per-entity twins, and
-answers natural-language questions. They are **fallback-safe** — with no Fabric connection
-configured they run on a synthetic telemetry generator and light up real data once the
-connection aliases are set.
+Beyond the eight ontology/deployment domains, four of them also ship a **browser app** under
+`apps/`, built on **Fabric Rayfin** (React 19 + Vite + Three.js + Vitest). The three industrial apps
+render live telemetry on a 3D geospatial map, expose per-entity twins, and answer natural-language
+questions; the Finance + HR app is a planning front-end with aggregate-only views. They are
+**fallback-safe** — with no Fabric connection configured they run on a synthetic data generator and
+light up real data once the connection aliases are set.
 
 | App | Ontology model | Scope |
 |-----|----------------|-------|
 | [`apps/wind-turbine-rayfin`](apps/wind-turbine-rayfin/README.md) | WindTurbine | Global multi-site wind fleet |
 | [`apps/solar-france-rayfin`](apps/solar-france-rayfin/README.md) | SolarFarm | France |
 | [`apps/refinery-worldwide-rayfin`](apps/refinery-worldwide-rayfin/README.md) | OilGasRefinery | Worldwide |
+| [`apps/enterprise-finance-hr-rayfin`](apps/enterprise-finance-hr-rayfin/README.md) | EnterpriseFinanceHR | Finance + workforce planning (aggregate-only, synthetic data) |
 
 > The remaining domains (Smart Building, Manufacturing Plant, IT Asset, Healthcare) ship the
 > ontology + deployment layer only — no browser app yet. See
@@ -80,6 +87,8 @@ connection aliases are set.
 | :rocket: | **Deployer** | Fabric REST API, Lakehouse, Eventhouse, Notebook, Semantic Model | `deploy/*.ps1` | `deploy/*.ps1` |
 | :bar_chart: | **Dashboard Builder** | RTI Dashboard KQL tiles, real-time visualizations | `Deploy-RTIDashboard.ps1` | `*RTIDashboard*` |
 | :robot: | **Agent Builder** | Data Agent, Operations Agent, Teams integration | `Deploy-DataAgent.ps1`, `Deploy-OperationsAgent.ps1` | `*Agent.ps1` |
+| :art: | **Report Layout** | Page grid, header band, KPI row, storytelling titles, palette | `ontologies/*/report.spec.json` | on request |
+| :chart_with_upwards_trend: | **Report Mockup** | Spec validation vs TMDL, live DAX preview, HTML mockup, deploy handoff | `report.spec.json`, `deploy/*Report*.ps1` | `report.spec.json` |
 | :desktop_computer: | **Fabric Apps** | Rayfin app features, parity, telemetry UX, scene performance | `apps/*-rayfin/src/**` | `apps/*-rayfin/src/**/*.ts(x)` |
 | :sparkles: | **UI Wow** | Interface testing, visual polish, accessibility, and wow-effect UX | `apps/*-rayfin/src/**`, app docs | `apps/*-rayfin/src/**/*.ts(x), apps/*-rayfin/src/**/*.css` |
 
@@ -98,8 +107,9 @@ flowchart LR
         F4["deploy/*.ps1"]
         F5["*RTIDashboard*"]
         F6["*Agent.ps1"]
-        F7["apps/*-rayfin/src/**/*.ts(x)"]
-        F8["apps/*-rayfin/src/**/*.css"]
+        F7["report.spec.json"]
+        F8["apps/*-rayfin/src/**/*.ts(x)"]
+        F9["apps/*-rayfin/src/**/*.css"]
     end
 
     subgraph Agents["Active Agent"]
@@ -109,8 +119,9 @@ flowchart LR
         A4["Deployer"]
         A5["Dashboard Builder"]
         A6["Agent Builder"]
-        A7["Fabric Apps"]
-        A8["UI Wow"]
+        A7["Report Mockup / Report Layout"]
+        A8["Fabric Apps"]
+        A9["UI Wow"]
     end
 
     F1 --> A1
@@ -121,6 +132,7 @@ flowchart LR
     F6 --> A6
     F7 --> A7
     F8 --> A8
+    F9 --> A9
 
     style A1 fill:#107C10,color:#fff
     style A2 fill:#0078D4,color:#fff
@@ -128,8 +140,9 @@ flowchart LR
     style A4 fill:#FF6F00,color:#fff
     style A5 fill:#0078D4,color:#fff
     style A6 fill:#FF6F00,color:#fff
-    style A7 fill:#1f6feb,color:#fff
-    style A8 fill:#C43A31,color:#fff
+    style A7 fill:#F2C811,color:#000
+    style A8 fill:#1f6feb,color:#fff
+    style A9 fill:#C43A31,color:#fff
 ```
 
 ---
@@ -278,6 +291,37 @@ PATCH {onelakeUri}?action=flush          -> 200
 
 </details>
 
+<details>
+<summary><h3>:art: Report Layout + :chart_with_upwards_trend: Report Mockup</h3></summary>
+
+**Responsibility:** Design and ship the spec-driven Power BI report for a domain. These two agents hand off to each other.
+
+**Report Layout** owns presentation in `ontologies/<Domain>/report.spec.json`:
+- 1280x720 canvas on a 4px grid, 16px margins, dark header band, KPI row of identical heights
+- Visual choice per business question (`kpi` with goal, `funnel`, `waterfall`, `slicer`, `textbox`, ...)
+- Titles written as **findings grounded in live data** ("Every business unit is under budget"), never generic "X by Y"
+- Theme palette; never changes measures or columns
+
+**Report Mockup** owns data binding and validation:
+- Validates every field in the spec against the TMDL model
+- Runs one live DAX query per visual and renders `artifacts/<Domain>-report-mockup.html`
+- Runs the non-blocking layout lint (`Test-ReportLayout`)
+- Hands off to **Deployer** once the mockup is approved
+
+```
+ontologies/<Domain>/report.spec.json
+  -> deploy/New-ReportMockup.ps1        (blocking gate: spec vs TMDL + live DAX)
+       -> artifacts/<Domain>-report-mockup.html
+  -> deploy/Deploy-ReportFromSpec.ps1   (PBIR from the same spec)
+```
+
+**Live specs:** [OilGasRefinery](ontologies/OilGasRefinery/report.spec.json) and
+[EnterpriseFinanceHR](ontologies/EnterpriseFinanceHR/report.spec.json) (Spend vs plan, Workforce & pay, Talent pipeline).
+
+> HR reports are aggregate-only by design: no per-employee visuals, and the data is synthetic.
+
+</details>
+
 ---
 
 ## :heavy_plus_sign: Adding a New Domain
@@ -319,7 +363,8 @@ flowchart TB
 | 4 | :rocket: Deployer | Create `Deploy-KqlTables.ps1` with 5 domain-specific tables |
 | 5 | :bar_chart: Dashboard Builder | Create `Deploy-RTIDashboard.ps1` with 10+ tiles |
 | 6 | :robot: Agent Builder | Create `Deploy-DataAgent.ps1` and `Deploy-OperationsAgent.ps1` |
-| 7 | :dart: Orchestrator | Register domain in `Deploy-Ontology.ps1` `$domains` hashtable |
+| 7 | :art: Report Layout + :chart_with_upwards_trend: Report Mockup | Optionally add `report.spec.json`, design the pages and validate them on live data |
+| 8 | :dart: Orchestrator | Register domain in `Deploy-Ontology.ps1` `$domains` hashtable |
 
 ---
 

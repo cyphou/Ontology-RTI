@@ -11,7 +11,7 @@
 <h1 align="center">:triangular_ruler: Semantic Model Guide</h1>
 
 <p align="center">
-  <b>Power BI semantic model configuration for all 7 ontology domains</b>
+  <b>Power BI semantic model configuration for all 8 ontology domains</b>
 </p>
 
 > [!TIP]
@@ -327,6 +327,61 @@ Key relationships:
 - `factalert.ArrayId` :arrow_right: `dimsolararray.ArrayId`
 - `factalert.SensorId` :arrow_right: `dimsensor.SensorId`
 - `sensortelemetry.SensorId` :arrow_right: `dimsensor.SensorId`
+
+</details>
+
+---
+
+## :briefcase: Enterprise Finance + HR Model
+
+<details>
+<summary><h3>Entity-Relationship Overview</h3></summary>
+
+**33 entity types** | **51 relationships** | **Snowflake schema** | **Synthetic data only**
+
+This is the largest model in the repo. It covers four subject areas that share the same
+`dimfiscalperiod` / `dimcalendardate` time spine:
+
+| Area | Fact tables | Typical question |
+|------|-------------|------------------|
+| Finance | `factbudgetplan`, `factactualledger`, `factforecastscenario` | Are we spending to plan? |
+| Workforce & pay | `factheadcountsnapshot`, `factemployeecompensationsnapshot`, `factcompensationplan` | Is headcount stable and pay consistent? |
+| Time & absence | `facttimeattendancedaily`, `factabsenceepisode` | How much overtime and absence? |
+| Talent | `factjobrequisition`, `factrecruitmentstageevent`, `factoffer` | Where do candidates drop off? |
+
+Key relationships:
+- `dimbusinessunit.LegalEntityId` :arrow_right: `dimlegalentity.LegalEntityId`
+- `dimcostcenter.BusinessUnitId` :arrow_right: `dimbusinessunit.BusinessUnitId`
+- `dimdepartment.BusinessUnitId` :arrow_right: `dimbusinessunit.BusinessUnitId`
+- `dimemployee.DepartmentId` :arrow_right: `dimdepartment.DepartmentId`
+- `dimposition.JobFamilyId` :arrow_right: `dimjobfamily.JobFamilyId`
+- `factbudgetplan.CostCenterId` :arrow_right: `dimcostcenter.CostCenterId`
+- `factactualledger.FiscalPeriodId` :arrow_right: `dimfiscalperiod.FiscalPeriodId`
+- `factactualledger.AccountId` :arrow_right: `dimaccount.AccountId`
+- `factemployeecompensationsnapshot.PayGradeId` :arrow_right: `dimpaygrade.PayGradeId`
+- `facttimeattendancedaily.CalendarDateId` :arrow_right: `dimcalendardate.CalendarDateId`
+- `factabsenceepisode.LeaveTypeId` :arrow_right: `dimleavetype.LeaveTypeId`
+- `factrecruitmentstageevent.RecruitmentStageId` :arrow_right: `dimrecruitmentstage.RecruitmentStageId`
+- `factoffer.JobRequisitionId` :arrow_right: `factjobrequisition.JobRequisitionId`
+
+> [!IMPORTANT]
+> Build **aggregate-only** visuals on this model: no per-employee reporting. The data is synthetic
+> and the model is not intended to support individual-level HR decisions.
+
+</details>
+
+<details>
+<summary><h3>Measure gotchas</h3></summary>
+
+| Measure | Behaviour |
+|---------|-----------|
+| `[Headcount]` / `[FTE]` | SUM across 24 monthly snapshots. Shown as a card this over-counts — use a KPI showing the latest period, or a trend. |
+| `[Attendance Rate]` | Can exceed 100% because approved hours may exceed scheduled hours. |
+| `[Base Salary]` | Can be blank in the sample data. |
+| `[Vacancy Rate]` | Errors (SUM over a string column) — do not query it. |
+
+All measures carry an explicit `formatString` (`0.0%` for rates, `#,0` for amounts). The report
+mockup mirrors these formats, so an unformatted value in the mockup means the model is missing one.
 
 </details>
 

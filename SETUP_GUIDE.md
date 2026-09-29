@@ -122,9 +122,13 @@ $headers = @{ "Authorization" = "Bearer $token" }
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType WindTurbine
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType Healthcare
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType SolarFarm
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType EnterpriseFinanceHR
 
 # Skip optional components (useful for lower-SKU capacity)
 .\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType ITAsset -SkipDataAgent -SkipDashboard -SkipOperationsAgent
+
+# Skip the spec-driven Power BI report (Oil & Gas and Enterprise Finance + HR only)
+.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType EnterpriseFinanceHR -SkipReport
 ```
 
 ### Step 4 - Validate
@@ -149,6 +153,7 @@ $headers = @{ "Authorization" = "Bearer $token" }
 | 8 | :mag: Create Graph Query Set | ~15s |
 | 9 | :bar_chart: Create RTI Dashboard (10-12 tiles) | ~30s |
 | 10 | :robot: Create Data Agent + Operations Agent | ~45s |
+| 11 | :chart_with_upwards_trend: Build and deploy the Power BI report from `report.spec.json` | ~60s |
 
 > **Total estimated time:** ~8-10 minutes per domain
 
@@ -182,13 +187,18 @@ If you prefer to create items manually (or as a learning exercise), follow the s
 
 | Domain | CSV Count | Key Tables |
 |--------|:---------:|------------|
-| <img src="assets/icons/oil-gas.svg" width="18"/> Oil & Gas | 14 | DimRefinery, DimEquipment, DimSensor, FactProduction, SensorTelemetry |
+| <img src="assets/icons/oil-gas.svg" width="18"/> Oil & Gas | 15 | DimRefinery, DimEquipment, DimSensor, FactProduction, SensorTelemetry |
 | <img src="assets/icons/smart-building.svg" width="18"/> Smart Building | 13 | DimBuilding, DimZone, DimSensor, DimHVACSystem, SensorTelemetry |
 | <img src="assets/icons/manufacturing.svg" width="18"/> Manufacturing | 12 | DimPlant, DimMachine, DimSensor, FactProductionBatch, SensorTelemetry |
 | <img src="assets/icons/it-asset.svg" width="18"/> IT Asset | 12 | DimServer, DimRack, DimApplication, FactIncident, SensorTelemetry |
-| <img src="assets/icons/wind-turbine.svg" width="18"/> Wind Turbine | 13 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
+| <img src="assets/icons/wind-turbine.svg" width="18"/> Wind Turbine | 25 | DimWindFarm, DimTurbine, DimSensor, FactPowerOutput, SensorTelemetry |
 | <img src="assets/icons/healthcare.svg" width="18"/> Healthcare | 14 | DimHospital, DimWard, DimPatient, DimPhysician, SensorTelemetry |
 | <img src="assets/icons/solar.svg" width="18"/> Solar Farm | 26 | DimSolarPlant, DimSolarArray, DimInverter, FactEnergyProduction, SensorTelemetry |
+| :briefcase: Enterprise Finance + HR | 35 | DimLegalEntity, DimCostCenter, DimFiscalPeriod, FactActualLedger, FactBudgetPlan |
+
+> [!NOTE]
+> Enterprise Finance + HR data is **synthetic** and contains no real PII. Keep it aggregate-only:
+> load it for planning analytics, not for individual-level HR decisions.
 
 > [!WARNING]
 > Do **NOT** upload `SensorTelemetry.csv` to the lakehouse. This file goes to the **Eventhouse** (Step 5).
@@ -278,6 +288,7 @@ Each domain has 5 KQL tables:
 | :wind_face: Wind Turbine | TurbineReading | TurbineAlert | PowerOutputMetric | WeatherMetric | MaintenanceMetric |
 | :hospital: Healthcare | PatientVitals | ClinicalAlert | LabMetric | MedicationEvent | DeviceReading |
 | :sunny: Solar Farm | ArrayReading | ArrayAlert | EnergyMetric | WeatherMetric | MaintenanceMetric |
+| :briefcase: Enterprise Finance + HR | FinanceVariance | PayrollCostAnomaly | WorkforceMovement | ForecastFreshness | PlanningException |
 
 </details>
 
@@ -292,14 +303,39 @@ Each domain has 5 KQL tables:
 
 </details>
 
+<details>
+<summary><h3>Step 9 - Power BI Report (spec-driven)</h3></summary>
+
+Domains that ship a `report.spec.json` (Oil & Gas Refinery and Enterprise Finance + HR) get a
+Power BI report built from that spec. The same file drives an HTML mockup and the deployed report.
+
+```powershell
+# Preview: validate the spec against the model and render the mockup on live data
+.\deploy\Deploy-ReportFromSpec.ps1 -SpecPath .\ontologies\EnterpriseFinanceHR\report.spec.json `
+    -WorkspaceId "guid" -SemanticModelId "guid" -MockupOnly
+
+# Deploy after approving artifacts/EnterpriseFinanceHR-report-mockup.html
+.\deploy\Deploy-ReportFromSpec.ps1 -SpecPath .\ontologies\EnterpriseFinanceHR\report.spec.json `
+    -WorkspaceId "guid" -SemanticModelId "guid"
+```
+
+The mockup step is a **blocking gate**: it checks every field against the TMDL model and runs one
+live DAX query per visual. Deployment is refused if anything fails (use `-Force` to override).
+`-PbipOutDir` writes a Power BI Desktop-openable PBIP project instead of deploying.
+
+> The report step runs automatically as part of `Deploy-Ontology.ps1`. Use `-SkipReport` to opt out.
+
+</details>
+
 ---
 
 ## :globe_with_meridians: Fabric Apps
 
-Three domains also ship a **browser digital-twin app** under `apps/`, built on **Fabric Rayfin**
-(React 19 + Vite + Three.js + Vitest). Each renders live telemetry on a 3D geospatial map, exposes
-per-entity twins, and answers natural-language questions. They are **fallback-safe** — with no Fabric
-connection configured they run on a synthetic telemetry generator, and light up real data once the
+Four domains also ship a **browser app** under `apps/`, built on **Fabric Rayfin**
+(React 19 + Vite + Three.js + Vitest). The three industrial apps render live telemetry on a 3D
+geospatial map, expose per-entity twins, and answer natural-language questions; the Finance + HR app
+is a planning front-end with aggregate-only views. They are **fallback-safe** — with no Fabric
+connection configured they run on a synthetic data generator, and light up real data once the
 connection aliases are set.
 
 | App | Ontology model | Scope |
@@ -307,6 +343,7 @@ connection aliases are set.
 | `apps/wind-turbine-rayfin` | WindTurbine | Global multi-site wind fleet |
 | `apps/solar-france-rayfin` | SolarFarm | France |
 | `apps/refinery-worldwide-rayfin` | OilGasRefinery | Worldwide |
+| `apps/enterprise-finance-hr-rayfin` | EnterpriseFinanceHR | Finance + workforce planning (aggregate-only) |
 
 ### Run an app locally
 
@@ -377,7 +414,7 @@ npm run dev            # http://localhost:5173
 5. **Teams** — install the *Fabric Operations Agent* app in Microsoft Teams to receive proactive recommendations
 
 > [!NOTE]
-> This limitation applies to all 7 domains. The deployment script auto-detects the Eventhouse
+> This limitation applies to all 8 domains. The deployment script auto-detects the Eventhouse
 > and KQL Database IDs from the workspace — no hardcoded GUIDs required.
 
 ---

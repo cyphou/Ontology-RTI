@@ -12,8 +12,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/domains-8%20industries-742774?style=flat-square" alt="8 Domains"/>
-  <img src="https://img.shields.io/badge/copilot%20agents-7-5391FE?style=flat-square" alt="7 Copilot Agents"/>
-  <img src="https://img.shields.io/badge/Rayfin%20apps-3-0078D4?style=flat-square" alt="3 Rayfin Apps"/>
+  <img src="https://img.shields.io/badge/copilot%20agents-11-5391FE?style=flat-square" alt="11 Copilot Agents"/>
+  <img src="https://img.shields.io/badge/Rayfin%20apps-4-0078D4?style=flat-square" alt="4 Rayfin Apps"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"/>
 </p>
 
@@ -22,6 +22,7 @@
   <a href="#-supported-domains">Domains</a> ---
   <a href="#-what-gets-deployed">What Gets Deployed</a> ---
   <a href="#-architecture">Architecture</a> ---
+  <a href="#-spec-driven-power-bi-reports">Reports</a> ---
   <a href="#-fabric-apps-browser-digital-twins">Apps</a> ---
   <a href="#-multi-agent-development">Agents</a> ---
   <a href="#-development-roadmap">Roadmap</a>
@@ -33,9 +34,10 @@
 ```mermaid
 flowchart LR
     subgraph Input["Package"]
-        CSV["CSV Data\n78 tables"]
-        ONT["Ontology\n68 entity types"]
-        GQL["GQL Queries\n113+ queries"]
+        CSV["CSV Data\n152 tables"]
+        ONT["Ontology\n116 entity types"]
+        GQL["GQL Queries\n160+ queries"]
+        SPEC["Report Spec\nreport.spec.json"]
     end
 
     CMD["Deploy-Ontology.ps1"] --> LH["Lakehouse\nDelta Tables"]
@@ -47,6 +49,7 @@ flowchart LR
     CMD --> DASH["RTI Dashboard\n10-12 tiles"]
     CMD --> DA["Data Agent\nNL + Graph"]
     CMD --> OA["Operations Agent\nRTI + Teams"]
+    CMD --> RPT["Power BI Report\nspec-driven PBIR"]
 
     Input --> CMD
 
@@ -60,11 +63,28 @@ flowchart LR
     style DASH fill:#0078D4,color:#fff,stroke:#0078D4
     style DA fill:#FF6F00,color:#fff,stroke:#FF6F00
     style OA fill:#FF6F00,color:#fff,stroke:#FF6F00
+    style RPT fill:#F2C811,color:#000,stroke:#F2C811
 ```
 
-Each domain ships a **complete, ready-to-deploy package**: CSV sample data, ontology definition, graph queries, KQL enrichment tables, an eventstream for real-time ingestion, a real-time dashboard, and two AI agents --- all wired together and deployed with a single PowerShell command.
+Each domain ships a **complete, ready-to-deploy package**: CSV sample data, ontology definition, graph queries, KQL enrichment tables, an eventstream for real-time ingestion, a real-time dashboard, two AI agents, and --- for domains with a `report.spec.json` --- a spec-driven Power BI report, all wired together and deployed with a single PowerShell command.
 
-The **Enterprise Finance + HR** package additionally includes 16 HR planning entities, four aggregate-only Dataflow Gen2 templates for curated `bi_*` Lakehouse tables, and an optional DataPipeline definition for ordered load, quality-gate, and semantic-model refresh orchestration. See [DATAFLOW_GEN2_GUIDE.md](ontologies/EnterpriseFinanceHR/DATAFLOW_GEN2_GUIDE.md) and [HR_DATA_PIPELINE_GUIDE.md](ontologies/EnterpriseFinanceHR/HR_DATA_PIPELINE_GUIDE.md). It also ships a shiny, multi-page Power BI report generator ([Deploy-Report.ps1](ontologies/EnterpriseFinanceHR/Deploy-Report.ps1)) with GenAI visuals (Decomposition Tree, Key Influencers), plus an M365 Cowork pipeline that asks business questions against the model, forecasts spend, generates a branded PowerPoint deck, and schedules a Teams review meeting --- see [COWORK_SCENARIO.md](ontologies/EnterpriseFinanceHR/COWORK_SCENARIO.md) for the manual runbook.
+### :briefcase: Enterprise Finance + HR at a glance
+
+The **Enterprise Finance + HR** domain is the most complete package in the repo (33 entities, 51 relationships, 35 CSVs, ~11,000 rows of explicitly synthetic data) and the reference implementation for the finance/workforce scenario:
+
+| Capability | Where |
+|------------|-------|
+| Finance, compensation, attendance, absence and recruitment ontology | [Build-Ontology.ps1](ontologies/EnterpriseFinanceHR/Build-Ontology.ps1) |
+| Spec-driven Power BI report (3 pages, HTML mockup gate) | [report.spec.json](ontologies/EnterpriseFinanceHR/report.spec.json) |
+| Multi-page report with GenAI visuals (Decomposition Tree, Key Influencers) | [Deploy-Report.ps1](ontologies/EnterpriseFinanceHR/Deploy-Report.ps1) |
+| Aggregate-only Dataflow Gen2 templates for curated `bi_*` tables | [DATAFLOW_GEN2_GUIDE.md](ontologies/EnterpriseFinanceHR/DATAFLOW_GEN2_GUIDE.md) |
+| Ordered load, quality gate and model refresh orchestration | [HR_DATA_PIPELINE_GUIDE.md](ontologies/EnterpriseFinanceHR/HR_DATA_PIPELINE_GUIDE.md) |
+| M365 Cowork pipeline (business Q&A, spend forecast, PowerPoint deck, Teams review) | [COWORK_SCENARIO.md](ontologies/EnterpriseFinanceHR/COWORK_SCENARIO.md) |
+| Browser planning app (aggregate-only views) | [apps/enterprise-finance-hr-rayfin](apps/enterprise-finance-hr-rayfin/README.md) |
+
+> [!IMPORTANT]
+> All HR data in this repo is **synthetic** and contains no real PII. The package renders
+> aggregate-only views and is **not** intended to drive automated HR decisions about individuals.
 
 ---
 
@@ -77,8 +97,8 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 
 ### Oil & Gas
 **Refinery**
-13 entities · 14 CSVs
-445 rows
+13 entities · 15 CSVs
+698 rows
 
 </td>
 <td width="14%" align="center">
@@ -87,7 +107,7 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 ### Smart Building
 **Building Ops**
 12 entities · 13 CSVs
-498 rows
+471 rows
 
 </td>
 <td width="14%" align="center">
@@ -96,7 +116,7 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 ### Manufacturing
 **Plant Floor**
 11 entities · 12 CSVs
-444 rows
+370 rows
 
 </td>
 <td width="14%" align="center">
@@ -105,7 +125,7 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 ### IT Asset
 **Infrastructure**
 11 entities · 12 CSVs
-381 rows
+355 rows
 
 </td>
 <td width="14%" align="center">
@@ -113,8 +133,8 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 
 ### Wind Turbine
 **Wind Farm**
-12 entities · 13 CSVs
-651 rows
+12 entities · 25 CSVs
+988 rows
 
 </td>
 <td width="14%" align="center">
@@ -122,7 +142,7 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 
 ### Healthcare
 **Hospital Ops**
-9 entities · 14 CSVs
+12 entities · 14 CSVs
 260 rows
 
 </td>
@@ -147,9 +167,15 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 </tr>
 </table>
 
-### Enterprise Finance + HR
+### :briefcase: Enterprise Finance + HR
 
-**Finance and workforce planning**: 33 ontology entities and 35 CSV tables for explicitly synthetic finance, compensation, attendance, absence, and recruitment planning data. The included [local planning app](apps/enterprise-finance-hr-rayfin/README.md) renders aggregate-only views and contains no actual PII. This package is not for automated HR decisions; RTI and Eventhouse capabilities are optional extensions.
+**33 entities · 51 relationships · 35 CSVs · ~11,000 rows** --- finance and workforce planning across
+legal entities, cost centers, budgets, actuals and forecasts, plus compensation, time & attendance,
+absence and recruitment. Data is explicitly **synthetic** and contains no real PII; the
+[planning app](apps/enterprise-finance-hr-rayfin/README.md) and the report render **aggregate-only**
+views. This package is not for automated HR decisions about individuals. It ships the full deployment
+chain plus a [spec-driven Power BI report](#-spec-driven-power-bi-reports), Dataflow Gen2 templates,
+a DataPipeline, and the M365 Cowork scenario. RTI and Eventhouse capabilities are optional extensions.
 
 ---
 
@@ -202,7 +228,7 @@ The **Enterprise Finance + HR** package additionally includes 16 HR planning ent
 
 ## :gear: What Gets Deployed
 
-Each domain deploys **8 Fabric items** in a coordinated pipeline:
+Each domain deploys up to **10 Fabric items** in a coordinated pipeline:
 
 ```mermaid
 flowchart TB
@@ -224,6 +250,7 @@ flowchart TB
         direction LR
         GQS["Graph Query Set\nGQL traversal queries"]
         DASH["RTI Dashboard\n10-12 KQL tiles"]
+        RPT["Power BI Report\nspec-driven PBIR"]
         DA["Data Agent\nNL queries on Lakehouse"]
         OA["Operations Agent\nRTI monitoring + Teams"]
     end
@@ -245,6 +272,7 @@ flowchart TB
 | :spider_web: | **Graph Model** | auto | Topology derived from ontology |
 | :mag: | **Graph Query Set** | 20 queries | GQL traversal patterns (pushed via API) |
 | :bar_chart: | **RTI Dashboard** | 10-12 tiles | Real-time KQL visualizations (schema v52) |
+| :chart_with_upwards_trend: | **Power BI Report** | 3 pages | Built from `report.spec.json` (Oil & Gas, Enterprise Finance + HR) |
 | :robot: | **AI Agents** | 2 agents | Data Agent + Operations Agent |
 ---
 
@@ -273,6 +301,10 @@ OntologyAccelerator/
 |   |-- Deploy-RTIDashboard.ps1              <-- Dashboard deployer (fallback)
 |   |-- Deploy-DataAgent.ps1                 <-- Data Agent deployer (fallback)
 |   |-- Deploy-OperationsAgent.ps1           <-- Operations Agent deployer (fallback)
+|   |-- ReportSpec.ps1                       <-- Shared report spec parsing, validation + layout lint
+|   |-- New-ReportMockup.ps1                 <-- Report validation gate + HTML mockup on live data
+|   |-- report-mockup.template.html          <-- Mockup renderer (SVG visuals, PBIR mapping badges)
+|   |-- Deploy-ReportFromSpec.ps1            <-- PBIR report builder (same spec as the mockup)
 |   |-- Deploy-BulkImport.ps1               <-- Bulk entity import
 |   |-- Send-TelemetrySimulator.ps1          <-- Real-time event simulator
 |   |-- New-OntologyDomain.ps1               <-- Domain scaffolding wizard
@@ -281,23 +313,28 @@ OntologyAccelerator/
 |   +-- SemanticModel/                       <-- TMDL semantic model (Direct Lake)
 |
 |-- ontologies/
-|   |-- OilGasRefinery/                      <-- Oil & Gas domain
+|   |-- OilGasRefinery/                      <-- Oil & Gas domain (+ report.spec.json)
 |   |-- SmartBuilding/                       <-- Smart Building domain
 |   |-- ManufacturingPlant/                  <-- Manufacturing domain
 |   |-- ITAsset/                             <-- IT Asset domain
 |   |-- WindTurbine/                         <-- Wind Turbine domain
 |   |-- Healthcare/                          <-- Healthcare domain
-|   +-- SolarFarm/                           <-- Solar Farm domain
+|   |-- SolarFarm/                           <-- Solar Farm domain
+|   +-- EnterpriseFinanceHR/                 <-- Finance + HR domain (report spec, dataflows,
+|       |                                        DataPipeline, quality gate, Cowork scenario)
 |       +-- (same structure per domain)
 |
 |-- apps/                                    <-- Browser digital-twin front-ends (Fabric Rayfin)
 |   |-- wind-turbine-rayfin/                 <-- Geo Wind Twin (WindTurbine model, backend-persisted twin graph)
 |   |-- solar-france-rayfin/                 <-- Geo Solar Twin, France (SolarFarm model)
-|   +-- refinery-worldwide-rayfin/           <-- Geo Refinery Twin (OilGasRefinery model)
+|   |-- refinery-worldwide-rayfin/           <-- Geo Refinery Twin (OilGasRefinery model)
+|   +-- enterprise-finance-hr-rayfin/        <-- Finance + HR planning app (aggregate-only views)
+|
+|-- artifacts/                               <-- Generated output (report mockups, insights, screenshots)
 |
 |-- .github/
 |   |-- workflows/ci.yml                     <-- GitHub Actions CI pipeline
-|   +-- agents/                              <-- 7 Copilot agent definitions
+|   +-- agents/                              <-- 11 Copilot agent definitions
 |       +-- shared.instructions.md
 |
 |-- diagrams/
@@ -608,13 +645,81 @@ graph TB
 **Dashboard:** 10 tiles (patient vitals, clinical alerts, lab results, medication timeline, device status)
 
 </details>
+
+<details>
+<summary><h3>:briefcase: Enterprise Finance + HR</h3></summary>
+
+**33 entity types** | **51 relationships** | **35 CSVs** | **~11,000 rows** (all synthetic)
+
+```mermaid
+graph TB
+    subgraph Org["Organization"]
+        LE["LegalEntity"]
+        BU["BusinessUnit"]
+        CC["CostCenter"]
+        DEP["Department"]
+    end
+
+    subgraph People["People & Pay"]
+        EMP["Employee"]
+        POS["Position"]
+        JF["JobFamily"]
+        ECS["EmployeeCompensationSnapshot"]
+    end
+
+    subgraph Finance["Finance"]
+        FP["FiscalPeriod"]
+        BP["BudgetPlan"]
+        AL["ActualLedger"]
+        FS["ForecastScenario"]
+    end
+
+    subgraph Talent["Time & Talent"]
+        TAD["TimeAttendanceDaily"]
+        ABS["AbsenceEpisode"]
+        REQ["JobRequisition"]
+        OFF["Offer"]
+    end
+
+    LE -->|owns| BU
+    BU -->|funds| CC
+    BU -->|contains| DEP
+    DEP -->|employs| EMP
+    EMP -->|holds| POS
+    POS -->|belongsTo| JF
+    ECS -->|compensates| EMP
+    BP -->|plannedFor| CC
+    AL -->|postedTo| CC
+    FS -->|forecasts| CC
+    AL -->|inPeriod| FP
+    TAD -->|recordedFor| EMP
+    ABS -->|takenBy| EMP
+    REQ -->|opensFor| POS
+    OFF -->|fills| REQ
+
+    style LE fill:#0B2545,color:#fff
+    style BU fill:#0B2545,color:#fff
+    style CC fill:#0B2545,color:#fff
+```
+
+**KQL Tables:** FinanceVariance | PayrollCostAnomaly | WorkforceMovement | ForecastFreshness | PlanningException
+
+**Dashboard:** 5 tiles (budget variance, payroll cost anomaly, workforce movement, forecast freshness, planning exceptions)
+
+**Power BI report:** 3 pages built from [report.spec.json](ontologies/EnterpriseFinanceHR/report.spec.json) --- Spend vs plan, Workforce & pay, Talent pipeline
+
+**Extras:** Dataflow Gen2 templates for curated `bi_*` tables, a DataPipeline with a Python quality gate, and the M365 Cowork scenario (business Q&A, spend forecast, PowerPoint deck, Teams review)
+
+> Aggregate-only by design. No individual-level HR decisioning, and the data is synthetic.
+
+</details>
 ---
 
 ## :bar_chart: KQL Real-Time Dashboards
 
 <p align="center">
-  <img src="https://img.shields.io/badge/total%20tiles-62-0078D4?style=for-the-badge" alt="62 tiles"/>
-  <img src="https://img.shields.io/badge/KQL%20tables-30-742774?style=for-the-badge" alt="30 KQL tables"/>
+  <img src="https://img.shields.io/badge/total%20tiles-77-0078D4?style=for-the-badge" alt="77 tiles"/>
+  <img src="https://img.shields.io/badge/KQL%20tables-40-742774?style=for-the-badge" alt="40 KQL tables"/>
   <img src="https://img.shields.io/badge/auto--refresh-30s-107C10?style=for-the-badge" alt="30s refresh"/>
 </p>
 
@@ -628,6 +733,8 @@ Each domain deploys its own RTI dashboard with domain-specific KQL queries:
 | :desktop_computer: IT Asset | `ITAssetDashboard` | 10 | CPU/memory lines, app health, incident resolution |
 | :wind_face: Wind Turbine | `WindTurbineDashboard` | 10 | Power output, wind-power scatter, icing risk |
 | :hospital: Healthcare | `HealthcareDashboard` | 10 | Patient vitals, clinical alerts, lab results, device status |
+| :sunny: Solar Farm | `SolarFarmDashboard` | 10 | Array power output, inverter efficiency, irradiance vs yield |
+| :briefcase: Enterprise Finance + HR | `EnterpriseFinanceHRDashboard` | 5 | Budget variance, payroll cost anomaly, workforce movement, forecast freshness, planning exceptions |
 
 ---
 
@@ -656,8 +763,8 @@ Each domain includes **20 GQL queries** covering:
 ## :robot: AI Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Data%20Agents-6-FF6F00?style=for-the-badge" alt="6 Data Agents"/>
-  <img src="https://img.shields.io/badge/Operations%20Agents-6-742774?style=for-the-badge" alt="6 Ops Agents"/>
+  <img src="https://img.shields.io/badge/Data%20Agents-8-FF6F00?style=for-the-badge" alt="8 Data Agents"/>
+  <img src="https://img.shields.io/badge/Operations%20Agents-8-742774?style=for-the-badge" alt="8 Ops Agents"/>
   <img src="https://img.shields.io/badge/Microsoft%20Teams-6264A7?style=for-the-badge&logo=microsoftteams&logoColor=white" alt="Teams"/>
 </p>
 
@@ -685,12 +792,81 @@ flowchart LR
 | :desktop_computer: IT Asset | :white_check_mark: | :white_check_mark: | Server health - App performance - Network - Incidents - Capacity |
 | :wind_face: Wind Turbine | :white_check_mark: | :white_check_mark: | Turbine performance - Predictive maintenance - Weather - Grid - Fleet |
 | :hospital: Healthcare | :white_check_mark: | :white_check_mark: | Patient vitals - Clinical alerts - Lab monitoring - Medication safety - Device management |
+| :sunny: Solar Farm | :white_check_mark: | :white_check_mark: | Array performance - Inverter health - Irradiance forecasting - Soiling - Grid export |
+| :briefcase: Enterprise Finance + HR | :white_check_mark: | :white_check_mark: | Budget variance - Payroll cost - Workforce movement - Forecast freshness - Planning exceptions |
+
+> [!IMPORTANT]
+> The Enterprise Finance + HR agents answer **aggregate** planning questions (spend vs budget,
+> headcount trend, funnel conversion). They are not designed to profile, rank or evaluate
+> individual employees, and the underlying data is synthetic.
+
+---
+
+## :chart_with_upwards_trend: Spec-Driven Power BI Reports
+
+<p align="center">
+  <img src="https://img.shields.io/badge/mockup-first-F2C811?style=for-the-badge" alt="Mockup first"/>
+  <img src="https://img.shields.io/badge/PBIR-v2-742774?style=for-the-badge" alt="PBIR v2"/>
+  <img src="https://img.shields.io/badge/validated%20on-live%20DAX-107C10?style=for-the-badge" alt="Live DAX"/>
+</p>
+
+Reports are **not** hand-written PBIR. A single `report.spec.json` per domain drives both an HTML
+mockup and the deployed report, so what you approve is exactly what ships.
+
+```mermaid
+flowchart LR
+    SPEC["ontologies/Domain/\nreport.spec.json"] --> GATE["New-ReportMockup.ps1\nvalidation gate"]
+    GATE --> HTML["artifacts/Domain-\nreport-mockup.html"]
+    GATE --> BUILD["Deploy-ReportFromSpec.ps1\nPBIR builder"]
+    BUILD --> PBI["Power BI report\nin the workspace"]
+    BUILD --> PBIP["PBIP project\n(-PbipOutDir)"]
+
+    style SPEC fill:#742774,color:#fff
+    style GATE fill:#107C10,color:#fff
+    style HTML fill:#F2C811,color:#000
+    style BUILD fill:#0078D4,color:#fff
+    style PBI fill:#F2C811,color:#000
+    style PBIP fill:#8DA9C4,color:#000
+```
+
+The gate is **blocking**: it checks every field in the spec against the TMDL semantic model, runs one
+live DAX query per visual, and refuses to deploy if anything is unknown, empty or overlapping
+(override with `-Force`). A second, **non-blocking** layout lint flags off-grid boxes, tight margins,
+mismatched KPI heights, overcrowded pages and generic `"X by Y"` titles.
+
+| Capability | Detail |
+|------------|--------|
+| Visual types | `card` `kpi` `bar` `column` `line` `donut` `combo` `funnel` `waterfall` `map` `table` `gauge` `slicer` `textbox` |
+| Live validation | One DAX query per visual against the deployed semantic model |
+| Theme | Built from the spec's `theme` block (custom registered PBIR theme) |
+| Safe replace | Deploys under a temp name, then removes the previous same-name report |
+| Verification | Server-side `ExportTo` PNG render (the web canvas is a cross-origin iframe) |
+
+```powershell
+# Preview only: validate the spec and build the HTML mockup on live data
+.\deploy\Deploy-ReportFromSpec.ps1 -SpecPath .\ontologies\EnterpriseFinanceHR\report.spec.json `
+    -WorkspaceId "guid" -SemanticModelId "guid" -MockupOnly
+
+# Deploy once the mockup is approved
+.\deploy\Deploy-ReportFromSpec.ps1 -SpecPath .\ontologies\EnterpriseFinanceHR\report.spec.json `
+    -WorkspaceId "guid" -SemanticModelId "guid"
+```
+
+| Domain | Spec | Pages |
+|--------|------|-------|
+| :oil_drum: Oil & Gas Refinery | [report.spec.json](ontologies/OilGasRefinery/report.spec.json) | Executive overview - Safety & maintenance - Storage & assets |
+| :briefcase: Enterprise Finance + HR | [report.spec.json](ontologies/EnterpriseFinanceHR/report.spec.json) | Spend vs plan - Workforce & pay - Talent pipeline |
+
+> [!NOTE]
+> `Deploy-Ontology.ps1` runs this chain automatically (Step 11) for any domain that has a
+> `report.spec.json`. Use `-SkipReport` to opt out. Two Copilot agents work on the spec:
+> **@report-layout** designs the pages, **@report-mockup** validates and previews them.
 
 ---
 
 ## :robot: Multi-Agent Development
 
-This project uses **7 specialized Copilot agents** for AI-assisted development:
+This project uses **11 specialized Copilot agents** for AI-assisted development:
 
 ```mermaid
 flowchart TB
@@ -702,6 +878,12 @@ flowchart TB
     ORCH --> DEP["Deployer\nFabric REST API, Lakehouse"]
     ORCH --> DB["Dashboard Builder\nKQL tiles, RTI visuals"]
     ORCH --> AB["Agent Builder\nData + Operations agents"]
+    ORCH --> RL["Report Layout\nGrid, KPI row, storytelling titles"]
+    ORCH --> RM["Report Mockup\nSpec validation, HTML preview"]
+    ORCH --> FAB["Fabric Apps\nRayfin app features, telemetry UX"]
+    ORCH --> UIW["UI Wow\nVisual polish, accessibility"]
+
+    RL <--> RM
 
     style ORCH fill:#742774,color:#fff
     style OD fill:#107C10,color:#fff
@@ -710,6 +892,10 @@ flowchart TB
     style DEP fill:#FF6F00,color:#fff
     style DB fill:#0078D4,color:#fff
     style AB fill:#FF6F00,color:#fff
+    style RL fill:#F2C811,color:#000
+    style RM fill:#F2C811,color:#000
+    style FAB fill:#1f6feb,color:#fff
+    style UIW fill:#C43A31,color:#fff
 ```
 
 Agents auto-activate based on the file you are editing. See [AGENTS.md](AGENTS.md) for full details.
@@ -750,25 +936,28 @@ flowchart LR
 
 1. Create `ontologies/<DomainName>/` with `data/`, `Build-Ontology.ps1`, `GraphQueries.gql`
 2. Add domain-specific: `Deploy-KqlTables.ps1`, `Deploy-RTIDashboard.ps1`, `Deploy-DataAgent.ps1`, `Deploy-OperationsAgent.ps1`
-3. Add domain entry to `$domains` hashtable in `Deploy-Ontology.ps1`
-4. Run `.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType <DomainName>`
+3. Optionally add `report.spec.json` to get a validated Power BI report (see [Spec-Driven Power BI Reports](#-spec-driven-power-bi-reports))
+4. Add domain entry to `$domains` hashtable in `Deploy-Ontology.ps1`
+5. Run `.\Deploy-Ontology.ps1 -WorkspaceId "guid" -OntologyType <DomainName>`
 
 ---
 
 ## :globe_with_meridians: Fabric Apps (browser digital twins)
 
-Beyond the PowerShell/Python deployment engine, the repo ships **browser-based 3D digital-twin
-command centers** under `apps/`, each built on **Fabric Rayfin** (React 19 + Vite + Three.js +
-Vitest). Every app renders live telemetry on a geospatial 3D map, exposes per-asset digital twins,
-and answers natural-language questions ("Ask Fabric IQ"). All three ship **fallback-safe**: with no
-Fabric connection configured they run on a synthetic telemetry generator, and they light up real
-data the moment the connection aliases (`VITE_LIVE_TELEMETRY_MODEL`, `VITE_DATA_AGENT_URL`) are set.
+Beyond the PowerShell/Python deployment engine, the repo ships **browser-based front-ends** under
+`apps/`, each built on **Fabric Rayfin** (React 19 + Vite + Three.js + Vitest). The three industrial
+apps render live telemetry on a geospatial 3D map, expose per-asset digital twins, and answer
+natural-language questions ("Ask Fabric IQ"); the Finance + HR app is a planning front-end with
+aggregate-only views. All ship **fallback-safe**: with no Fabric connection configured they run on a
+synthetic data generator, and they light up real data the moment the connection aliases
+(`VITE_LIVE_TELEMETRY_MODEL`, `VITE_DATA_AGENT_URL`) are set.
 
-| Scenario / Domain | App | Semantic Model | Geo Scope |
-|-------------------|-----|----------------|-----------|
+| Scenario / Domain | App | Semantic Model | Scope |
+|-------------------|-----|----------------|-------|
 | :wind_face: **Wind Turbine** | [apps/wind-turbine-rayfin](apps/wind-turbine-rayfin/README.md) | `WindTurbine` | Multi-site fleet (world) |
 | :sunny: **Solar Farm** | [apps/solar-france-rayfin](apps/solar-france-rayfin/README.md) | `SolarFarm` | Multi-site fleet (France) |
 | :oil_drum: **Oil & Gas Refinery** | [apps/refinery-worldwide-rayfin](apps/refinery-worldwide-rayfin/README.md) | `OilGasRefinery` | Multi-site fleet (worldwide) |
+| :briefcase: **Enterprise Finance + HR** | [apps/enterprise-finance-hr-rayfin](apps/enterprise-finance-hr-rayfin/README.md) | `EnterpriseFinanceHR` | Finance + workforce planning (aggregate-only) |
 
 **Refinery showcase:** [watch the Refinery Worldwide Rayfin demo video](apps/refinery-worldwide-rayfin/Refinery-video-demo.mp4)
 
@@ -801,6 +990,8 @@ npx rayfin up            # ships the static app into the Fabric workspace
 | `deploy\Send-TelemetrySimulator.ps1` | Sends real-time events to Eventstream (6 domain-specific generators) |
 | `deploy\Deploy-BulkImport.ps1` | Batch-imports Lakehouse data into ontology entities |
 | `deploy\New-OntologyDomain.ps1` | Scaffolds a new domain with template files |
+| `deploy\New-ReportMockup.ps1` | Validates `report.spec.json` against the model and renders the HTML mockup |
+| `deploy\Deploy-ReportFromSpec.ps1` | Builds and deploys the PBIR report (or a PBIP project) from the same spec |
 | `deploy\Validate-Deployment.ps1` | Post-deploy validation of all 9 Fabric item types |
 
 **Service Principal Authentication:**
@@ -825,6 +1016,10 @@ npx rayfin up            # ships the static app into the Fabric workspace
 | :globe_with_meridians: | [apps/wind-turbine-rayfin/README.md](apps/wind-turbine-rayfin/README.md) | Geo Wind Twin Command Center — browser digital-twin app (WindTurbine) |
 | :globe_with_meridians: | [apps/solar-france-rayfin/README.md](apps/solar-france-rayfin/README.md) | Geo Solar Twin Command Center · France — browser digital-twin app (SolarFarm) |
 | :globe_with_meridians: | [apps/refinery-worldwide-rayfin/README.md](apps/refinery-worldwide-rayfin/README.md) | Geo Refinery Twin Command Center · Worldwide — browser digital-twin app (OilGasRefinery) |
+| :briefcase: | [apps/enterprise-finance-hr-rayfin/README.md](apps/enterprise-finance-hr-rayfin/README.md) | Finance + workforce planning app — aggregate-only views (EnterpriseFinanceHR) |
+| :briefcase: | [ontologies/EnterpriseFinanceHR/DATAFLOW_GEN2_GUIDE.md](ontologies/EnterpriseFinanceHR/DATAFLOW_GEN2_GUIDE.md) | HR Dataflow Gen2 templates for curated aggregate-only `bi_*` tables |
+| :briefcase: | [ontologies/EnterpriseFinanceHR/HR_DATA_PIPELINE_GUIDE.md](ontologies/EnterpriseFinanceHR/HR_DATA_PIPELINE_GUIDE.md) | HR DataPipeline: ordered load, quality gate, semantic-model refresh |
+| :briefcase: | [ontologies/EnterpriseFinanceHR/COWORK_SCENARIO.md](ontologies/EnterpriseFinanceHR/COWORK_SCENARIO.md) | M365 Cowork runbook: business Q&A, spend forecast, PowerPoint deck, Teams review |
 | :wind_face: | [docs/WIND_TURBINE_RAYFIN_PLAN.md](docs/WIND_TURBINE_RAYFIN_PLAN.md) | Execution plan for the Rayfin + Three.js wind farm digital twin series |
 | :calendar: | [docs/WIND_TURBINE_RAYFIN_ROADMAP.md](docs/WIND_TURBINE_RAYFIN_ROADMAP.md) | Sprint roadmap, milestones, ownership, and KPI tracking for the series |
 | :checkered_flag: | [docs/WIND_TURBINE_RAYFIN_TASKBOARD.csv](docs/WIND_TURBINE_RAYFIN_TASKBOARD.csv) | Import-ready backlog for GitHub Projects or task tracking tools |

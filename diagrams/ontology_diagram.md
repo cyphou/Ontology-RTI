@@ -1,16 +1,19 @@
-# Ontology Diagrams — All 7 Domains
+# Ontology Diagrams — All 8 Domains
 
 ## Domain Overview
 
 | Domain | Entity Types | Relationships | KQL Tables |
 |--------|:-----------:|:------------:|:----------:|
-| Oil & Gas Refinery | 13 | 17 | 5 |
+| Oil & Gas Refinery | 13 | 15 | 5 |
 | Smart Building | 12 | 11 | 5 |
 | Manufacturing Plant | 11 | 11 | 5 |
 | IT Asset Management | 11 | 10 | 5 |
 | Wind Turbine | 12 | 12 | 5 |
-| Healthcare | 9 | 7 | 5 |
+| Healthcare | 12 | 14 | 5 |
 | Solar Farm | 12 | 12 | 6 |
+| Enterprise Finance + HR | 33 | 51 | 5 |
+
+> Enterprise Finance + HR uses synthetic data and is modelled for aggregate-only analysis.
 
 ---
 

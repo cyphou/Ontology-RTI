@@ -3,10 +3,12 @@
 This project uses a **specialized agent model**. Each agent has scoped domain knowledge,
 file ownership, and clear boundaries.
 
-> **Fabric Apps:** three domains also ship a browser digital-twin app under `apps/`
+> **Fabric Apps:** four domains also ship a browser app under `apps/`
 > (Fabric Rayfin — React 19 + Vite + Three.js): [wind-turbine-rayfin](../apps/wind-turbine-rayfin/README.md)
 > (WindTurbine), [solar-france-rayfin](../apps/solar-france-rayfin/README.md) (SolarFarm, France),
-> and [refinery-worldwide-rayfin](../apps/refinery-worldwide-rayfin/README.md) (OilGasRefinery). See the
+> [refinery-worldwide-rayfin](../apps/refinery-worldwide-rayfin/README.md) (OilGasRefinery), and
+> [enterprise-finance-hr-rayfin](../apps/enterprise-finance-hr-rayfin/README.md)
+> (EnterpriseFinanceHR — aggregate-only planning views on synthetic data). See the
 > repo [Development Plan](../DEVELOPMENT_PLAN.md) for the app roadmap.
 
 ## Quick Reference
@@ -20,6 +22,8 @@ file ownership, and clear boundaries.
 | **@wiring** | DAX↔M bridge, query generation, classification | M query modules |
 | **@semantic** | Semantic model (TMDL), relationships, RLS | Semantic model generators |
 | **@visual** | Report layout, visual containers, filters | Report/visual generators |
+| **@report-layout** | Power BI spec layout: grid, header band, KPI row, storytelling titles, palette | `ontologies/*/report.spec.json` |
+| **@report-mockup** | Spec validation vs TMDL, live DAX preview, HTML mockup, deploy handoff | `deploy/*Report*.ps1`, `report.spec.json` |
 | **@generator** | Cross-cutting generation coordination | `deploy/` generators |
 | **@assessor** | Migration readiness, scoring, strategy, validation | Assessment modules |
 | **@merger** | Shared model, multi-source merge | Merge modules |
