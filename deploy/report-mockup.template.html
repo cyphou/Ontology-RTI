@@ -256,6 +256,11 @@ function renderPage(pi) {
     box.innerHTML = `${v.title ? `<h3 style="${v.background ? "color:rgba(255,255,255,0.8)" : ""}">${esc(v.title)}</h3>` : ""}<div class="chart"></div><div class="badge">${esc(badge(v))}</div>`;
     host.appendChild(box);
     const chart = box.querySelector(".chart");
+    if (v.type === "logo") {
+      chart.innerHTML = `<img src="${esc(v.image)}" alt="" style="max-width:100%;max-height:100%;object-fit:contain">`;
+      Object.assign(chart.style, { display: "flex", alignItems: "center", justifyContent: "flex-start" });
+      return;
+    }
     if (v.type === "textbox") {
       chart.innerHTML = `<div style="font-size:${(v.fontSize || 14) * 1.33}px;font-weight:600;color:${esc(v.color || "var(--fg)")}">${esc(v.text)}</div>` +
         (v.subtext ? `<div style="font-size:${(v.subFontSize || 10) * 1.33}px;color:${esc(v.subColor || "var(--muted)")};margin-top:2px">${esc(v.subtext)}</div>` : "");
@@ -269,7 +274,7 @@ function renderPage(pi) {
 }
 
 const RENDER_STATIC = new Set();
-SPEC.pages.forEach((p, pi) => p.visuals.forEach((v, vi) => { if (v.type === "textbox") RENDER_STATIC.add(`p${pi}-v${vi}`); }));
+SPEC.pages.forEach((p, pi) => p.visuals.forEach((v, vi) => { if (v.type === "textbox" || v.type === "logo") RENDER_STATIC.add(`p${pi}-v${vi}`); }));
 const isStatic = (k) => RENDER_STATIC.has(k);
 
 document.getElementById("title").textContent = SPEC.reportName + " - mockup";

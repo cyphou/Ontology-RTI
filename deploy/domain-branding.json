@@ -1,0 +1,197 @@
+{
+  "$comment": "Single source of brand truth per ontology domain. The report theme, the generated logo lockup and the mockup all read this file, so a domain cannot drift between them. Palettes are derived from each domain's own icon in assets/icons, which keeps the report visually tied to the domain it describes.",
+  "version": "1.0",
+  "defaults": {
+    "foreground": "#1B1F23",
+    "mutedText": "#5C6B7A",
+    "border": "#E3E8EF",
+    "visualBackground": "#FFFFFF",
+    "pageBackground": "#F5F7FA",
+    "outspace": "#E9EDF2",
+    "good": "#0F766E",
+    "neutral": "#B45309",
+    "bad": "#B91C1C",
+    "$comment": "good/neutral/bad are semantic: they carry meaning, so they are never reused as ordinary series colours.",
+    "measureColors": {
+      "$comment": "Role-based colour binding. A measure whose name matches a pattern keeps the same colour on every page, which is the 'be consistent with the colours you use' rule from Microsoft guidance.",
+      "actual": {
+        "match": "actual|spend|cost|output|production",
+        "color": "$accent"
+      },
+      "plan": {
+        "match": "budget|plan|target|goal|capacity",
+        "color": "$muted"
+      },
+      "forecast": {
+        "match": "forecast|predicted|projection",
+        "color": "$secondary"
+      },
+      "variance": {
+        "match": "variance|delta|gap",
+        "color": "$semantic"
+      }
+    }
+  },
+  "domains": {
+    "OilGasRefinery": {
+      "displayName": "Oil & Gas Refinery",
+      "tagline": "Refining operations",
+      "icon": "assets/icons/oil-gas.svg",
+      "logo": "assets/logos/oil-gas.png",
+      "accent": "#CC5500",
+      "secondary": "#FF8C00",
+      "dataColors": [
+        "#CC5500",
+        "#FF8C00",
+        "#7A8B99",
+        "#1F6F8B",
+        "#C99700",
+        "#4E5D6C",
+        "#8C4A2F",
+        "#A9B4BE",
+        "#2E7D8F",
+        "#6B4E2E"
+      ]
+    },
+    "EnterpriseFinanceHR": {
+      "displayName": "Enterprise Finance + HR",
+      "tagline": "Finance and workforce planning",
+      "icon": "assets/icons/enterprise-finance-hr.svg",
+      "logo": "assets/logos/enterprise-finance-hr.png",
+      "accent": "#0B2545",
+      "secondary": "#13A89E",
+      "dataColors": [
+        "#0B2545",
+        "#13A89E",
+        "#8DA9C4",
+        "#E8A33D",
+        "#5C6B7A",
+        "#2E86AB",
+        "#6A994E",
+        "#B9C4D0",
+        "#9E7B5A",
+        "#43526B"
+      ]
+    },
+    "SmartBuilding": {
+      "displayName": "Smart Building",
+      "tagline": "Building operations",
+      "icon": "assets/icons/smart-building.svg",
+      "logo": "assets/logos/smart-building.png",
+      "accent": "#0077B6",
+      "secondary": "#00B4D8",
+      "dataColors": [
+        "#0077B6",
+        "#00B4D8",
+        "#7A8B99",
+        "#C99700",
+        "#4E5D6C",
+        "#2E7D8F",
+        "#6A994E",
+        "#A9B4BE",
+        "#8C6A2F",
+        "#43526B"
+      ]
+    },
+    "ManufacturingPlant": {
+      "displayName": "Manufacturing Plant",
+      "tagline": "Plant floor operations",
+      "icon": "assets/icons/manufacturing.svg",
+      "logo": "assets/logos/manufacturing.png",
+      "accent": "#107C10",
+      "secondary": "#2ECC71",
+      "dataColors": [
+        "#107C10",
+        "#2ECC71",
+        "#7A8B99",
+        "#C99700",
+        "#4E5D6C",
+        "#1F6F8B",
+        "#8C4A2F",
+        "#A9B4BE",
+        "#6B4E2E",
+        "#43526B"
+      ]
+    },
+    "ITAsset": {
+      "displayName": "IT Asset Management",
+      "tagline": "Infrastructure and services",
+      "icon": "assets/icons/it-asset.svg",
+      "logo": "assets/logos/it-asset.png",
+      "accent": "#6C3483",
+      "secondary": "#9B59B6",
+      "dataColors": [
+        "#6C3483",
+        "#9B59B6",
+        "#7A8B99",
+        "#1F6F8B",
+        "#C99700",
+        "#4E5D6C",
+        "#2E7D8F",
+        "#A9B4BE",
+        "#6B4E2E",
+        "#43526B"
+      ]
+    },
+    "WindTurbine": {
+      "displayName": "Wind Turbine",
+      "tagline": "Wind fleet performance",
+      "icon": "assets/icons/wind-turbine.svg",
+      "logo": "assets/logos/wind-turbine.png",
+      "accent": "#1A5276",
+      "secondary": "#3498DB",
+      "dataColors": [
+        "#1A5276",
+        "#3498DB",
+        "#7A8B99",
+        "#0F766E",
+        "#C99700",
+        "#4E5D6C",
+        "#2E7D8F",
+        "#A9B4BE",
+        "#6B4E2E",
+        "#43526B"
+      ]
+    },
+    "Healthcare": {
+      "displayName": "Healthcare",
+      "tagline": "Hospital operations",
+      "icon": "assets/icons/healthcare.svg",
+      "logo": "assets/logos/healthcare.png",
+      "accent": "#B71C1C",
+      "secondary": "#E53935",
+      "dataColors": [
+        "#B71C1C",
+        "#E53935",
+        "#7A8B99",
+        "#1F6F8B",
+        "#0F766E",
+        "#4E5D6C",
+        "#C99700",
+        "#A9B4BE",
+        "#6B4E2E",
+        "#43526B"
+      ]
+    },
+    "SolarFarm": {
+      "displayName": "Solar Farm",
+      "tagline": "PV plant performance",
+      "icon": "assets/icons/solar.svg",
+      "logo": "assets/logos/solar.png",
+      "accent": "#B9770E",
+      "secondary": "#F5B041",
+      "dataColors": [
+        "#B9770E",
+        "#F5B041",
+        "#7A8B99",
+        "#1F6F8B",
+        "#0F766E",
+        "#4E5D6C",
+        "#2E7D8F",
+        "#A9B4BE",
+        "#6B4E2E",
+        "#43526B"
+      ]
+    }
+  }
+}

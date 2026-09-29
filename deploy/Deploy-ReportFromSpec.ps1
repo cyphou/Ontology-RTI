@@ -78,6 +78,17 @@ function New-PbirVisual($v) {
     $m0 = if ($v.measures) { M $v.measures[0] } else { $null }
     $roles = @{}; $objects = $null; $sortField = $null
     switch ($v.type) {
+        'logo' {
+            # The image ships as a RegisteredResources item, so the report needs no public URL.
+            $item = Split-Path $v.image -Leaf
+            $visual = @{
+                visualType = 'image'
+                objects    = @{ general = @(@{ properties = @{ imageUrl = @{ expr = @{ ResourcePackageItem = [ordered]@{ PackageName = 'RegisteredResources'; PackageType = 1; ItemName = $item } } } } }) }
+                drillFilterOtherVisuals = $false
+            }
+            $visual.visualContainerObjects = New-ContainerObjects $v
+            return $visual
+        }
         'textbox' {
             $run = [ordered]@{ value = [string]$v.text; textStyle = [ordered]@{ fontFamily = 'Segoe UI Semibold'; fontSize = "$(if ($v.fontSize) { $v.fontSize } else { 14 })pt"; color = $(if ($v.color) { $v.color } else { $t.foreground }) } }
             $para = [ordered]@{ textRuns = @($run) }
@@ -101,7 +112,7 @@ function New-PbirVisual($v) {
             $objects = @{
                 goals     = @(@{ properties = @{ show = Lit 'true'; showGoal = Lit 'true'; showDistance = Lit 'true'; distanceLabel = Lit "'Percent'" } })
                 # Without a goal the trend area is grey and auto-scaled, which turns flat data into noise.
-                trendline = @(@{ properties = @{ show = Lit $(if ($v.goalMeasures) { 'true' } else { 'false' }); transparency = Lit '75D' } })
+                trendline = @(@{ properties = @{ show = Lit $(if ($v.goalMeasures) { 'true' } else { 'false' }); transparency = Lit '92D' } })
                 status    = @(@{ properties = @{
                             direction    = Lit $(if ($v.lowerIsBetter) { "'Decreasing'" } else { "'Increasing'" })
                             goodColor    = @{ solid = @{ color = Lit "'$($t.good)'" } }
@@ -153,6 +164,17 @@ function New-PbirVisual($v) {
             if ($axis.Count) { $objects = @{ axis = @(@{ properties = $axis }) } }
         }
     }
+    # The container title already says what the chart shows, so axis titles only repeat the
+    # field names. Microsoft guidance: remove unnecessary labels.
+    if ($type -in 'clusteredBarChart', 'clusteredColumnChart', 'lineChart', 'lineClusteredColumnComboChart', 'funnel', 'waterfallChart') {
+        if (-not $objects) { $objects = @{} }
+        $catProps = @{ showAxisTitle = Lit 'false' }
+        # Long category names on a dense axis rotate into unreadable stubs; the trend shape is the message.
+        if ($v.hideCategoryLabels) { $catProps.show = Lit 'false' }
+        $objects.categoryAxis = @(@{ properties = $catProps })
+        if ($objects.valueAxis) { $objects.valueAxis[0].properties.showAxisTitle = Lit 'false' }
+        else { $objects.valueAxis = @(@{ properties = @{ showAxisTitle = Lit 'false' } }) }
+    }
     $sortDirection = 'Descending'
     if ($v.sort -eq 'desc' -and $m0) { $sortField = $m0.field }
     elseif ($v.sort -eq 'asc' -and $v.category) { $sortField = (C $v.category).field; $sortDirection = 'Ascending' }
@@ -170,6 +192,8 @@ function New-ContainerObjects($v) {
     $o = @{}
     if ($v.title) { $o.title = @(@{ properties = @{ show = Lit 'true'; text = Lit "'$($v.title.Replace("'", "''"))'" } }) }
     else { $o.title = @(@{ properties = @{ show = Lit 'false' } }) }
+    # Accessibility: alt text is what a screen reader announces for the visual.
+    if ($v.altText) { $o.general = @(@{ properties = @{ altText = Lit "'$($v.altText.Replace("'", "''"))'" } }) }
     if ($v.background) {
         $o.background = @(@{ properties = @{ show = Lit 'true'; color = @{ solid = @{ color = Lit "'$($v.background)'" } }; transparency = Lit '0D' } })
     }
@@ -216,6 +240,16 @@ $themeObj = [ordered]@{
 }
 
 $rvi = [ordered]@{ visual = '2.6.0'; report = '3.1.0'; page = '2.3.0' }
+# Logos referenced by the spec travel inside the report as registered resources.
+$logoItems = @()
+$logoParts = @()
+foreach ($img in @($spec.pages.visuals | Where-Object { $_.type -eq 'logo' -and $_.image } | Select-Object -ExpandProperty image -Unique)) {
+    $path = if ([IO.Path]::IsPathRooted($img)) { $img } else { Join-Path (Split-Path $PSScriptRoot -Parent) $img }
+    if (-not (Test-Path $path)) { throw "Logo image not found: $path" }
+    $item = Split-Path $path -Leaf
+    $logoItems += @{ name = $item; path = $item; type = 'Image' }
+    $logoParts += @{ path = "StaticResources/RegisteredResources/$item"; payload = [Convert]::ToBase64String([IO.File]::ReadAllBytes($path)); payloadType = 'InlineBase64' }
+}
 $parts = @()
 $pageNames = @()
 foreach ($page in $spec.pages) {
@@ -228,7 +262,7 @@ foreach ($page in $spec.pages) {
         # Spec order is paint order: header bands first, visuals layered on top.
         $container = [ordered]@{
             '$schema' = $sbVisual; name = $name
-            position  = [ordered]@{ x = [int]$v.x; y = [int]$v.y; z = $zIndex * 1000; width = [int]$v.w; height = [int]$v.h; tabOrder = $zIndex * 1000 }
+            position  = [ordered]@{ x = [int]$v.x; y = [int]$v.y; z = $zIndex * 1000; width = [int]$v.w; height = [int]$v.h; tabOrder = $(if ($v.type -eq 'logo') { -1 } else { $zIndex * 1000 }) }
             visual    = (New-PbirVisual $v)
         }
         $zIndex++
@@ -251,7 +285,7 @@ $report = [ordered]@{
     }
     resourcePackages = @(
         @{ name = 'SharedResources'; type = 'SharedResources'; items = @(@{ name = 'CY26SU02'; path = 'BaseThemes/CY26SU02.json'; type = 'BaseTheme' }) },
-        @{ name = 'RegisteredResources'; type = 'RegisteredResources'; items = @(@{ name = "$themeName.json"; path = "$themeName.json"; type = 'CustomTheme' }) }
+        @{ name = 'RegisteredResources'; type = 'RegisteredResources'; items = @(@{ name = "$themeName.json"; path = "$themeName.json"; type = 'CustomTheme' }) + $logoItems }
     )
     settings         = [ordered]@{ useStylableVisualContainerHeader = $true; defaultDrillFilterOtherVisuals = $true }
 }
@@ -273,7 +307,7 @@ $parts = @(
     @{ path = "StaticResources/RegisteredResources/$themeName.json"; payload = (ToB64 $themeObj); payloadType = 'InlineBase64' },
     @{ path = 'definition/pages/pages.json'; payload = (ToB64 $pagesMeta); payloadType = 'InlineBase64' },
     @{ path = '.platform'; payload = (ToB64 $platform); payloadType = 'InlineBase64' }
-) + $parts
+) + $logoParts + $parts
 
 if ($PbipOutDir) {
     $reportFolder = Join-Path $PbipOutDir "$PbipName.Report"
@@ -281,7 +315,10 @@ if ($PbipOutDir) {
     foreach ($p in $parts) {
         $dest = Join-Path $reportFolder ($p.path -replace '/', '\')
         New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
-        [IO.File]::WriteAllText($dest, [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p.payload)), (New-Object Text.UTF8Encoding($false)))
+        $bytes = [Convert]::FromBase64String($p.payload)
+        # Images are binary; decoding them as UTF-8 text would corrupt the file.
+        if ($p.path -match '\.(png|jpg|jpeg|gif|bmp)$') { [IO.File]::WriteAllBytes($dest, $bytes) }
+        else { [IO.File]::WriteAllText($dest, [Text.Encoding]::UTF8.GetString($bytes), (New-Object Text.UTF8Encoding($false))) }
     }
     $pbipFile = [ordered]@{
         '$schema' = 'https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json'

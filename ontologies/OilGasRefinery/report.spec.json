@@ -1,56 +1,56 @@
 {
   "reportName": "Refinery Operations Report",
-  "theme": {
-    "name": "RefineryOperationsTheme",
-    "accent": "#B11F4B",
-    "dataColors": ["#B11F4B", "#E07A93", "#F59E0B", "#242424", "#16A34A", "#0078D4", "#9A1A41", "#919191", "#DC2626", "#5C5C5C"],
-    "foreground": "#242424",
-    "mutedText": "#5C5C5C",
-    "border": "#DEDEDE",
-    "visualBackground": "#FFFFFF",
-    "pageBackground": "#F7F4EF",
-    "outspace": "#FCFBF8",
-    "good": "#16A34A",
-    "neutral": "#F59E0B",
-    "bad": "#DC2626"
-  },
+  "domain": "OilGasRefinery",
+  "$comment": "Theme and logo are inherited from deploy/domain-branding.json. Layout follows deploy/visual-mapping.json: the alarm-severity donut became a bar because the point is to compare severities, not to show a split.",
   "pages": [
     {
       "name": "Executive overview",
-      "storyNote": "Naphtha + gasoline = 60% of output; crude distillation carries 51% of volume.",
+      "storyNote": "Naphtha and gasoline are 60% of output, and crude distillation carries 51% of the volume.",
       "visuals": [
-        { "type": "card", "title": "Total capacity (BPD)", "x": 16, "y": 16, "w": 240, "h": 110, "measures": ["dimrefinery[Total Capacity BPD]"], "precision": 2 },
-        { "type": "card", "title": "Production (bbl)", "x": 268, "y": 16, "w": 240, "h": 110, "measures": ["factproduction[Total Output Barrels]"], "precision": 2 },
-        { "type": "card", "title": "Average yield", "x": 520, "y": 16, "w": 240, "h": 110, "measures": ["factproduction[Avg Yield %]"] },
-        { "type": "card", "title": "Energy per barrel (MMBTU)", "x": 772, "y": 16, "w": 240, "h": 110, "measures": ["factproduction[Energy Per Barrel]"] },
-        { "type": "card", "title": "Critical alarms", "x": 1024, "y": 16, "w": 240, "h": 110, "measures": ["factsafetyalarm[Critical Alarm Count]"] },
-        { "type": "map", "title": "Refinery capacity (BPD)", "x": 16, "y": 138, "w": 452, "h": 566, "category": "dimrefinery[RefineryName]", "latitude": "dimrefinery[Latitude]", "longitude": "dimrefinery[Longitude]", "measures": ["dimrefinery[Total Capacity BPD]"] },
-        { "type": "bar", "title": "Production by product category (bbl)", "x": 480, "y": 138, "w": 380, "h": 566, "category": "dimrefinedproduct[ProductCategory]", "measures": ["factproduction[Total Output Barrels]"], "sort": "desc" },
-        { "type": "combo", "title": "Output and yield by process unit type", "x": 872, "y": 138, "w": 392, "h": 566, "category": "dimprocessunit[ProcessUnitType]", "measures": ["factproduction[Total Output Barrels]"], "lineMeasures": ["factproduction[Avg Yield %]"] }
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/oil-gas.png", "plain": true },
+
+        { "type": "card", "title": "Total capacity (BPD)", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimrefinery[Total Capacity BPD]"], "precision": 2, "altText": "Combined nameplate capacity of all refineries in barrels per day." },
+        { "type": "card", "title": "Production (bbl)", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factproduction[Total Output Barrels]"], "precision": 2, "altText": "Total barrels produced across all process units in the current filter." },
+        { "type": "card", "title": "Average yield", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factproduction[Avg Yield %]"], "altText": "Average conversion yield across process units." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Two products carry the plant", "fontSize": 13, "subtext": "Naphtha and gasoline account for roughly 60% of output, and crude distillation alone moves 51% of the volume.", "subFontSize": 9 },
+
+        { "type": "map", "title": "Capacity is concentrated in a few sites", "x": 16, "y": 236, "w": 616, "h": 468, "category": "dimrefinery[RefineryName]", "latitude": "dimrefinery[Latitude]", "longitude": "dimrefinery[Longitude]", "measures": ["dimrefinery[Total Capacity BPD]"], "altText": "World map with a bubble per refinery, sized by nameplate capacity in barrels per day." },
+
+        { "type": "bar", "title": "Naphtha and gasoline are 60% of output", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimrefinedproduct[ProductCategory]", "measures": ["factproduction[Total Output Barrels]"], "sort": "desc", "altText": "Barrels produced by refined product category, sorted from highest to lowest." },
+        { "type": "combo", "title": "Crude distillation moves the volume, not the yield", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimprocessunit[ProcessUnitType]", "measures": ["factproduction[Total Output Barrels]"], "lineMeasures": ["factproduction[Avg Yield %]"], "sort": "desc", "altText": "Columns show barrels produced per process unit type against a line showing average yield percentage on a second axis." }
       ]
     },
     {
       "name": "Safety & maintenance",
-      "storyNote": "Turnarounds = 94% of maintenance cost; 7 of 15 alarms are high-temperature.",
+      "storyNote": "Turnarounds absorb 94% of maintenance cost, and 7 of the 15 alarms are high-temperature.",
       "visuals": [
-        { "type": "donut", "title": "Alarms by severity", "x": 16, "y": 16, "w": 300, "h": 330, "category": "factsafetyalarm[Severity]", "measures": ["factsafetyalarm[Alarm Count]"] },
-        { "type": "bar", "title": "Alarms by type", "x": 328, "y": 16, "w": 400, "h": 330, "category": "factsafetyalarm[AlarmType]", "measures": ["factsafetyalarm[Alarm Count]"], "sort": "desc" },
-        { "type": "bar", "title": "Maintenance cost by type (USD)", "x": 16, "y": 358, "w": 712, "h": 346, "category": "factmaintenance[MaintenanceType]", "measures": ["factmaintenance[Total Maintenance Cost]"], "sort": "desc" },
-        { "type": "table", "title": "Work orders by cost", "x": 740, "y": 16, "w": 524, "h": 560, "columns": ["factmaintenance[WorkOrderNumber]", "factmaintenance[MaintenanceType]", "factmaintenance[Priority]", "factmaintenance[Status]"], "measures": ["factmaintenance[Total Maintenance Cost]"], "sort": "desc", "fontSize": 8 },
-        { "type": "card", "title": "Maintenance cost", "x": 740, "y": 588, "w": 256, "h": 116, "measures": ["factmaintenance[Total Maintenance Cost]"], "precision": 2 },
-        { "type": "card", "title": "Preventive share", "x": 1008, "y": 588, "w": 256, "h": 116, "measures": ["factmaintenance[Preventive Maintenance %]"] }
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/oil-gas.png", "plain": true },
+
+        { "type": "card", "title": "Critical alarms", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["factsafetyalarm[Critical Alarm Count]"], "altText": "Number of alarms raised at critical severity." },
+        { "type": "card", "title": "Maintenance cost", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenance[Total Maintenance Cost]"], "precision": 2, "altText": "Total maintenance spend across all work orders." },
+        { "type": "card", "title": "Preventive share", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenance[Preventive Maintenance %]"], "altText": "Share of maintenance work orders that are preventive rather than corrective." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "One activity dominates cost", "fontSize": 13, "subtext": "Turnarounds absorb about 94% of maintenance spend, so the cost profile is driven by scheduled shutdowns rather than by day-to-day repairs.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "High temperature is the most frequent alarm", "x": 16, "y": 236, "w": 616, "h": 248, "category": "factsafetyalarm[AlarmType]", "measures": ["factsafetyalarm[Alarm Count]"], "sort": "desc", "altText": "Alarm count by alarm type, sorted from most to least frequent." },
+        { "type": "bar", "title": "Turnarounds absorb 94% of maintenance cost", "x": 648, "y": 236, "w": 616, "h": 248, "category": "factmaintenance[MaintenanceType]", "measures": ["factmaintenance[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost by maintenance type, sorted from highest to lowest." },
+
+        { "type": "bar", "title": "Alarms cluster at the lower severities", "x": 16, "y": 500, "w": 300, "h": 204, "category": "factsafetyalarm[Severity]", "measures": ["factsafetyalarm[Alarm Count]"], "sort": "desc", "altText": "Alarm count by severity level, sorted from most to least frequent." },
+        { "type": "table", "title": "Work orders by cost", "x": 332, "y": 500, "w": 932, "h": 204, "columns": ["factmaintenance[WorkOrderNumber]", "factmaintenance[MaintenanceType]", "factmaintenance[Priority]", "factmaintenance[Status]"], "measures": ["factmaintenance[Total Maintenance Cost]"], "sort": "desc", "fontSize": 8, "altText": "Work order number, maintenance type, priority, status and cost for every work order, sorted by cost." }
       ]
     },
     {
       "name": "Storage & assets",
-      "storyNote": "2 tanks above the 85% threshold; 8 of 35 equipment items are high-criticality.",
+      "storyNote": "Two tanks sit above the 85% threshold, and 8 of the 35 equipment items are high-criticality.",
       "visuals": [
-        { "type": "card", "title": "Storage utilization", "x": 16, "y": 16, "w": 303, "h": 110, "measures": ["dimstoragetank[Tank Utilization %]"] },
-        { "type": "card", "title": "Equipment", "x": 331, "y": 16, "w": 303, "h": 110, "measures": ["dimequipment[Equipment Count]"] },
-        { "type": "card", "title": "Critical equipment", "x": 646, "y": 16, "w": 303, "h": 110, "measures": ["dimequipment[Critical Equipment Count]"] },
-        { "type": "card", "title": "Sensors", "x": 961, "y": 16, "w": 303, "h": 110, "measures": ["dimsensor[Sensor Count]"] },
-        { "type": "bar", "title": "Tank fill rate", "x": 16, "y": 138, "w": 820, "h": 566, "category": "dimstoragetank[TankName]", "measures": ["dimstoragetank[Tank Utilization %]"], "sort": "desc" },
-        { "type": "gauge", "title": "Overall storage utilization (target max 85%)", "x": 848, "y": 138, "w": 416, "h": 566, "measures": ["dimstoragetank[Tank Utilization %]"], "min": 0, "max": 1, "target": 0.85 }
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/oil-gas.png", "plain": true },
+
+        { "type": "gauge", "title": "Storage utilization against the 85% ceiling", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimstoragetank[Tank Utilization %]"], "min": 0, "max": 1, "target": 0.85, "altText": "Radial gauge showing overall tank utilization against a maximum safe threshold of 85 percent." },
+        { "type": "card", "title": "Equipment", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["dimequipment[Equipment Count]"], "altText": "Total number of tracked equipment items." },
+        { "type": "card", "title": "Critical equipment", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["dimequipment[Critical Equipment Count]"], "altText": "Number of equipment items classified as high criticality." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Two tanks need attention", "fontSize": 13, "subtext": "Two tanks sit above the 85% safe-fill threshold, and 8 of the 35 equipment items are high-criticality.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Two tanks sit above the 85% safe-fill threshold", "x": 16, "y": 236, "w": 932, "h": 468, "category": "dimstoragetank[TankName]", "measures": ["dimstoragetank[Tank Utilization %]"], "sort": "desc", "altText": "Fill level of every storage tank as a percentage of capacity, sorted from fullest to emptiest." },
+        { "type": "card", "title": "Sensors", "x": 964, "y": 236, "w": 300, "h": 128, "measures": ["dimsensor[Sensor Count]"], "altText": "Number of sensors monitoring the equipment." }
       ]
     }
   ]

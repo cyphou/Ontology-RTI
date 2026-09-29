@@ -1,0 +1,188 @@
+{
+  "$comment": "Visual selection mapping for spec-driven reports. Rules are grounded in Microsoft guidance: 'Tips for designing a great Power BI dashboard' (service-dashboards-design-tips), 'Visualizations overview in Power BI' (power-bi-visualizations-overview) and 'Design Power BI reports for accessibility' (desktop-accessibility). Test-ReportLayout reads this file, so editing it changes the lint.",
+  "version": "1.0",
+  "intents": [
+    {
+      "id": "single-value-status",
+      "need": "State one number that is the headline of the page.",
+      "question": "What is the total / the rate right now?",
+      "use": "card",
+      "instead_of": ["gauge", "kpi"],
+      "because": "A card shows one number prominently. Use it only when there is no target and no time axis to compare against.",
+      "requires": ["measure"],
+      "avoid_when": "A goal exists (use kpi) or the value only means something as a trend (use line)."
+    },
+    {
+      "id": "value-vs-target",
+      "need": "Show progress and distance to a target.",
+      "question": "Are we on plan?",
+      "use": "kpi",
+      "instead_of": ["card", "gauge"],
+      "because": "KPI shows the latest value, the trend and the distance to the goal in one visual.",
+      "requires": ["measure", "category(time)", "goalMeasures"],
+      "avoid_when": "There is no target measure: the KPI degrades to a plain number, so use a card."
+    },
+    {
+      "id": "status-vs-goal-single",
+      "need": "Show current status inside a fixed range with a target.",
+      "question": "Where are we between the floor and the ceiling?",
+      "use": "gauge",
+      "instead_of": [],
+      "because": "Microsoft: gauge charts are great for displaying the current status in the context of a goal. Circular charts are otherwise discouraged.",
+      "requires": ["measure", "target"],
+      "avoid_when": "No target is defined. A gauge without a goal is decoration; use a card."
+    },
+    {
+      "id": "compare-categories",
+      "need": "Compare a measure across named categories.",
+      "question": "Which business unit / product / site is highest?",
+      "use": "bar",
+      "instead_of": ["donut", "pie", "treemap"],
+      "because": "Microsoft: bar and column charts are better for comparing values because humans compare values side by side. Bars suit long category names.",
+      "requires": ["measure", "category"],
+      "sort": "desc",
+      "avoid_when": "The category is time (use column or line)."
+    },
+    {
+      "id": "compare-over-time-discrete",
+      "need": "Compare a measure across a few discrete periods.",
+      "question": "How does this year compare with last year?",
+      "use": "column",
+      "instead_of": ["line"],
+      "because": "Microsoft: use column charts for time-based comparisons. Columns read better than a line when there are only a handful of periods.",
+      "requires": ["measure", "category(time)"],
+      "sort": "asc",
+      "avoid_when": "More than about 12 periods: the shape of the trend matters more, so use a line."
+    },
+    {
+      "id": "trend-over-time",
+      "need": "Show the shape of a measure over a continuous time axis.",
+      "question": "Is it rising, falling or seasonal?",
+      "use": "line",
+      "instead_of": ["column", "area"],
+      "because": "Line charts emphasise the overall shape of values over time.",
+      "requires": ["measure", "category(time)"],
+      "sort": "asc",
+      "avoid_when": "Fewer than about 4 points, or the category is not ordered time."
+    },
+    {
+      "id": "two-different-scales",
+      "need": "Compare two measures whose magnitudes differ widely.",
+      "question": "How does volume relate to rate?",
+      "use": "combo",
+      "instead_of": ["line", "column"],
+      "because": "Microsoft: avoid mixing large and small measures on the same scale; choose a visual that allows a second axis.",
+      "requires": ["measures", "lineMeasures", "category"],
+      "avoid_when": "Both measures share a scale and a unit: one column or line chart is clearer."
+    },
+    {
+      "id": "part-to-whole",
+      "need": "Show how a few parts make up a total.",
+      "question": "What is the split?",
+      "use": "donut",
+      "instead_of": [],
+      "because": "Microsoft: pie and donut charts are best with fewer than eight categories, and for part-to-whole relationships rather than for comparing parts.",
+      "requires": ["measure", "category"],
+      "max_categories": 6,
+      "avoid_when": "The point is to rank or compare the parts, or there are more than 6 slices: use a bar chart."
+    },
+    {
+      "id": "contribution-to-change",
+      "need": "Explain how a total moved from a start value to an end value.",
+      "question": "What drove the variance?",
+      "use": "waterfall",
+      "instead_of": ["bar"],
+      "because": "Waterfall charts show a running total as values are added or subtracted.",
+      "requires": ["measure(signed)", "category"],
+      "avoid_when": "The measure is never negative: nothing subtracts, so a bar chart is honest and simpler."
+    },
+    {
+      "id": "stage-conversion",
+      "need": "Show drop-off through ordered stages.",
+      "question": "Where do we lose candidates / leads?",
+      "use": "funnel",
+      "instead_of": ["bar"],
+      "because": "Funnel charts visualise sequential processes where items flow from one stage to the next.",
+      "requires": ["measure", "category(ordered stages)"],
+      "avoid_when": "The categories are not sequential stages, or values do not decrease."
+    },
+    {
+      "id": "exact-values",
+      "need": "Let the reader look up precise numbers across several measures.",
+      "question": "What exactly did each cost center spend?",
+      "use": "table",
+      "instead_of": ["bar"],
+      "because": "Tables are ideal when you need exact values and quantitative comparison across many values.",
+      "requires": ["columns", "measures"],
+      "avoid_when": "The reader only needs the ranking, not the numbers: a sorted bar chart is faster to read."
+    },
+    {
+      "id": "geographic",
+      "need": "Show where assets or values are located.",
+      "question": "Which sites, and where?",
+      "use": "map",
+      "instead_of": ["table"],
+      "because": "Location is the message; a map makes spatial clustering visible.",
+      "requires": ["measure", "category", "latitude", "longitude"],
+      "avoid_when": "Position carries no meaning: use a bar chart."
+    },
+    {
+      "id": "correlation",
+      "need": "Test whether two measures move together.",
+      "question": "Does wind speed explain output?",
+      "use": "scatter",
+      "instead_of": ["line"],
+      "because": "Scatter charts reveal correlations and clusters at the intersection of two numeric values.",
+      "requires": ["measureX", "measureY", "category"],
+      "avoid_when": "One axis is time: use a line."
+    },
+    {
+      "id": "filter-scope",
+      "need": "Let the reader narrow the page.",
+      "question": "Show me one entity / one year.",
+      "use": "slicer",
+      "requires": ["category"],
+      "avoid_when": "More than about 3 slicers per page: move the rest to the filter pane."
+    },
+    {
+      "id": "narrative",
+      "need": "State the finding, the scope or the data caveat in words.",
+      "question": "What am I looking at, and what should I not conclude?",
+      "use": "textbox",
+      "because": "Microsoft: text boxes add titles, descriptions and context; supplement colour with text so colour is never the only carrier of meaning.",
+      "requires": ["text"]
+    },
+    {
+      "id": "branding",
+      "need": "Identify the owning organisation or domain.",
+      "question": "Whose report is this?",
+      "use": "logo",
+      "because": "An image visual displays a company logo; keep it small, in one corner, and out of the tab order.",
+      "requires": ["image"],
+      "avoid_when": "It competes with the data for attention."
+    }
+  ],
+  "rules": {
+    "max_donut_categories": 6,
+    "min_line_points": 4,
+    "max_column_periods": 12,
+    "max_slicers_per_page": 3,
+    "max_content_visuals_per_page": 12,
+    "max_distinct_visual_types_per_page": 6,
+    "grid": 4,
+    "margin": 16,
+    "canvas": { "width": 1280, "height": 720 },
+    "contrast_ratio_min": 4.5
+  },
+  "principles": [
+    "Put the highest level of data top-left; add detail moving right and down, the way the audience reads.",
+    "Avoid variety for the sake of variety: a page with many different chart types is harder to read, not richer.",
+    "Do not exceed three or four numerals: scale to thousands or millions, because '3.4 million' reads faster than '3,400,000'.",
+    "Remove unnecessary data labels. If the eye is drawn more to labels than to data points, turn them off.",
+    "Be consistent with scales, category ordering and colours across the report.",
+    "Sort by the measure to expose extremes; sort by the axis when the reader needs to find a known category.",
+    "Never use colour as the only carrier of meaning: add text, icons or position.",
+    "Give every visual alt text; remove decorative images from the tab order.",
+    "Titles state the finding in the data, not the field names."
+  ]
+}

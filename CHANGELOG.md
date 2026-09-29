@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- `deploy/visual-mapping.json`: an authoritative business-need to visual mapping, grounded in Microsoft report and dashboard design guidance, that drives the report design lint instead of only documenting it
+- `Test-VisualFit`: a data-aware lint that runs during the mockup and rejects visual choices the live data cannot support (a donut with too many slices, a waterfall where nothing subtracts, a funnel whose stages do not fall)
+- `deploy/domain-branding.json` plus `deploy/New-DomainLogos.ps1`: one palette and one generated logo lockup per ontology domain, derived from that domain's own icon and shared by the report theme, the logo and the mockup
+- `logo` visual type: images ship inside the report as registered resources, so no public URL is needed, and they stay out of the tab order
+- `altText` on every visual, enforced by the lint, for the Power BI accessibility checklist
 - Spec-driven Power BI report chain: `ontologies/<Domain>/report.spec.json` drives both an HTML mockup (`deploy/New-ReportMockup.ps1`) and the deployed PBIR report (`deploy/Deploy-ReportFromSpec.ps1`), with a blocking validation gate against the TMDL model and one live DAX query per visual
 - Report specs for Oil & Gas Refinery (Executive overview, Safety & maintenance, Storage & assets) and Enterprise Finance + HR (Spend vs plan, Workforce & pay, Talent pipeline)
 - `Test-ReportLayout` non-blocking layout lint: 4px grid, margins, KPI row consistency, page density, and generic "X by Y" titles
@@ -18,6 +23,7 @@
 - Initial documentation synchronization from template project
 
 ### Changed
+- Redesigned both report specs away from the generated-dashboard look: the full-width dark header band is replaced by a logo and filter strip, the fourth metric card by a written finding, and misused donut charts by sorted bars. Axis titles are off, and themes now come from the domain rather than from hand-picked colours.
 - Documentation updated across README, SETUP_GUIDE, SEMANTIC_MODEL_GUIDE, AGENTS, and diagrams to reflect 8 industry domains, 11 Copilot agents, 4 Rayfin apps, and the spec-driven report chain, including full coverage of the Enterprise Finance + HR package (ontology, report, dataflows, pipeline, Cowork scenario) and its aggregate-only, synthetic-data constraints
 - Corrected stale per-domain entity, CSV and row counts in README and SETUP_GUIDE
 - Wind Turbine Data Agent runtime seam now supports configurable auth/header modes for public API-era integrations (`bearer`, `api-key`, or `none`) while preserving MCP/legacy fallback behavior

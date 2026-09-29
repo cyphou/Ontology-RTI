@@ -836,11 +836,42 @@ mismatched KPI heights, overcrowded pages and generic `"X by Y"` titles.
 
 | Capability | Detail |
 |------------|--------|
-| Visual types | `card` `kpi` `bar` `column` `line` `donut` `combo` `funnel` `waterfall` `map` `table` `gauge` `slicer` `textbox` |
+| Visual types | `card` `kpi` `bar` `column` `line` `donut` `combo` `funnel` `waterfall` `map` `table` `gauge` `slicer` `textbox` `logo` |
+| Visual selection | [`deploy/visual-mapping.json`](deploy/visual-mapping.json) maps business need to visual, with the anti-patterns that rule one out |
+| Branding | [`deploy/domain-branding.json`](deploy/domain-branding.json) gives each domain a palette derived from its own icon; the theme, logo and mockup all read it |
 | Live validation | One DAX query per visual against the deployed semantic model |
-| Theme | Built from the spec's `theme` block (custom registered PBIR theme) |
+| Design lint | Static layout checks plus data-aware checks (a donut with 9 slices, a waterfall with nothing negative) |
+| Accessibility | `altText` on every visual, axis titles off, logos out of the tab order |
 | Safe replace | Deploys under a temp name, then removes the previous same-name report |
 | Verification | Server-side `ExportTo` PNG render (the web canvas is a cross-origin iframe) |
+
+### Choosing the visual
+
+The mapping is grounded in Microsoft's report and dashboard design guidance, and the lint enforces it:
+
+| Need | Visual | Ruled out because |
+|------|--------|-------------------|
+| One number, no target | `card` | a `gauge` without a goal is decoration |
+| Progress toward a target | `kpi` + `goalMeasures` | a `kpi` with no goal renders as a plain number |
+| Compare named categories | sorted `bar` | bar and column beat circular charts for comparison |
+| Part-to-whole, few slices | `donut` | 7+ slices, or when the point is to rank |
+| Trend over many periods | `line` | a `column` chart past 12 periods |
+| Two measures, different scales | `combo` | one axis hides the smaller measure |
+| Contribution to a change | `waterfall` | when no value is negative, nothing subtracts |
+| Ordered stage drop-off | `funnel` | categories that are not sequential |
+| Exact values | `table` | fewer than 4 rows is a card |
+
+### Brand and logo
+
+Each domain carries a palette taken from its own icon, plus a generated logo lockup:
+
+```powershell
+.\deploy\New-DomainLogos.ps1                 # all domains
+.\deploy\New-DomainLogos.ps1 -Domain SolarFarm
+```
+
+A spec that names its `domain` inherits that palette and logo, so colour is not restated per report.
+Semantic `good` / `neutral` / `bad` are reserved for meaning and never reused as series colours.
 
 ```powershell
 # Preview only: validate the spec and build the HTML mockup on live data

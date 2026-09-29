@@ -57,6 +57,8 @@ foreach ($page in $spec.pages) {
                 })
             $visualData[$key] = @{ rows = $rows }
             if ($rows.Count -eq 0) { $errors.Add("Page '$($page.name)' / '$($v.title)': query returned no rows.") }
+            # Cardinality decides whether the visual choice holds up, and only live data knows it.
+            foreach ($w in Test-VisualFit $v $rows.Count $rows) { $layoutWarnings += "Page '$($page.name)' / $w"; Write-Host "  [FIT]  $w" -ForegroundColor Yellow }
             Write-Host "  [OK]   $($page.name) / $($v.title) ($($rows.Count) rows)" -ForegroundColor Green
         } else {
             $visualData[$key] = @{ error = $result.Error }

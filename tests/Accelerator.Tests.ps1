@@ -246,6 +246,36 @@ Describe "Spec-driven Reports" {
         $warnings | Should -Match "generic 'X by Y' title"
         $warnings | Should -Match 'off the 4px grid'
         $warnings | Should -Match 'no KPI/card row'
+        $warnings | Should -Match 'no altText'
+        $warnings | Should -Match 'no sort'
+    }
+
+    It "layout lint flags visuals that cannot honour their own choice" {
+        $spec = [pscustomobject]@{ reportName = 'x'; pages = @([pscustomobject]@{ name = 'p'; visuals = @(
+                    [pscustomobject]@{ type = 'gauge'; title = 'Utilisation'; x = 16; y = 16; w = 300; h = 120; measures = @('a[m]'); altText = 'x' },
+                    [pscustomobject]@{ type = 'kpi'; title = 'Spend'; x = 332; y = 16; w = 300; h = 120; category = 'a[b]'; measures = @('a[m]'); altText = 'x' },
+                    [pscustomobject]@{ type = 'combo'; title = 'Volume and rate'; x = 648; y = 16; w = 300; h = 120; category = 'a[b]'; measures = @('a[m]'); altText = 'x' }) }) }
+        $warnings = @(Test-ReportLayout $spec) -join ' '
+        $warnings | Should -Match 'gauge without a target'
+        $warnings | Should -Match 'KPI without goalMeasures'
+        $warnings | Should -Match 'combo without lineMeasures'
+    }
+
+    It "data-aware lint rejects a donut with too many slices and a waterfall that never subtracts" {
+        $donut = [pscustomobject]@{ type = 'donut'; title = 'Split' }
+        (@(Test-VisualFit $donut 9 @()) -join ' ') | Should -Match 'slices'
+        $flat = [pscustomobject]@{ type = 'waterfall'; title = 'Variance' }
+        $rows = @([pscustomobject]@{ m0 = 5 }, [pscustomobject]@{ m0 = 3 })
+        (@(Test-VisualFit $flat 2 $rows) -join ' ') | Should -Match 'no value is negative'
+    }
+
+    It "every visual type in the mapping is supported by the builder" {
+        $mapping = Get-VisualMapping
+        $mapping | Should -Not -BeNullOrEmpty
+        foreach ($intent in $mapping.intents) {
+            if ($intent.use -eq 'scatter') { continue }  # documented in the mapping, not yet emitted by the builder
+            $script:ReportVisualTypes | Should -Contain $intent.use
+        }
     }
 
     It "rejects unknown measures and overlapping visuals" {
@@ -266,10 +296,21 @@ Describe "Spec-driven Reports" {
         It "produces a DAX query for every data-bound visual" {
             foreach ($page in (Read-ReportSpec $SpecFile).pages) {
                 foreach ($v in $page.visuals) {
-                    if ($v.type -eq 'textbox') { Get-VisualDax $v | Should -BeNullOrEmpty; continue }
+                    if ($v.type -in 'textbox', 'logo') { Get-VisualDax $v | Should -BeNullOrEmpty; continue }
                     Get-VisualDax $v | Should -Match '^EVALUATE '
                 }
             }
+        }
+
+        It "passes the mapping-driven layout lint with no warnings" {
+            @(Test-ReportLayout (Read-ReportSpec $SpecFile)) -join "`n" | Should -BeNullOrEmpty
+        }
+
+        It "resolves a theme and a logo from the domain branding" {
+            $spec = Read-ReportSpec $SpecFile
+            $spec.theme.accent | Should -Match '^#[0-9A-Fa-f]{6}$'
+            @($spec.theme.dataColors).Count | Should -BeGreaterThan 3
+            Test-Path (Join-Path $script:rootDir $spec.theme.logo) | Should -BeTrue
         }
     }
 }

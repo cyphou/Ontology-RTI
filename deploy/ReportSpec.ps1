@@ -8,9 +8,27 @@
 #>
 
 $script:ReportCanvas = @{ Width = 1280; Height = 720 }
-$script:ReportVisualTypes = @('card', 'kpi', 'bar', 'column', 'line', 'donut', 'combo', 'funnel', 'waterfall', 'map', 'table', 'gauge', 'slicer', 'textbox')
-# Visuals that carry no measure: slicers list column values, textboxes are static text.
-$script:ReportNoMeasureTypes = @('slicer', 'textbox')
+$script:ReportVisualTypes = @('card', 'kpi', 'bar', 'column', 'line', 'donut', 'combo', 'funnel', 'waterfall', 'map', 'table', 'gauge', 'slicer', 'textbox', 'logo')
+# Visuals that carry no measure: slicers list column values, textboxes are static text, logos are images.
+$script:ReportNoMeasureTypes = @('slicer', 'textbox', 'logo')
+# Visuals that are chrome, not content: excluded from density and KPI-anchor checks.
+$script:ReportChromeTypes = @('slicer', 'textbox', 'logo')
+
+# Visual selection rules, grounded in Microsoft report/dashboard design guidance. Editing the
+# JSON changes the lint, so the mapping stays the single source of truth.
+function Get-VisualMapping {
+    if (-not $script:VisualMapping) {
+        $path = Join-Path $PSScriptRoot 'visual-mapping.json'
+        $script:VisualMapping = if (Test-Path $path) { Get-Content $path -Raw | ConvertFrom-Json } else { $null }
+    }
+    return $script:VisualMapping
+}
+
+function Get-VisualRule([string]$Name, $Fallback) {
+    $rules = (Get-VisualMapping).rules
+    if ($rules -and $null -ne $rules.$Name) { return $rules.$Name }
+    return $Fallback
+}
 
 function Get-ApiToken([string]$Resource) {
     $token = $null
@@ -32,7 +50,43 @@ function ConvertTo-FieldRef([string]$Ref) {
 
 function Read-ReportSpec([string]$Path) {
     if (-not (Test-Path $Path)) { throw "Report spec not found: $Path" }
-    return (Get-Content $Path -Raw | ConvertFrom-Json)
+    $spec = Get-Content $Path -Raw | ConvertFrom-Json
+    # A spec that names its domain inherits that domain's palette and logo, so brand colour
+    # lives in one place instead of being copied into every spec.
+    if (-not $spec.domain) {
+        $folder = Split-Path (Split-Path $Path -Parent) -Leaf
+        Add-Member -InputObject $spec -NotePropertyName domain -NotePropertyValue $folder -Force
+    }
+    Add-Member -InputObject $spec -NotePropertyName theme -NotePropertyValue (Resolve-SpecTheme $spec) -Force
+    return $spec
+}
+
+# Brand metadata per ontology domain: one source shared by the theme, the generated logo and the mockup.
+function Get-DomainBranding([string]$Domain) {
+    if (-not $script:DomainBranding) {
+        $path = Join-Path $PSScriptRoot 'domain-branding.json'
+        $script:DomainBranding = if (Test-Path $path) { Get-Content $path -Raw | ConvertFrom-Json } else { $null }
+    }
+    if (-not $script:DomainBranding) { return $null }
+    $d = $script:DomainBranding.domains.$Domain
+    if (-not $d) { return $null }
+    $merged = [ordered]@{}
+    foreach ($p in $script:DomainBranding.defaults.PSObject.Properties) { if ($p.Name -ne '$comment') { $merged[$p.Name] = $p.Value } }
+    foreach ($p in $d.PSObject.Properties) { $merged[$p.Name] = $p.Value }
+    return [pscustomobject]$merged
+}
+
+# Spec theme wins where it is set; anything omitted falls back to the domain brand.
+function Resolve-SpecTheme($Spec) {
+    $brand = Get-DomainBranding $Spec.domain
+    $theme = [ordered]@{}
+    if ($brand) {
+        foreach ($p in $brand.PSObject.Properties) { $theme[$p.Name] = $p.Value }
+        $theme['name'] = "$($Spec.domain)Theme"
+    }
+    if ($Spec.theme) { foreach ($p in $Spec.theme.PSObject.Properties) { if ($null -ne $p.Value) { $theme[$p.Name] = $p.Value } } }
+    if (-not $theme['name']) { $theme['name'] = 'ReportTheme' }
+    return [pscustomobject]$theme
 }
 
 # Parses TMDL table files into measures (with formatString) and columns per table.
@@ -86,6 +140,13 @@ function Test-ReportSpec($Spec, [string]$SemanticModelFolder) {
             $needsCategory = @('kpi', 'bar', 'column', 'line', 'donut', 'combo', 'funnel', 'waterfall', 'map', 'slicer') -contains $v.type
             if ($needsCategory -and -not $v.category) { $problems.Add("$label needs a category column.") }
             if ($v.type -eq 'textbox' -and -not $v.text) { $problems.Add("$label needs text.") }
+            if ($v.type -eq 'logo') {
+                if (-not $v.image) { $problems.Add("$label needs an image path.") }
+                else {
+                    $imgPath = if ([IO.Path]::IsPathRooted($v.image)) { $v.image } else { Join-Path (Split-Path $PSScriptRoot -Parent) $v.image }
+                    if (-not (Test-Path $imgPath)) { $problems.Add("$label image not found: $($v.image) (run deploy/New-DomainLogos.ps1).") }
+                }
+            }
             if ($v.sort -and @('asc', 'desc') -notcontains $v.sort) { $problems.Add("$label sort must be 'asc' or 'desc'.") }
             if ($v.type -eq 'map' -and (-not $v.latitude -or -not $v.longitude)) { $problems.Add("$label needs latitude and longitude columns.") }
             if ($v.type -eq 'table' -and -not $v.columns) { $problems.Add("$label needs columns.") }
@@ -104,26 +165,44 @@ function Test-ReportSpec($Spec, [string]$SemanticModelFolder) {
 }
 
 # Design lint (non-blocking): returns warnings about layout quality, never about correctness.
-function Test-ReportLayout($Spec, [int]$Grid = 4, [int]$Margin = 16, [int]$MaxVisuals = 12) {
+# Rules come from deploy/visual-mapping.json so the mapping and the lint cannot drift.
+function Test-ReportLayout($Spec, [int]$Grid = 0, [int]$Margin = 0, [int]$MaxVisuals = 0) {
+    if (-not $Grid) { $Grid = [int](Get-VisualRule 'grid' 4) }
+    if (-not $Margin) { $Margin = [int](Get-VisualRule 'margin' 16) }
+    if (-not $MaxVisuals) { $MaxVisuals = [int](Get-VisualRule 'max_content_visuals_per_page' 12) }
+    $maxSlicers = [int](Get-VisualRule 'max_slicers_per_page' 3)
+    $maxTypes = [int](Get-VisualRule 'max_distinct_visual_types_per_page' 6)
     $warnings = New-Object System.Collections.Generic.List[string]
     $genericTitle = '^\s*(Total\s+)?[\w\s%&+]+\s+by\s+[\w\s]+$'
     foreach ($page in $Spec.pages) {
-        $content = @($page.visuals | Where-Object { -not ($_.type -eq 'textbox' -and $_.background) -and $_.type -ne 'slicer' })
+        $content = @($page.visuals | Where-Object { -not ($_.type -eq 'textbox' -and $_.background) -and $_.type -notin $script:ReportChromeTypes })
         if ($content.Count -gt $MaxVisuals) { $warnings.Add("Page '$($page.name)' has $($content.Count) visuals; more than $MaxVisuals feels crowded.") }
         $offGrid = @($page.visuals | Where-Object { $v = $_; @($v.x, $v.y, $v.w, $v.h | Where-Object { $_ % $Grid -ne 0 }).Count -gt 0 })
         if ($offGrid.Count) { $warnings.Add("Page '$($page.name)': $($offGrid.Count) visual(s) off the ${Grid}px grid (e.g. '$(if ($offGrid[0].title) { $offGrid[0].title } else { $offGrid[0].type })' at $($offGrid[0].x),$($offGrid[0].y) $($offGrid[0].w)x$($offGrid[0].h)).") }
+        $slicers = @($page.visuals | Where-Object { $_.type -eq 'slicer' })
+        if ($slicers.Count -gt $maxSlicers) { $warnings.Add("Page '$($page.name)' has $($slicers.Count) slicers; keep at most $maxSlicers on canvas and move the rest to the filter pane.") }
+        # "Avoid variety for the sake of variety": many chart types on one page read as a demo, not a report.
+        $types = @($content | Select-Object -ExpandProperty type -Unique)
+        if ($types.Count -gt $maxTypes) { $warnings.Add("Page '$($page.name)' mixes $($types.Count) visual types ($($types -join ', ')); variety for its own sake hurts readability.") }
         foreach ($v in $page.visuals) {
             $label = "Page '$($page.name)' / '$(if ($v.title) { $v.title } else { $v.type })'"
             $isBand = $v.type -eq 'textbox' -and $v.background
-            if (-not $isBand -and $v.type -ne 'slicer') {
+            if (-not $isBand -and $v.type -notin $script:ReportChromeTypes) {
                 if ($v.x -gt 0 -and $v.x -lt $Margin) { $warnings.Add("$label is closer than ${Margin}px to the left edge.") }
                 if (($v.x + $v.w) -lt $script:ReportCanvas.Width -and ($script:ReportCanvas.Width - $v.x - $v.w) -lt $Margin) { $warnings.Add("$label is closer than ${Margin}px to the right edge.") }
             }
-            $minW = if ($v.type -in 'card', 'kpi', 'slicer', 'textbox', 'gauge') { 120 } else { 240 }
-            if ($v.w -lt $minW -or ($v.type -notin 'slicer', 'textbox' -and $v.h -lt 100)) { $warnings.Add("$label is too small to read ($($v.w)x$($v.h)).") }
+            $minW = if ($v.type -in 'card', 'kpi', 'slicer', 'textbox', 'gauge', 'logo') { 120 } else { 240 }
+            if ($v.type -ne 'logo' -and ($v.w -lt $minW -or ($v.type -notin 'slicer', 'textbox' -and $v.h -lt 100))) { $warnings.Add("$label is too small to read ($($v.w)x$($v.h)).") }
             if ($v.title -and $v.type -notin 'card', 'kpi', 'slicer', 'table' -and $v.title -match $genericTitle) {
                 $warnings.Add("$label has a generic 'X by Y' title; state the finding instead (e.g. 'Pay per FTE is flat across job families').")
             }
+            # Accessibility checklist: every non-decorative visual needs alt text.
+            if ($v.type -notin 'textbox', 'logo' -and -not $v.altText) { $warnings.Add("$label has no altText; screen readers will announce only the title.") }
+            # Visual-choice rules from the mapping.
+            if ($v.type -eq 'gauge' -and $null -eq $v.target) { $warnings.Add("$label is a gauge without a target; a gauge only earns its space against a goal, otherwise use a card.") }
+            if ($v.type -eq 'kpi' -and -not $v.goalMeasures) { $warnings.Add("$label is a KPI without goalMeasures; it renders as a plain number, so use a card.") }
+            if ($v.type -eq 'combo' -and -not $v.lineMeasures) { $warnings.Add("$label is a combo without lineMeasures; the second axis is the only reason to use it.") }
+            if ($v.type -in 'bar', 'column' -and -not $v.sort) { $warnings.Add("$label has no sort; sort by the measure to expose extremes, or by the axis for lookup.") }
         }
         # KPI/card row: same y and same height reads as one band; mixed heights look accidental.
         $kpis = @($page.visuals | Where-Object { $_.type -in 'card', 'kpi' } | Group-Object y | Where-Object { $_.Count -gt 1 })
@@ -135,13 +214,49 @@ function Test-ReportLayout($Spec, [int]$Grid = 4, [int]$Margin = 16, [int]$MaxVi
     return $warnings
 }
 
+# Data-aware lint: cardinality decides whether a visual choice holds up, and only the live
+# query result knows it. Runs in the mockup, after each visual has been queried.
+function Test-VisualFit($Visual, [int]$RowCount, $Rows) {
+    $warnings = New-Object System.Collections.Generic.List[string]
+    $label = "'$(if ($Visual.title) { $Visual.title } else { $Visual.type })'"
+    $maxDonut = [int](Get-VisualRule 'max_donut_categories' 6)
+    $minLine = [int](Get-VisualRule 'min_line_points' 4)
+    $maxPeriods = [int](Get-VisualRule 'max_column_periods' 12)
+    switch ($Visual.type) {
+        'donut' {
+            if ($RowCount -gt $maxDonut) { $warnings.Add("$label is a donut with $RowCount slices; Microsoft guidance caps part-to-whole charts at a handful. Use a sorted bar chart.") }
+            if ($RowCount -le 2) { $warnings.Add("$label is a donut with only $RowCount slices; two numbers do not need a chart.") }
+        }
+        'line' {
+            if ($RowCount -lt $minLine) { $warnings.Add("$label is a line with $RowCount points; below $minLine points a column chart is more honest.") }
+        }
+        'column' {
+            if ($RowCount -gt $maxPeriods) { $warnings.Add("$label is a column chart with $RowCount categories; past $maxPeriods use a line (time) or a bar (names).") }
+        }
+        'waterfall' {
+            $values = @($Rows | ForEach-Object { $_.m0 } | Where-Object { $null -ne $_ })
+            if ($values.Count -and -not @($values | Where-Object { $_ -lt 0 }).Count) { $warnings.Add("$label is a waterfall but no value is negative; nothing subtracts, so a bar chart says the same thing.") }
+        }
+        'funnel' {
+            $values = @($Rows | ForEach-Object { $_.m0 } | Where-Object { $null -ne $_ })
+            $descending = $true
+            for ($i = 1; $i -lt $values.Count; $i++) { if ($values[$i] -gt $values[$i - 1]) { $descending = $false } }
+            if ($values.Count -gt 1 -and -not $descending) { $warnings.Add("$label is a funnel whose stages do not decrease; a funnel implies drop-off.") }
+        }
+        'table' {
+            if ($RowCount -le 3) { $warnings.Add("$label is a table with $RowCount rows; that is a card or a bar chart.") }
+        }
+    }
+    return $warnings
+}
+
 function Format-DaxColumn([string]$Ref) { $f = ConvertTo-FieldRef $Ref; return "'$($f.Entity)'[$($f.Property)]" }
 function Format-DaxMeasure([string]$Ref) { $f = ConvertTo-FieldRef $Ref; return "[$($f.Property)]" }
 
 # Builds the DAX query whose result shape the mockup renderer expects for each visual type.
 # Returns $null for static visuals (textbox) that need no data.
 function Get-VisualDax($Visual) {
-    if ($Visual.type -eq 'textbox') { return $null }
+    if ($Visual.type -in 'textbox', 'logo') { return $null }
     if ($Visual.type -eq 'slicer') { return "EVALUATE VALUES($(Format-DaxColumn $Visual.category)) ORDER BY $(Format-DaxColumn $Visual.category)" }
     $pairs = @(); $i = 0
     foreach ($m in $Visual.measures) { $pairs += "`"m$i`", $(Format-DaxMeasure $m)"; $i++ }
