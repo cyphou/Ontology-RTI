@@ -1,3 +1,5 @@
+# Switch with `rayfin up --profile <name>`; keep `default` active so a fresh clone
+# never targets someone else's demo workspace.
 activeProfile: default
 profiles:
   default:
@@ -5,3 +7,13 @@ profiles:
       refinery:
         workspaceId: "c4e0ab47-88d2-452d-ac98-ad101b574cf3"
         itemId: "d615fd15-1797-4e0a-aeb4-5741b367a649"
+  demo-raffinerie:
+    semanticModels:
+      refinery:
+        workspaceId: "9dc914b7-d98d-4ea4-bfe8-7a4408bb0314"
+        itemId: "82ce3f2b-73d5-4185-8ad1-64c3eba17f6a"
+  demo-ontology-ref:
+    semanticModels:
+      refinery:
+        workspaceId: "5bedc525-e9db-4e0f-a30c-2db5231a8ec7"
+        itemId: "a7e2a100-ef7f-4083-94f5-78027b022d9f"
