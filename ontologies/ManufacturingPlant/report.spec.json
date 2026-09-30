@@ -15,10 +15,10 @@
         { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Volume against quality", "fontSize": 13, "subtext": "A line that produces the most is not automatically the best line. Read the defect rate on the same axis before drawing conclusions.", "subFontSize": 9 },
 
         { "type": "bar", "title": "Which product categories drive volume", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimproduct[ProductCategory]", "measures": ["factproductionbatch[Total Quantity Produced]"], "sort": "desc", "altText": "Units produced by product category, sorted from most to least." },
-        { "type": "combo", "title": "Do the busiest line types also defect most", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimproductionline[LineType]", "measures": ["factproductionbatch[Total Quantity Produced]"], "lineMeasures": ["factproductionbatch[Avg Defect Rate]"], "sort": "desc", "altText": "Columns show units produced per production line type against a line showing the average defect rate on a second axis." },
+        { "type": "bar", "title": "Does inspector certification change the pass rate", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimoperator[CertificationLevel]", "measures": ["factqualitycheck[Pass Rate]"], "sort": "desc", "altText": "Quality check pass rate grouped by the certification level of the inspecting operator." },
 
-        { "type": "bar", "title": "Output across production lines", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimproductionline[LineName]", "measures": ["factproductionbatch[Total Quantity Produced]"], "sort": "desc", "altText": "Units produced by each production line, sorted from most to least." },
-        { "type": "bar", "title": "Where defects are caught", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimproduct[ProductCategory]", "measures": ["factqualitycheck[Total Defect Count]"], "sort": "desc", "altText": "Defects recorded by quality checks for each product category." }
+        { "type": "bar", "title": "Which lines carry the most machines", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimproductionline[LineName]", "measures": ["dimmachine[Machine Count]"], "sort": "desc", "altText": "Machine count on each production line, sorted from most to least." },
+        { "type": "bar", "title": "Which product categories defect most", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimproduct[ProductCategory]", "measures": ["factproductionbatch[Avg Defect Rate]"], "sort": "desc", "altText": "Average batch defect rate by product category, sorted from highest to lowest." }
       ]
     },
     {
@@ -32,11 +32,11 @@
         { "type": "card", "title": "Critical alerts", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Critical Alert Count]"], "altText": "Number of alerts raised at critical severity." },
         { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Cost concentrates", "fontSize": 13, "subtext": "Maintenance spend is rarely spread evenly. Find the machine types that absorb it before negotiating the next service contract.", "subFontSize": 9 },
 
-        { "type": "bar", "title": "Which machine types absorb maintenance spend", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimmachine[MachineType]", "measures": ["factmaintenanceorder[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost by machine type, sorted from most to least expensive." },
+        { "type": "bar", "title": "Which machine types are most instrumented", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimmachine[MachineType]", "measures": ["dimsensor[Sensor Count]"], "sort": "desc", "altText": "Sensor count by machine type, sorted from most to least instrumented." },
         { "type": "bar", "title": "How many machines sit at each criticality level", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimmachine[CriticalityLevel]", "measures": ["dimmachine[Machine Count]"], "sort": "desc", "altText": "Machine count for each criticality level, sorted from most to least." },
 
         { "type": "bar", "title": "Which sensor types raise the alerts", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimsensor[SensorType]", "measures": ["factalert[Alert Count]"], "sort": "desc", "altText": "Alert count by sensor type, sorted from most to least." },
-        { "type": "table", "title": "Maintenance order detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimmachine[MachineName]", "dimmachine[MachineType]"], "measures": ["factmaintenanceorder[Maintenance Order Count]", "factmaintenanceorder[Total Maintenance Cost]"], "sort": "desc", "fontSize": 9, "altText": "Order count and maintenance cost for every machine." }
+        { "type": "table", "title": "Machine detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimmachine[MachineName]", "dimmachine[MachineType]"], "measures": ["dimmachine[Machine Count]", "dimsensor[Sensor Count]"], "sort": "desc", "fontSize": 9, "altText": "Machine name, type and attached sensor count for every machine." }
       ]
     }
   ]

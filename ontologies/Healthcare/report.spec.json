@@ -33,10 +33,10 @@
         { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Activity, not outcomes", "fontSize": 13, "subtext": "These are volume counts. They say what was done, not how well: read them against bed capacity rather than as quality measures.", "subFontSize": 9 },
 
         { "type": "bar", "title": "Which medication categories are administered most", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimmedication[Category]", "measures": ["factmedicationadmin[Administration Count]"], "sort": "desc", "altText": "Medication administration count by medication category, sorted from most to least." },
-        { "type": "bar", "title": "Where patients are admitted", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimward[WardType]", "measures": ["dimpatient[Patient Count]"], "sort": "desc", "altText": "Patient count by ward type, sorted from most to least." },
+        { "type": "bar", "title": "How nursing staff spreads across ward types", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimward[WardType]", "measures": ["dimnurse[Nurse Count]"], "sort": "desc", "altText": "Nurse count by ward type, sorted from most to least." },
 
         { "type": "bar", "title": "Which device types are deployed", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimmedicaldevice[DeviceType]", "measures": ["dimmedicaldevice[Device Count]"], "sort": "desc", "altText": "Medical device count by device type, sorted from most to least." },
-        { "type": "bar", "title": "Procedure duration across physicians", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimphysician[PhysicianName]", "measures": ["factprocedure[Avg Procedure Duration]"], "sort": "desc", "altText": "Average procedure duration for each physician, sorted from longest to shortest." }
+        { "type": "bar", "title": "Which blood types generate the lab work", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimpatient[BloodType]", "measures": ["factlabresult[Lab Result Count]"], "sort": "desc", "altText": "Lab result count grouped by patient blood type, sorted from most to least." }
       ]
     }
   ]

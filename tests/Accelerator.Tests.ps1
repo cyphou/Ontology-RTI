@@ -278,6 +278,16 @@ Describe "Spec-driven Reports" {
         }
     }
 
+    It "rejects a measure bound across an inactive relationship" {
+        # dimsensor and factincident exist in ITAsset but factincident_ServerId is inactive,
+        # so this pairing would repeat one unfiltered total for every server type.
+        $spec = [pscustomobject]@{ reportName = 'x'; pages = @([pscustomobject]@{ name = 'p'; visuals = @(
+                        [pscustomobject]@{ type = 'bar'; title = 'Incidents'; x = 16; y = 16; w = 400; h = 300; sort = 'desc'; altText = 'x'
+                        category = 'dimserver[ServerType]'; measures = @('factincident[Incident Count]') }) }) }
+        $problems = @(Test-ReportSpec $spec (Join-Path $script:rootDir "ontologies\ITAsset\SemanticModel"))
+        ($problems -join ' ') | Should -Match 'no active relationship connects'
+    }
+
     It "rejects unknown measures and overlapping visuals" {
         $bad = [pscustomobject]@{ reportName = 'x'; pages = @([pscustomobject]@{ name = 'p'; visuals = @(
                     [pscustomobject]@{ type = 'card'; title = 'a'; x = 0; y = 0; w = 200; h = 100; measures = @('factproduction[Does Not Exist]') },

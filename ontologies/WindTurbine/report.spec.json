@@ -16,8 +16,8 @@
 
         { "type": "map", "title": "Where the fleet is sited", "x": 16, "y": 236, "w": 616, "h": 468, "category": "dimwindfarm[WindFarmName]", "latitude": "dimwindfarm[Latitude]", "longitude": "dimwindfarm[Longitude]", "measures": ["dimwindfarm[Total Installed Capacity MW]"], "altText": "World map with a bubble per wind farm, sized by installed capacity in megawatts." },
 
-        { "type": "bar", "title": "Which farms deliver the output", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimwindfarm[WindFarmName]", "measures": ["factpoweroutput[Total Power Output KW]"], "sort": "desc", "altText": "Recorded power output for each wind farm, sorted from most to least." },
-        { "type": "bar", "title": "Does generator type change the output", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimnacelle[GeneratorType]", "measures": ["factpoweroutput[Total Power Output KW]"], "sort": "desc", "altText": "Recorded power output grouped by nacelle generator type, sorted from most to least." }
+        { "type": "bar", "title": "Which farms hold the rated capacity", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimwindfarm[WindFarmName]", "measures": ["dimturbine[Total Rated Capacity KW]"], "sort": "desc", "altText": "Combined turbine rated capacity for each wind farm, sorted from most to least." },
+        { "type": "bar", "title": "How blade inventory spreads across farms", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimwindfarm[WindFarmName]", "measures": ["dimblade[Blade Count]"], "sort": "desc", "altText": "Installed blade count for each wind farm, sorted from most to least." }
       ]
     },
     {
@@ -31,11 +31,11 @@
         { "type": "card", "title": "Average duration (hours)", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenanceevent[Avg Maintenance Duration Hours]"], "altText": "Mean hours spent on a maintenance event." },
         { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Few turbines, most cost", "fontSize": 13, "subtext": "Maintenance spend usually concentrates on a handful of turbines. Those are the candidates for condition monitoring, not the fleet average.", "subFontSize": 9 },
 
-        { "type": "bar", "title": "Which turbines absorb the maintenance cost", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimturbine[TurbineName]", "measures": ["factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost for each turbine, sorted from most to least expensive." },
+        { "type": "bar", "title": "Which certification levels absorb the maintenance cost", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimtechnician[CertificationLevel]", "measures": ["factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost grouped by the certification level of the technician who performed the work." },
         { "type": "bar", "title": "Which sensor types raise the alerts", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimsensor[SensorType]", "measures": ["factalert[Alert Count]"], "sort": "desc", "altText": "Alert count by sensor type, sorted from most to least." },
 
         { "type": "bar", "title": "Who performs the maintenance", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimtechnician[CertificationLevel]", "measures": ["factmaintenanceevent[Maintenance Event Count]"], "sort": "desc", "altText": "Maintenance event count grouped by technician certification level." },
-        { "type": "table", "title": "Turbine detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimturbine[TurbineName]", "dimturbine[Status]"], "measures": ["factmaintenanceevent[Maintenance Event Count]", "factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "fontSize": 9, "altText": "Maintenance event count and cost for every turbine, with its status." }
+        { "type": "table", "title": "Technician workload", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimtechnician[TechnicianName]", "dimtechnician[CertificationLevel]"], "measures": ["factmaintenanceevent[Maintenance Event Count]", "factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "fontSize": 9, "altText": "Maintenance event count and cost for every technician, with their certification level." }
       ]
     }
   ]

@@ -112,11 +112,49 @@ function Get-ModelFieldCatalog([string]$SemanticModelFolder) {
     return $catalog
 }
 
+# Active relationships only. An inactive relationship still exists in the model but carries no
+# filter, so a visual bound across one returns the same unfiltered total for every category:
+# wrong numbers, no error. Treated as undirected because either end can be the filtering side.
+function Get-ModelRelationshipGraph([string]$SemanticModelFolder) {
+    $edges = @{}
+    $file = Join-Path $SemanticModelFolder 'definition\relationships.tmdl'
+    if (-not (Test-Path $file)) { return $edges }
+    foreach ($block in ((Get-Content $file -Raw) -split '(?m)^relationship\s')) {
+        if ($block -notmatch 'fromColumn') { continue }
+        if ($block -match '(?m)^\s*isActive:\s*false') { continue }
+        $from = ([regex]::Match($block, 'fromColumn:\s*(\S+)')).Groups[1].Value.Split('.')[0]
+        $to = ([regex]::Match($block, 'toColumn:\s*(\S+)')).Groups[1].Value.Split('.')[0]
+        if (-not $from -or -not $to) { continue }
+        if (-not $edges.ContainsKey($from)) { $edges[$from] = New-Object System.Collections.Generic.List[string] }
+        if (-not $edges.ContainsKey($to)) { $edges[$to] = New-Object System.Collections.Generic.List[string] }
+        $edges[$from].Add($to); $edges[$to].Add($from)
+    }
+    return $edges
+}
+
+function Test-TablesConnected($Graph, [string]$From, [string]$To) {
+    if ($From -eq $To) { return $true }
+    if (-not $Graph.ContainsKey($From)) { return $false }
+    $seen = @{ $From = $true }
+    $queue = New-Object System.Collections.Queue
+    $queue.Enqueue($From)
+    while ($queue.Count) {
+        foreach ($next in $Graph[$queue.Dequeue()]) {
+            if ($seen.ContainsKey($next)) { continue }
+            if ($next -eq $To) { return $true }
+            $seen[$next] = $true
+            if ($Graph.ContainsKey($next)) { $queue.Enqueue($next) }
+        }
+    }
+    return $false
+}
+
 # Returns a list of human-readable problems; empty list = valid spec.
 function Test-ReportSpec($Spec, [string]$SemanticModelFolder) {
     $problems = New-Object System.Collections.Generic.List[string]
     $catalog = $null
-    if ($SemanticModelFolder) { $catalog = Get-ModelFieldCatalog $SemanticModelFolder }
+    $graph = $null
+    if ($SemanticModelFolder) { $catalog = Get-ModelFieldCatalog $SemanticModelFolder; $graph = Get-ModelRelationshipGraph $SemanticModelFolder }
     if (-not $Spec.reportName) { $problems.Add('reportName is required.') }
     if (-not $Spec.pages -or @($Spec.pages).Count -eq 0) { $problems.Add('At least one page is required.'); return $problems }
     foreach ($page in $Spec.pages) {
@@ -158,6 +196,20 @@ function Test-ReportSpec($Spec, [string]$SemanticModelFolder) {
             foreach ($c in @($v.category, $v.latitude, $v.longitude) + @($v.columns) | Where-Object { $_ }) {
                 try { $null = ConvertTo-FieldRef $c } catch { $problems.Add("${label}: $($_.Exception.Message)"); continue }
                 if (-not $catalog.Columns.ContainsKey($c)) { $problems.Add("$label references unknown column $c.") }
+            }
+            # A measure only responds to a category if an active relationship connects their tables.
+            if ($graph -and $graph.Count) {
+                foreach ($c in @($v.category) + @($v.columns) | Where-Object { $_ }) {
+                    if (-not $catalog.Columns.ContainsKey($c)) { continue }
+                    $ct = (ConvertTo-FieldRef $c).Entity
+                    foreach ($m in @($v.measures | Where-Object { $_ }) + @($v.lineMeasures | Where-Object { $_ }) + @($v.goalMeasures | Where-Object { $_ })) {
+                        if (-not $catalog.Measures.ContainsKey($m)) { continue }
+                        $mt = (ConvertTo-FieldRef $m).Entity
+                        if (-not (Test-TablesConnected $graph $ct $mt)) {
+                            $problems.Add("$label binds $c to $m but no active relationship connects '$ct' to '$mt'; the measure would repeat the same unfiltered total for every category.")
+                        }
+                    }
+                }
             }
         }
     }

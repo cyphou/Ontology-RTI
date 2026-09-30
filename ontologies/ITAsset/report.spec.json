@@ -32,7 +32,7 @@
         { "type": "card", "title": "Critical alerts", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Critical Alert Count]"], "altText": "Number of alerts raised at critical severity." },
         { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Cost follows failure", "fontSize": 13, "subtext": "Compare where incidents land with where licence spend goes. The two rarely line up, and the gap is where the budget argument is.", "subFontSize": 9 },
 
-        { "type": "bar", "title": "Which server types generate the incidents", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimserver[ServerType]", "measures": ["factincident[Incident Count]"], "sort": "desc", "altText": "Incident count by server type, sorted from most to least." },
+        { "type": "bar", "title": "Which server types host the most applications", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimserver[ServerType]", "measures": ["dimapplication[Application Count]"], "sort": "desc", "altText": "Application count by server type, sorted from most to least." },
         { "type": "bar", "title": "Where licence spend concentrates", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimapplication[AppType]", "measures": ["dimlicense[Total License Cost]"], "sort": "desc", "altText": "Total licence cost by application type, sorted from most to least expensive." },
 
         { "type": "bar", "title": "Who reports the incidents", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimuser[AccessLevel]", "measures": ["factincident[Incident Count]"], "sort": "desc", "altText": "Incident count by the access level of the reporting user." },

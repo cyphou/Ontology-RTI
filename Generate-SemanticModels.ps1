@@ -15,7 +15,7 @@
     .\Generate-SemanticModels.ps1 -Domain SmartBuilding
 #>
 param(
-    [ValidateSet("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare","All")]
+    [ValidateSet("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare","SolarFarm","All")]
     [string]$Domain = "All"
 )
 
@@ -53,6 +53,14 @@ $numericColumns = @{
         "BedCapacity","TierLevel","BedCount","Floor","NurseStations","UnitCost",
         "YearsExperience","MinThreshold","MaxThreshold","ResultValue","DurationMinutes",
         "Dosage","Value"
+    )
+    "SolarFarm" = @(
+        "Latitude","Longitude","CapacityMWc","ArrayCount","RatedCapacityKW","TiltDegrees",
+        "RatedPowerKW","Efficiency","ModuleCount","RatedVoltageV","MaxTiltDeg",
+        "RatingMVA","VoltageKV","ElevationM","YearsExperience",
+        "MinThreshold","MaxThreshold","Value","Threshold","Hour",
+        "IrradianceWm2","PowerOutputKW","PerformanceRatio","ModuleTempC",
+        "InverterEfficiency","GridFrequencyHz","DurationHours","CostUSD"
     )
 }
 
