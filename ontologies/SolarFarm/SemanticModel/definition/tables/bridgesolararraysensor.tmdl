@@ -1,0 +1,25 @@
+table bridgesolararraysensor
+	lineageTag: 70000006-0001-0001-0001-000000000001
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000006-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 70000006-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgesolararraysensor = entity
+		mode: directLake
+		entityName: bridgesolararraysensor
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

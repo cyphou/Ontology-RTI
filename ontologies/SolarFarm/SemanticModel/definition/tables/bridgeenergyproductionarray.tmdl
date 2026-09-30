@@ -1,0 +1,25 @@
+table bridgeenergyproductionarray
+	lineageTag: 70000002-0001-0001-0001-000000000001
+
+	column ProductionId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductionId
+		lineageTag: 70000002-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000002-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgeenergyproductionarray = entity
+		mode: directLake
+		entityName: bridgeenergyproductionarray
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

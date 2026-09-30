@@ -1,0 +1,25 @@
+table bridgealertarray
+	lineageTag: 70000001-0001-0001-0001-000000000001
+
+	column AlertId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AlertId
+		lineageTag: 70000001-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000001-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgealertarray = entity
+		mode: directLake
+		entityName: bridgealertarray
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

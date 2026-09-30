@@ -1,0 +1,90 @@
+table dimstring
+	lineageTag: 70000017-0001-0001-0001-000000000001
+
+	measure 'Panel String Count' = COUNTROWS(dimstring)
+		displayFolder: Measures
+		lineageTag: 70000017-0001-0001-0001-100000000001
+
+	measure 'Total Module Count' = SUM(dimstring[ModuleCount])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 70000017-0001-0001-0001-100000000002
+
+	column StringId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StringId
+		lineageTag: 70000017-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column StringName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StringName
+		lineageTag: 70000017-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000017-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModuleCount
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ModuleCount
+		lineageTag: 70000017-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModuleType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ModuleType
+		lineageTag: 70000017-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column RatedVoltageV
+		dataType: double
+		summarizeBy: none
+		sourceColumn: RatedVoltageV
+		lineageTag: 70000017-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 70000017-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastInspectionDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastInspectionDate
+		lineageTag: 70000017-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 70000017-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimstring = entity
+		mode: directLake
+		entityName: dimstring
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

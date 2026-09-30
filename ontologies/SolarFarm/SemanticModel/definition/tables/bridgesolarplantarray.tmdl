@@ -1,0 +1,25 @@
+table bridgesolarplantarray
+	lineageTag: 70000009-0001-0001-0001-000000000001
+
+	column PlantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantId
+		lineageTag: 70000009-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000009-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgesolarplantarray = entity
+		mode: directLake
+		entityName: bridgesolarplantarray
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

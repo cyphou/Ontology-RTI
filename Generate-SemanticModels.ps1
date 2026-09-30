@@ -147,6 +147,23 @@ $relationships = @{
         @{Name="bridgewarddevice_DeviceId_dimmedicaldevice"; From="bridgewarddevice.DeviceId"; To="dimmedicaldevice.DeviceId"; Inactive=$true}
         @{Name="sensortelemetry_DeviceId_dimmedicaldevice"; From="sensortelemetry.DeviceId"; To="dimmedicaldevice.DeviceId"; Inactive=$true}
     )
+    "SolarFarm" = @(
+        @{Name="dimsolararray_PlantId_dimsolarplant"; From="dimsolararray.PlantId"; To="dimsolarplant.PlantId"}
+        @{Name="diminverter_ArrayId_dimsolararray"; From="diminverter.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="dimstring_ArrayId_dimsolararray"; From="dimstring.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="dimtracker_ArrayId_dimsolararray"; From="dimtracker.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="dimsensor_ArrayId_dimsolararray"; From="dimsensor.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="dimtechnician_PlantId_dimsolarplant"; From="dimtechnician.PlantId"; To="dimsolarplant.PlantId"; Inactive=$true}
+        @{Name="dimweatherstation_PlantId_dimsolarplant"; From="dimweatherstation.PlantId"; To="dimsolarplant.PlantId"}
+        @{Name="dimtransformer_PlantId_dimsolarplant"; From="dimtransformer.PlantId"; To="dimsolarplant.PlantId"}
+        @{Name="factenergyproduction_ArrayId_dimsolararray"; From="factenergyproduction.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="factmaintenanceevent_ArrayId_dimsolararray"; From="factmaintenanceevent.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="factmaintenanceevent_TechnicianId_dimtechnician"; From="factmaintenanceevent.TechnicianId"; To="dimtechnician.TechnicianId"}
+        @{Name="factalert_ArrayId_dimsolararray"; From="factalert.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="factalert_SensorId_dimsensor"; From="factalert.SensorId"; To="dimsensor.SensorId"; Inactive=$true}
+        @{Name="sensortelemetry_ArrayId_dimsolararray"; From="sensortelemetry.ArrayId"; To="dimsolararray.ArrayId"}
+        @{Name="sensortelemetry_SensorId_dimsensor"; From="sensortelemetry.SensorId"; To="dimsensor.SensorId"; Inactive=$true}
+    )
 }
 
 # ============================================================================
@@ -412,6 +429,64 @@ $measures = @{
             @{Name="Telemetry Count"; DAX="COUNTROWS(sensortelemetry)"; Format=$null}
         )
     }
+    "SolarFarm" = @{
+        "dimsolarplant" = @(
+            @{Name="Solar Plant Count"; DAX="COUNTROWS(dimsolarplant)"; Format=$null}
+            @{Name="Total Installed Capacity MWc"; DAX="SUM(dimsolarplant[CapacityMWc])"; Format="#,0.0"}
+        )
+        "dimsolararray" = @(
+            @{Name="Solar Array Count"; DAX="COUNTROWS(dimsolararray)"; Format=$null}
+            @{Name="Total Rated Capacity KW"; DAX="SUM(dimsolararray[RatedCapacityKW])"; Format="#,0"}
+        )
+        "diminverter" = @(
+            @{Name="Inverter Count"; DAX="COUNTROWS(diminverter)"; Format=$null}
+            @{Name="Total Rated Power KW"; DAX="SUM(diminverter[RatedPowerKW])"; Format="#,0"}
+            @{Name="Avg Inverter Efficiency"; DAX="AVERAGE(diminverter[Efficiency])"; Format='#,0.0"%"'}
+        )
+        "dimstring" = @(
+            @{Name="Panel String Count"; DAX="COUNTROWS(dimstring)"; Format=$null}
+            @{Name="Total Module Count"; DAX="SUM(dimstring[ModuleCount])"; Format="#,0"}
+        )
+        "dimtracker" = @(
+            @{Name="Tracker Count"; DAX="COUNTROWS(dimtracker)"; Format=$null}
+        )
+        "dimsensor" = @(
+            @{Name="Sensor Count"; DAX="COUNTROWS(dimsensor)"; Format=$null}
+        )
+        "dimtechnician" = @(
+            @{Name="Technician Count"; DAX="COUNTROWS(dimtechnician)"; Format=$null}
+            @{Name="Avg Years Experience"; DAX="AVERAGE(dimtechnician[YearsExperience])"; Format="#,0.0"}
+        )
+        "dimweatherstation" = @(
+            @{Name="Weather Station Count"; DAX="COUNTROWS(dimweatherstation)"; Format=$null}
+        )
+        "dimtransformer" = @(
+            @{Name="Transformer Count"; DAX="COUNTROWS(dimtransformer)"; Format=$null}
+            @{Name="Total Rating MVA"; DAX="SUM(dimtransformer[RatingMVA])"; Format="#,0.0"}
+        )
+        "factenergyproduction" = @(
+            @{Name="Production Record Count"; DAX="COUNTROWS(factenergyproduction)"; Format=$null}
+            @{Name="Avg Power Output KW"; DAX="AVERAGE(factenergyproduction[PowerOutputKW])"; Format="#,0"}
+            @{Name="Avg Performance Ratio"; DAX="AVERAGE(factenergyproduction[PerformanceRatio])"; Format="0.0%"}
+            @{Name="Avg Irradiance Wm2"; DAX="AVERAGE(factenergyproduction[IrradianceWm2])"; Format="#,0"}
+            @{Name="Avg Module Temperature C"; DAX="AVERAGE(factenergyproduction[ModuleTempC])"; Format="#,0.0"}
+            @{Name="Avg Production Inverter Efficiency"; DAX="AVERAGE(factenergyproduction[InverterEfficiency])"; Format='#,0.0"%"'}
+            @{Name="Avg Grid Frequency Hz"; DAX="AVERAGE(factenergyproduction[GridFrequencyHz])"; Format="#,0.00"}
+        )
+        "factalert" = @(
+            @{Name="Alert Count"; DAX="COUNTROWS(factalert)"; Format=$null}
+            @{Name="Critical Alert Count"; DAX='CALCULATE(COUNTROWS(factalert), factalert[Severity] = "Critical")'; Format=$null}
+            @{Name="Active Alert Count"; DAX='CALCULATE(COUNTROWS(factalert), factalert[Status] = "Active")'; Format=$null}
+        )
+        "factmaintenanceevent" = @(
+            @{Name="Maintenance Event Count"; DAX="COUNTROWS(factmaintenanceevent)"; Format=$null}
+            @{Name="Total Maintenance Cost"; DAX="SUM(factmaintenanceevent[CostUSD])"; Format="$#,0"}
+            @{Name="Avg Maintenance Duration Hours"; DAX="AVERAGE(factmaintenanceevent[DurationHours])"; Format="#,0.0"}
+        )
+        "sensortelemetry" = @(
+            @{Name="Telemetry Count"; DAX="COUNTROWS(sensortelemetry)"; Format=$null}
+        )
+    }
 }
 
 # ============================================================================
@@ -424,6 +499,7 @@ $descriptions = @{
     "ITAsset"            = "Direct Lake semantic model for IT Asset Management ontology - 12 tables with datacenter, server, application, and incident analysis"
     "WindTurbine"        = "Direct Lake semantic model for Wind Turbine ontology - 13 tables with turbine, power output, weather, and maintenance analysis"
     "Healthcare"         = "Direct Lake semantic model for Healthcare ontology - 14 tables with hospital, patient, physician, procedure, and lab analysis"
+    "SolarFarm"          = "Direct Lake semantic model for Solar Farm ontology - 26 tables with plants, arrays, energy production, alerts, maintenance, and telemetry analysis"
 }
 
 # LineageTag prefix per domain
@@ -433,6 +509,7 @@ $lineagePrefixes = @{
     "ITAsset"            = 40000000
     "WindTurbine"        = 50000000
     "Healthcare"         = 60000000
+    "SolarFarm"          = 70000000
 }
 
 # ============================================================================
@@ -574,7 +651,7 @@ function New-TableTmdl {
 # MAIN GENERATION LOOP
 # ============================================================================
 
-$domainsToProcess = if ($Domain -eq "All") { @("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare") } else { @($Domain) }
+$domainsToProcess = if ($Domain -eq "All") { @("SmartBuilding","ManufacturingPlant","ITAsset","WindTurbine","Healthcare","SolarFarm") } else { @($Domain) }
 $totalFiles = 0
 
 foreach ($domainName in $domainsToProcess) {

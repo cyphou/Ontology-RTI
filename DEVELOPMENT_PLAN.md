@@ -269,7 +269,8 @@ gantt
 | 🤖 | `Report Layout` + `Report Mockup` Copilot agents with mutual handoffs | ✅ |
 | 📄 | Specs shipped for Oil & Gas Refinery and Enterprise Finance + HR | ✅ |
 | 📊 | Specs for Healthcare, IT Asset, Manufacturing Plant, Smart Building and Wind Turbine | ✅ |
-| ☀️ | Spec for Solar Farm | ⏳ Blocked: the semantic model has 3 tables and 4 measures for 26 CSVs |
+| ☀️ | Solar Farm Direct Lake model generated for 26 CSVs: 30 measures, 15 relationships, plus a 2-page report spec | ✅ |
+| 🔬 | Live mockup review for Healthcare, IT Asset, Manufacturing Plant, Smart Building, Solar Farm and Wind Turbine | ⏳ Requires each model to be deployed |
 
 ---
 
@@ -285,7 +286,7 @@ gantt
 | 📡 KQL tables | 40 |
 | 📊 Dashboard tiles | 77 |
 | 🕸️ GQL queries | 160+ |
-| 📈 Spec-driven Power BI reports | 2 |
+| 📈 Spec-driven Power BI reports | 8 |
 | 🖥️ Rayfin browser apps | 4 |
 | 🤖 AI agents (Data + Ops) | 16 |
 | 🤖 Copilot agents | 11 |

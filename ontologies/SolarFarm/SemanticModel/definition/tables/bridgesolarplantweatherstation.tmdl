@@ -1,0 +1,25 @@
+table bridgesolarplantweatherstation
+	lineageTag: 70000012-0001-0001-0001-000000000001
+
+	column PlantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantId
+		lineageTag: 70000012-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column StationId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StationId
+		lineageTag: 70000012-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgesolarplantweatherstation = entity
+		mode: directLake
+		entityName: bridgesolarplantweatherstation
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

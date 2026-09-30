@@ -1,0 +1,25 @@
+table bridgemaintenanceeventtechnician
+	lineageTag: 70000004-0001-0001-0001-000000000001
+
+	column EventId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: EventId
+		lineageTag: 70000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TechnicianId
+		lineageTag: 70000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgemaintenanceeventtechnician = entity
+		mode: directLake
+		entityName: bridgemaintenanceeventtechnician
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

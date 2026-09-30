@@ -1,0 +1,25 @@
+table bridgesolararraystring
+	lineageTag: 70000007-0001-0001-0001-000000000001
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column StringId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StringId
+		lineageTag: 70000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgesolararraystring = entity
+		mode: directLake
+		entityName: bridgesolararraystring
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -3,8 +3,76 @@ relationship dimsolararray_PlantId_dimsolarplant
 	toColumn: dimsolarplant.PlantId
 	crossFilteringBehavior: oneDirection
 
-relationship sensortelemetry_ArrayId_dimsolararray
+relationship diminverter_ArrayId_dimsolararray
+	fromColumn: diminverter.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship dimstring_ArrayId_dimsolararray
+	fromColumn: dimstring.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship dimtracker_ArrayId_dimsolararray
+	fromColumn: dimtracker.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship dimsensor_ArrayId_dimsolararray
+	fromColumn: dimsensor.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship dimtechnician_PlantId_dimsolarplant
 	isActive: false
+	fromColumn: dimtechnician.PlantId
+	toColumn: dimsolarplant.PlantId
+	crossFilteringBehavior: oneDirection
+
+relationship dimweatherstation_PlantId_dimsolarplant
+	fromColumn: dimweatherstation.PlantId
+	toColumn: dimsolarplant.PlantId
+	crossFilteringBehavior: oneDirection
+
+relationship dimtransformer_PlantId_dimsolarplant
+	fromColumn: dimtransformer.PlantId
+	toColumn: dimsolarplant.PlantId
+	crossFilteringBehavior: oneDirection
+
+relationship factenergyproduction_ArrayId_dimsolararray
+	fromColumn: factenergyproduction.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceevent_ArrayId_dimsolararray
+	fromColumn: factmaintenanceevent.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship factmaintenanceevent_TechnicianId_dimtechnician
+	fromColumn: factmaintenanceevent.TechnicianId
+	toColumn: dimtechnician.TechnicianId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_ArrayId_dimsolararray
+	fromColumn: factalert.ArrayId
+	toColumn: dimsolararray.ArrayId
+	crossFilteringBehavior: oneDirection
+
+relationship factalert_SensorId_dimsensor
+	isActive: false
+	fromColumn: factalert.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_ArrayId_dimsolararray
 	fromColumn: sensortelemetry.ArrayId
 	toColumn: dimsolararray.ArrayId
 	crossFilteringBehavior: oneDirection
+
+relationship sensortelemetry_SensorId_dimsensor
+	isActive: false
+	fromColumn: sensortelemetry.SensorId
+	toColumn: dimsensor.SensorId
+	crossFilteringBehavior: oneDirection
+

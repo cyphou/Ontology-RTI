@@ -311,7 +311,18 @@ Key relationships:
 <details>
 <summary><h3>Entity-Relationship Overview</h3></summary>
 
-**12 entity types** | **~12 relationships** | **Star schema**
+**26 Direct Lake tables** | **15 relationships** | **30 measures** | **Star schema**
+
+Generate or refresh the model from the Solar Farm CSV schemas with:
+
+```powershell
+.\Generate-SemanticModels.ps1 -Domain SolarFarm
+```
+
+The generated model now includes the production, alert and maintenance facts. `FactEnergyProduction`
+has 185 sample records but only **one distinct date**, so use site/array comparisons, not a line chart
+that implies a trend. Efficiency fields in the sample are already on a 0-100 scale; their format string
+must use a literal percent sign (`#,0.0"%"`), not a percentage format that multiplies by 100.
 
 Key relationships:
 - `dimsolararray.PlantId` :arrow_right: `dimsolarplant.PlantId`
@@ -325,8 +336,13 @@ Key relationships:
 - `factmaintenanceevent.ArrayId` :arrow_right: `dimsolararray.ArrayId`
 - `factmaintenanceevent.TechnicianId` :arrow_right: `dimtechnician.TechnicianId`
 - `factalert.ArrayId` :arrow_right: `dimsolararray.ArrayId`
-- `factalert.SensorId` :arrow_right: `dimsensor.SensorId`
-- `sensortelemetry.SensorId` :arrow_right: `dimsensor.SensorId`
+- `factalert.SensorId` :arrow_right: `dimsensor.SensorId` (**inactive**; use the array path for alert totals)
+- `sensortelemetry.ArrayId` :arrow_right: `dimsolararray.ArrayId`
+- `sensortelemetry.SensorId` :arrow_right: `dimsensor.SensorId` (**inactive**; it would create an ambiguous path)
+
+The technician-to-plant relationship is also inactive: maintenance facts already reach plants through
+the array, and activating both routes would introduce an ambiguous filter path. `factmaintenanceevent`
+does have an active direct path to `dimtechnician` for technician-level maintenance analysis.
 
 </details>
 

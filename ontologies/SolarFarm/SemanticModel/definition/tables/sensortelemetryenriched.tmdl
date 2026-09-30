@@ -1,15 +1,11 @@
-table sensortelemetry
-	lineageTag: 70000025-0001-0001-0001-000000000001
-
-	measure 'Telemetry Count' = COUNTROWS(sensortelemetry)
-		displayFolder: Measures
-		lineageTag: 70000025-0001-0001-0001-100000000001
+table sensortelemetryenriched
+	lineageTag: 70000026-0001-0001-0001-000000000001
 
 	column Timestamp
 		dataType: string
 		summarizeBy: none
 		sourceColumn: Timestamp
-		lineageTag: 70000025-0001-0001-0001-200000000001
+		lineageTag: 70000026-0001-0001-0001-200000000001
 
 		annotation SummarizationSetBy = Automatic
 
@@ -17,7 +13,7 @@ table sensortelemetry
 		dataType: string
 		summarizeBy: none
 		sourceColumn: ArrayId
-		lineageTag: 70000025-0001-0001-0001-200000000002
+		lineageTag: 70000026-0001-0001-0001-200000000002
 
 		annotation SummarizationSetBy = Automatic
 
@@ -25,7 +21,7 @@ table sensortelemetry
 		dataType: string
 		summarizeBy: none
 		sourceColumn: SensorId
-		lineageTag: 70000025-0001-0001-0001-200000000003
+		lineageTag: 70000026-0001-0001-0001-200000000003
 
 		annotation SummarizationSetBy = Automatic
 
@@ -33,7 +29,7 @@ table sensortelemetry
 		dataType: string
 		summarizeBy: none
 		sourceColumn: SensorType
-		lineageTag: 70000025-0001-0001-0001-200000000004
+		lineageTag: 70000026-0001-0001-0001-200000000004
 
 		annotation SummarizationSetBy = Automatic
 
@@ -41,7 +37,7 @@ table sensortelemetry
 		dataType: double
 		summarizeBy: none
 		sourceColumn: Value
-		lineageTag: 70000025-0001-0001-0001-200000000005
+		lineageTag: 70000026-0001-0001-0001-200000000005
 
 		annotation SummarizationSetBy = Automatic
 
@@ -49,7 +45,7 @@ table sensortelemetry
 		dataType: string
 		summarizeBy: none
 		sourceColumn: Unit
-		lineageTag: 70000025-0001-0001-0001-200000000006
+		lineageTag: 70000026-0001-0001-0001-200000000006
 
 		annotation SummarizationSetBy = Automatic
 
@@ -57,13 +53,13 @@ table sensortelemetry
 		dataType: string
 		summarizeBy: none
 		sourceColumn: Quality
-		lineageTag: 70000025-0001-0001-0001-200000000007
+		lineageTag: 70000026-0001-0001-0001-200000000007
 
 		annotation SummarizationSetBy = Automatic
 
-	partition sensortelemetry = entity
+	partition sensortelemetryenriched = entity
 		mode: directLake
-		entityName: sensortelemetry
+		entityName: sensortelemetryenriched
 		expressionSource: DatabaseQuery
 
 	annotation PBI_ResultType = Table

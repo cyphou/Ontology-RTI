@@ -4,6 +4,7 @@
 
 ### Added
 - Report specs for Healthcare, IT Asset, Manufacturing Plant, Smart Building and Wind Turbine, each two pages, validated against their TMDL models and against the visual mapping. Fact measures are paired only with dimensions that are reachable through a declared relationship.
+- Solar Farm Direct Lake semantic model generated for all 26 CSVs: 26 tables, 30 measures and 15 relationships; added a two-page `report.spec.json` using plant/array comparisons because production samples contain only one distinct date.
 - `deploy/visual-mapping.json`: an authoritative business-need to visual mapping, grounded in Microsoft report and dashboard design guidance, that drives the report design lint instead of only documenting it
 - `Test-VisualFit`: a data-aware lint that runs during the mockup and rejects visual choices the live data cannot support (a donut with too many slices, a waterfall where nothing subtracts, a funnel whose stages do not fall)
 - `deploy/domain-branding.json` plus `deploy/New-DomainLogos.ps1`: one palette and one generated logo lockup per ontology domain, derived from that domain's own icon and shared by the report theme, the logo and the mockup

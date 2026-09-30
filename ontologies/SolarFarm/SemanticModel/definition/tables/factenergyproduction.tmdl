@@ -1,0 +1,123 @@
+table factenergyproduction
+	lineageTag: 70000023-0001-0001-0001-000000000001
+
+	measure 'Production Record Count' = COUNTROWS(factenergyproduction)
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000001
+
+	measure 'Avg Power Output KW' = AVERAGE(factenergyproduction[PowerOutputKW])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000002
+
+	measure 'Avg Performance Ratio' = AVERAGE(factenergyproduction[PerformanceRatio])
+		formatString: 0.0%
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000003
+
+	measure 'Avg Irradiance Wm2' = AVERAGE(factenergyproduction[IrradianceWm2])
+		formatString: #,0
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000004
+
+	measure 'Avg Module Temperature C' = AVERAGE(factenergyproduction[ModuleTempC])
+		formatString: #,0.0
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000005
+
+	measure 'Avg Production Inverter Efficiency' = AVERAGE(factenergyproduction[InverterEfficiency])
+		formatString: #,0.0"%"
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000006
+
+	measure 'Avg Grid Frequency Hz' = AVERAGE(factenergyproduction[GridFrequencyHz])
+		formatString: #,0.00
+		displayFolder: Measures
+		lineageTag: 70000023-0001-0001-0001-100000000007
+
+	column ProductionId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ProductionId
+		lineageTag: 70000023-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000023-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Date
+		lineageTag: 70000023-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Hour
+		dataType: double
+		summarizeBy: none
+		sourceColumn: Hour
+		lineageTag: 70000023-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column IrradianceWm2
+		dataType: double
+		summarizeBy: none
+		sourceColumn: IrradianceWm2
+		lineageTag: 70000023-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column PowerOutputKW
+		dataType: double
+		summarizeBy: none
+		sourceColumn: PowerOutputKW
+		lineageTag: 70000023-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column PerformanceRatio
+		dataType: double
+		summarizeBy: none
+		sourceColumn: PerformanceRatio
+		lineageTag: 70000023-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModuleTempC
+		dataType: double
+		summarizeBy: none
+		sourceColumn: ModuleTempC
+		lineageTag: 70000023-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	column InverterEfficiency
+		dataType: double
+		summarizeBy: none
+		sourceColumn: InverterEfficiency
+		lineageTag: 70000023-0001-0001-0001-200000000009
+
+		annotation SummarizationSetBy = Automatic
+
+	column GridFrequencyHz
+		dataType: double
+		summarizeBy: none
+		sourceColumn: GridFrequencyHz
+		lineageTag: 70000023-0001-0001-0001-200000000010
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factenergyproduction = entity
+		mode: directLake
+		entityName: factenergyproduction
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,77 @@
+table dimtracker
+	lineageTag: 70000019-0001-0001-0001-000000000001
+
+	measure 'Tracker Count' = COUNTROWS(dimtracker)
+		displayFolder: Measures
+		lineageTag: 70000019-0001-0001-0001-100000000001
+
+	column TrackerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TrackerId
+		lineageTag: 70000019-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TrackerName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TrackerName
+		lineageTag: 70000019-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000019-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column TrackerType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TrackerType
+		lineageTag: 70000019-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column AxisType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AxisType
+		lineageTag: 70000019-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxTiltDeg
+		dataType: double
+		summarizeBy: none
+		sourceColumn: MaxTiltDeg
+		lineageTag: 70000019-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InstallDate
+		lineageTag: 70000019-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+		lineageTag: 70000019-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimtracker = entity
+		mode: directLake
+		entityName: dimtracker
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

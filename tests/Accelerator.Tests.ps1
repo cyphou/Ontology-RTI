@@ -216,7 +216,7 @@ Describe "Spec-driven Reports" {
     }
 
     It "mockup template has the spec, data and format placeholders" {
-        foreach ($token in @('__SPEC__', '__DATA__', '__FORMATS__', '__GENERATED__')) { $script:template | Should -Match $token }
+        foreach ($token in @('__SPEC__', '__DATA__', '__FORMATS__', '__IMAGES__', '__GENERATED__')) { $script:template | Should -Match $token }
     }
 
     It "deployment chain runs the report step after the mockup gate" {
@@ -361,5 +361,63 @@ Describe "Enterprise Finance + HR Expansion" {
         Join-Path $script:enterprisePath "Deploy-HRDataflowsGen2.ps1" | Should -Exist
         Join-Path $script:enterprisePath "Deploy-HRDataPipeline.ps1" | Should -Exist
         Join-Path $script:enterprisePath "DataPipeline\definition\pipeline-content.json" | Should -Exist
+    }
+}
+
+# ============================================================================
+# TEST 7: Solar Farm semantic model generation
+# ============================================================================
+Describe "Solar Farm semantic model" {
+    BeforeAll {
+        $script:solarRoot = Join-Path $script:rootDir "ontologies\SolarFarm"
+        $script:solarTables = Join-Path $script:solarRoot "SemanticModel\definition\tables"
+        . (Join-Path $script:rootDir "deploy\ReportSpec.ps1")
+    }
+
+    It "has one TMDL table for every Solar Farm CSV" {
+        $csvNames = @(Get-ChildItem (Join-Path $script:solarRoot "data") -Filter "*.csv" | ForEach-Object { $_.BaseName.ToLowerInvariant() } | Sort-Object)
+        $tmdlNames = @(Get-ChildItem $script:solarTables -Filter "*.tmdl" | ForEach-Object { $_.BaseName.ToLowerInvariant() } | Sort-Object)
+        $csvNames.Count | Should -Be 26
+        ($tmdlNames -join ',') | Should -Be ($csvNames -join ',')
+    }
+
+    It "defines production, alert and maintenance measures with explicit formats" {
+        $production = Get-Content (Join-Path $script:solarTables "factenergyproduction.tmdl") -Raw
+        $alerts = Get-Content (Join-Path $script:solarTables "factalert.tmdl") -Raw
+        $maintenance = Get-Content (Join-Path $script:solarTables "factmaintenanceevent.tmdl") -Raw
+        $production | Should -Match "measure 'Avg Power Output KW'"
+        $production | Should -Match "measure 'Avg Performance Ratio'"
+        $production | Should -Match 'formatString: 0\.0%'
+        $alerts | Should -Match "measure 'Critical Alert Count'"
+        $maintenance | Should -Match "measure 'Total Maintenance Cost'"
+        $maintenance | Should -Match 'formatString: \$#,0'
+    }
+
+    It "keeps fact filter paths active and ambiguous sensor paths inactive" {
+        $rels = Get-Content (Join-Path $script:solarRoot "SemanticModel\definition\relationships.tmdl") -Raw
+        $rels | Should -Match '(?s)relationship factenergyproduction_ArrayId_dimsolararray\s+fromColumn:'
+        $rels | Should -Match '(?s)relationship factmaintenanceevent_ArrayId_dimsolararray\s+fromColumn:'
+        $rels | Should -Match '(?s)relationship factalert_ArrayId_dimsolararray\s+fromColumn:'
+        $rels | Should -Match '(?s)relationship factalert_SensorId_dimsensor\s+isActive: false'
+    }
+
+    It "does not claim a time trend for a single-date production sample" {
+        $dates = @(Import-Csv (Join-Path $script:solarRoot "data\FactEnergyProduction.csv") | Select-Object -ExpandProperty Date -Unique)
+        $dates.Count | Should -Be 1
+        $spec = Read-ReportSpec (Join-Path $script:solarRoot "report.spec.json")
+        foreach ($page in $spec.pages) {
+            foreach ($visual in $page.visuals) {
+                if ($visual.type -eq 'line' -and $visual.category -eq 'factenergyproduction[Date]') {
+                    throw "Production has only one distinct date; a time-series line is misleading."
+                }
+            }
+        }
+    }
+
+    It "registers SolarFarm in the generator's All set and lineage map" {
+        $generator = Get-Content (Join-Path $script:rootDir "Generate-SemanticModels.ps1") -Raw
+        $generator | Should -Match 'ValidateSet\([^\)]*"SolarFarm"'
+        $generator | Should -Match '"Healthcare","SolarFarm"\)'
+        $generator | Should -Match '"SolarFarm"\s*=\s*70000000'
     }
 }

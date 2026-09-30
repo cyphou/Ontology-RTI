@@ -1,0 +1,42 @@
+{
+  "reportName": "Solar Farm Operations Report",
+  "domain": "SolarFarm",
+  "$comment": "Theme and logo inherit from deploy/domain-branding.json. FactEnergyProduction contains 185 records but only one distinct date, so this report deliberately uses plant/array comparisons instead of a time series. Titles are questions until live validation provides findings.",
+  "pages": [
+    {
+      "name": "Fleet & production",
+      "storyNote": "Where the installed capacity sits, and how power output and performance differ by plant.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/solar.png", "plain": true },
+
+        { "type": "card", "title": "Solar plants", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimsolarplant[Solar Plant Count]"], "altText": "Number of solar plants in the current filter." },
+        { "type": "card", "title": "Installed capacity (MWc)", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["dimsolarplant[Total Installed Capacity MWc]"], "precision": 1, "altText": "Combined installed capacity of all solar plants in megawatt-peak." },
+        { "type": "card", "title": "Solar arrays", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["dimsolararray[Solar Array Count]"], "altText": "Number of solar arrays across the fleet." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Capacity is the baseline", "fontSize": 13, "subtext": "Compare plant capacity with observed output. These sample production records cover one day only, so they do not support a trend claim.", "subFontSize": 9 },
+
+        { "type": "map", "title": "Where the installed capacity sits", "x": 16, "y": 236, "w": 616, "h": 468, "category": "dimsolarplant[PlantName]", "latitude": "dimsolarplant[Latitude]", "longitude": "dimsolarplant[Longitude]", "measures": ["dimsolarplant[Total Installed Capacity MWc]"], "altText": "Map of solar plants, with each bubble sized by installed capacity in megawatt-peak." },
+
+        { "type": "bar", "title": "Which plants produced the most power", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimsolarplant[PlantName]", "measures": ["factenergyproduction[Avg Power Output KW]"], "sort": "desc", "altText": "Average recorded power output by solar plant for the sample day, sorted from highest to lowest." },
+        { "type": "bar", "title": "Where performance ratio is highest", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimsolarplant[PlantName]", "measures": ["factenergyproduction[Avg Performance Ratio]"], "sort": "desc", "altText": "Average performance ratio by solar plant for the sample day, sorted from highest to lowest." }
+      ]
+    },
+    {
+      "name": "Equipment & reliability",
+      "storyNote": "How inverter efficiency, active alerts and maintenance work distribute across the fleet.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/solar.png", "plain": true },
+
+        { "type": "card", "title": "Inverters", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["diminverter[Inverter Count]"], "altText": "Number of inverters across the solar fleet." },
+        { "type": "card", "title": "Active alerts", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Active Alert Count]"], "altText": "Alerts whose status is active." },
+        { "type": "card", "title": "Maintenance cost", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenanceevent[Total Maintenance Cost]"], "precision": 2, "altText": "Total recorded maintenance cost across all events." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Look past the fleet average", "fontSize": 13, "subtext": "Compare alerts and maintenance by plant and event type. A fleet-wide efficiency average can hide one inverter or site that needs attention.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which inverter types are most efficient", "x": 16, "y": 236, "w": 616, "h": 248, "category": "diminverter[CoolingType]", "measures": ["diminverter[Avg Inverter Efficiency]"], "sort": "desc", "altText": "Average inverter efficiency by cooling type, sorted from highest to lowest." },
+        { "type": "bar", "title": "Which alert types remain active", "x": 648, "y": 236, "w": 616, "h": 248, "category": "factalert[AlertType]", "measures": ["factalert[Active Alert Count]"], "sort": "desc", "altText": "Count of active alerts by alert type, sorted from most to least." },
+
+        { "type": "bar", "title": "Where maintenance cost concentrates", "x": 16, "y": 500, "w": 616, "h": 204, "category": "factmaintenanceevent[EventType]", "measures": ["factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost by event type, sorted from highest to lowest." },
+        { "type": "table", "title": "Maintenance event detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimsolararray[ArrayName]", "factmaintenanceevent[EventType]", "factmaintenanceevent[Priority]", "factmaintenanceevent[Status]"], "measures": ["factmaintenanceevent[Maintenance Event Count]", "factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "fontSize": 9, "altText": "Maintenance event count and cost by array, event type, priority and status." }
+      ]
+    }
+  ]
+}

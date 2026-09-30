@@ -1,0 +1,25 @@
+table bridgesolararrayinverter
+	lineageTag: 70000005-0001-0001-0001-000000000001
+
+	column ArrayId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ArrayId
+		lineageTag: 70000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column InverterId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InverterId
+		lineageTag: 70000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgesolararrayinverter = entity
+		mode: directLake
+		entityName: bridgesolararrayinverter
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

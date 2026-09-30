@@ -1,0 +1,25 @@
+table bridgesolarplanttechnician
+	lineageTag: 70000010-0001-0001-0001-000000000001
+
+	column PlantId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PlantId
+		lineageTag: 70000010-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TechnicianId
+		lineageTag: 70000010-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgesolarplanttechnician = entity
+		mode: directLake
+		entityName: bridgesolarplanttechnician
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

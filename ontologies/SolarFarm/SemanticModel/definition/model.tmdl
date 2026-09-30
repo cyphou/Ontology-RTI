@@ -5,11 +5,34 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-annotation PBI_QueryOrder = ["dimsolarplant","dimsolararray","sensortelemetry"]
+annotation PBI_QueryOrder = ["bridgealertarray","bridgeenergyproductionarray","bridgemaintenanceeventarray","bridgemaintenanceeventtechnician","bridgesolararrayinverter","bridgesolararraysensor","bridgesolararraystring","bridgesolararraytracker","bridgesolarplantarray","bridgesolarplanttechnician","bridgesolarplanttransformer","bridgesolarplantweatherstation","diminverter","dimsensor","dimsolararray","dimsolarplant","dimstring","dimtechnician","dimtracker","dimtransformer","dimweatherstation","factalert","factenergyproduction","factmaintenanceevent","sensortelemetry","sensortelemetryenriched"]
 
-ref table dimsolarplant
+ref table bridgealertarray
+ref table bridgeenergyproductionarray
+ref table bridgemaintenanceeventarray
+ref table bridgemaintenanceeventtechnician
+ref table bridgesolararrayinverter
+ref table bridgesolararraysensor
+ref table bridgesolararraystring
+ref table bridgesolararraytracker
+ref table bridgesolarplantarray
+ref table bridgesolarplanttechnician
+ref table bridgesolarplanttransformer
+ref table bridgesolarplantweatherstation
+ref table diminverter
+ref table dimsensor
 ref table dimsolararray
+ref table dimsolarplant
+ref table dimstring
+ref table dimtechnician
+ref table dimtracker
+ref table dimtransformer
+ref table dimweatherstation
+ref table factalert
+ref table factenergyproduction
+ref table factmaintenanceevent
 ref table sensortelemetry
+ref table sensortelemetryenriched
 
 ref expression DatabaseQuery
 
