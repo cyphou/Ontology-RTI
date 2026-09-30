@@ -1,0 +1,14 @@
+# Copy to fabric.yaml and fill in your own ids. fabric.yaml is gitignored because it
+# carries real Fabric workspace and item identifiers.
+#
+#   copy fabric.yaml.example fabric.yaml
+#   npx fabric-app-data generate -o src/fabric.generated.ts
+#
+# Add profiles for other environments and switch with --profile <name>.
+activeProfile: default
+profiles:
+  default:
+    semanticModels:
+      windTurbineModel:
+        workspaceId: "<workspace-id>"
+        itemId: "<semantic-model-item-id>"

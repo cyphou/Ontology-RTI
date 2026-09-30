@@ -31,3 +31,7 @@ Thumbs.db
 # Rayfin CLI generated state and build output
 apps/*/rayfin/.temp/
 apps/*/rayfin/.deployments.json
+
+# App deployment targets: real Fabric workspace and item ids
+apps/*/fabric.yaml
+!apps/*/fabric.yaml.example
