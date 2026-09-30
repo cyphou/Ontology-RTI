@@ -1,0 +1,42 @@
+{
+  "reportName": "Wind Fleet Report",
+  "domain": "WindTurbine",
+  "$comment": "Theme and logo inherited from deploy/domain-branding.json. Titles are written as questions because this domain is not deployed yet: rewrite them as findings once New-ReportMockup.ps1 has run against a live model.",
+  "pages": [
+    {
+      "name": "Fleet output",
+      "storyNote": "Where the installed capacity sits and how much of it the fleet actually converts.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/wind-turbine.png", "plain": true },
+
+        { "type": "card", "title": "Installed capacity (MW)", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimwindfarm[Total Installed Capacity MW]"], "precision": 1, "altText": "Combined nameplate capacity of every wind farm in megawatts." },
+        { "type": "card", "title": "Power output (kW)", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factpoweroutput[Total Power Output KW]"], "precision": 2, "altText": "Total recorded power output across the fleet in kilowatts." },
+        { "type": "card", "title": "Average capacity factor", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factpoweroutput[Avg Capacity Factor]"], "altText": "Mean share of nameplate capacity actually delivered." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Capacity is not output", "fontSize": 13, "subtext": "A farm can hold the most megawatts and still convert the least. Read capacity factor alongside installed capacity, never instead of it.", "subFontSize": 9 },
+
+        { "type": "map", "title": "Where the fleet is sited", "x": 16, "y": 236, "w": 616, "h": 468, "category": "dimwindfarm[WindFarmName]", "latitude": "dimwindfarm[Latitude]", "longitude": "dimwindfarm[Longitude]", "measures": ["dimwindfarm[Total Installed Capacity MW]"], "altText": "World map with a bubble per wind farm, sized by installed capacity in megawatts." },
+
+        { "type": "bar", "title": "Which farms deliver the output", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimwindfarm[WindFarmName]", "measures": ["factpoweroutput[Total Power Output KW]"], "sort": "desc", "altText": "Recorded power output for each wind farm, sorted from most to least." },
+        { "type": "bar", "title": "Does generator type change the output", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimnacelle[GeneratorType]", "measures": ["factpoweroutput[Total Power Output KW]"], "sort": "desc", "altText": "Recorded power output grouped by nacelle generator type, sorted from most to least." }
+      ]
+    },
+    {
+      "name": "Reliability",
+      "storyNote": "What the fleet costs to keep turning, and which turbines absorb that cost.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/wind-turbine.png", "plain": true },
+
+        { "type": "card", "title": "Critical alerts", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Critical Alert Count]"], "altText": "Number of alerts raised at critical severity." },
+        { "type": "card", "title": "Maintenance cost", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenanceevent[Total Maintenance Cost]"], "precision": 2, "altText": "Total maintenance spend across all maintenance events." },
+        { "type": "card", "title": "Average duration (hours)", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenanceevent[Avg Maintenance Duration Hours]"], "altText": "Mean hours spent on a maintenance event." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Few turbines, most cost", "fontSize": 13, "subtext": "Maintenance spend usually concentrates on a handful of turbines. Those are the candidates for condition monitoring, not the fleet average.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which turbines absorb the maintenance cost", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimturbine[TurbineName]", "measures": ["factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost for each turbine, sorted from most to least expensive." },
+        { "type": "bar", "title": "Which sensor types raise the alerts", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimsensor[SensorType]", "measures": ["factalert[Alert Count]"], "sort": "desc", "altText": "Alert count by sensor type, sorted from most to least." },
+
+        { "type": "bar", "title": "Who performs the maintenance", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimtechnician[CertificationLevel]", "measures": ["factmaintenanceevent[Maintenance Event Count]"], "sort": "desc", "altText": "Maintenance event count grouped by technician certification level." },
+        { "type": "table", "title": "Turbine detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimturbine[TurbineName]", "dimturbine[Status]"], "measures": ["factmaintenanceevent[Maintenance Event Count]", "factmaintenanceevent[Total Maintenance Cost]"], "sort": "desc", "fontSize": 9, "altText": "Maintenance event count and cost for every turbine, with its status." }
+      ]
+    }
+  ]
+}

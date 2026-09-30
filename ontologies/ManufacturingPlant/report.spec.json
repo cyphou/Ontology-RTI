@@ -1,0 +1,43 @@
+{
+  "reportName": "Manufacturing Plant Report",
+  "domain": "ManufacturingPlant",
+  "$comment": "Theme and logo inherited from deploy/domain-branding.json. Titles are written as questions because this domain is not deployed yet: rewrite them as findings once New-ReportMockup.ps1 has run against a live model.",
+  "pages": [
+    {
+      "name": "Production & quality",
+      "storyNote": "What the plant produced, and what it had to scrap to get there.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/manufacturing.png", "plain": true },
+
+        { "type": "card", "title": "Quantity produced", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["factproductionbatch[Total Quantity Produced]"], "precision": 2, "altText": "Total units produced across all batches in the current filter." },
+        { "type": "card", "title": "Quality pass rate", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factqualitycheck[Pass Rate]"], "altText": "Share of quality checks that passed." },
+        { "type": "card", "title": "Average defect rate", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factproductionbatch[Avg Defect Rate]"], "altText": "Mean defect rate across production batches." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Volume against quality", "fontSize": 13, "subtext": "A line that produces the most is not automatically the best line. Read the defect rate on the same axis before drawing conclusions.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which product categories drive volume", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimproduct[ProductCategory]", "measures": ["factproductionbatch[Total Quantity Produced]"], "sort": "desc", "altText": "Units produced by product category, sorted from most to least." },
+        { "type": "combo", "title": "Do the busiest line types also defect most", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimproductionline[LineType]", "measures": ["factproductionbatch[Total Quantity Produced]"], "lineMeasures": ["factproductionbatch[Avg Defect Rate]"], "sort": "desc", "altText": "Columns show units produced per production line type against a line showing the average defect rate on a second axis." },
+
+        { "type": "bar", "title": "Output across production lines", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimproductionline[LineName]", "measures": ["factproductionbatch[Total Quantity Produced]"], "sort": "desc", "altText": "Units produced by each production line, sorted from most to least." },
+        { "type": "bar", "title": "Where defects are caught", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimproduct[ProductCategory]", "measures": ["factqualitycheck[Total Defect Count]"], "sort": "desc", "altText": "Defects recorded by quality checks for each product category." }
+      ]
+    },
+    {
+      "name": "Machines & maintenance",
+      "storyNote": "Which machines cost the most to keep running, and where the alerts come from.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/manufacturing.png", "plain": true },
+
+        { "type": "card", "title": "Machines", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimmachine[Machine Count]"], "altText": "Number of machines on the plant floor." },
+        { "type": "card", "title": "Maintenance cost", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factmaintenanceorder[Total Maintenance Cost]"], "precision": 2, "altText": "Total maintenance spend across all maintenance orders." },
+        { "type": "card", "title": "Critical alerts", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Critical Alert Count]"], "altText": "Number of alerts raised at critical severity." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Cost concentrates", "fontSize": 13, "subtext": "Maintenance spend is rarely spread evenly. Find the machine types that absorb it before negotiating the next service contract.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which machine types absorb maintenance spend", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimmachine[MachineType]", "measures": ["factmaintenanceorder[Total Maintenance Cost]"], "sort": "desc", "altText": "Maintenance cost by machine type, sorted from most to least expensive." },
+        { "type": "bar", "title": "How many machines sit at each criticality level", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimmachine[CriticalityLevel]", "measures": ["dimmachine[Machine Count]"], "sort": "desc", "altText": "Machine count for each criticality level, sorted from most to least." },
+
+        { "type": "bar", "title": "Which sensor types raise the alerts", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimsensor[SensorType]", "measures": ["factalert[Alert Count]"], "sort": "desc", "altText": "Alert count by sensor type, sorted from most to least." },
+        { "type": "table", "title": "Maintenance order detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimmachine[MachineName]", "dimmachine[MachineType]"], "measures": ["factmaintenanceorder[Maintenance Order Count]", "factmaintenanceorder[Total Maintenance Cost]"], "sort": "desc", "fontSize": 9, "altText": "Order count and maintenance cost for every machine." }
+      ]
+    }
+  ]
+}

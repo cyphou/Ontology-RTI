@@ -272,7 +272,7 @@ flowchart TB
 | :spider_web: | **Graph Model** | auto | Topology derived from ontology |
 | :mag: | **Graph Query Set** | 20 queries | GQL traversal patterns (pushed via API) |
 | :bar_chart: | **RTI Dashboard** | 10-12 tiles | Real-time KQL visualizations (schema v52) |
-| :chart_with_upwards_trend: | **Power BI Report** | 3 pages | Built from `report.spec.json` (Oil & Gas, Enterprise Finance + HR) |
+| :chart_with_upwards_trend: | **Power BI Report** | 2-3 pages | Built from `report.spec.json` (7 of 8 domains) |
 | :robot: | **AI Agents** | 2 agents | Data Agent + Operations Agent |
 ---
 
@@ -887,6 +887,20 @@ Semantic `good` / `neutral` / `bad` are reserved for meaning and never reused as
 |--------|------|-------|
 | :oil_drum: Oil & Gas Refinery | [report.spec.json](ontologies/OilGasRefinery/report.spec.json) | Executive overview - Safety & maintenance - Storage & assets |
 | :briefcase: Enterprise Finance + HR | [report.spec.json](ontologies/EnterpriseFinanceHR/report.spec.json) | Spend vs plan - Workforce & pay - Talent pipeline |
+| :hospital: Healthcare | [report.spec.json](ontologies/Healthcare/report.spec.json) | Capacity & staffing - Clinical activity |
+| :desktop_computer: IT Asset | [report.spec.json](ontologies/ITAsset/report.spec.json) | Infrastructure - Incidents & licences |
+| :factory: Manufacturing Plant | [report.spec.json](ontologies/ManufacturingPlant/report.spec.json) | Production & quality - Machines & maintenance |
+| :office: Smart Building | [report.spec.json](ontologies/SmartBuilding/report.spec.json) | Portfolio - Systems & alerts |
+| :wind_face: Wind Turbine | [report.spec.json](ontologies/WindTurbine/report.spec.json) | Fleet output - Reliability |
+
+> [!NOTE]
+> Solar Farm has no spec yet: its semantic model defines only 3 tables out of 26 CSVs and 4 measures,
+> none of them over `FactEnergyProduction`, so there is nothing meaningful to report on until the model
+> is built out.
+>
+> The six domains added last carry question-style titles ("Which turbines absorb the maintenance cost").
+> Only Oil & Gas and Enterprise Finance + HR have been validated on live data, so only their titles state
+> findings. Rewrite the others as findings after the first mockup run against a deployed model.
 
 > [!NOTE]
 > `Deploy-Ontology.ps1` runs this chain automatically (Step 11) for any domain that has a

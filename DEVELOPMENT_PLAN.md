@@ -268,7 +268,8 @@ gantt
 | 📐 | Non-blocking layout lint (grid, margins, KPI row, page density, generic titles) | ✅ |
 | 🤖 | `Report Layout` + `Report Mockup` Copilot agents with mutual handoffs | ✅ |
 | 📄 | Specs shipped for Oil & Gas Refinery and Enterprise Finance + HR | ✅ |
-| 📊 | Specs for the remaining six domains | ⏳ Backlog |
+| 📊 | Specs for Healthcare, IT Asset, Manufacturing Plant, Smart Building and Wind Turbine | ✅ |
+| ☀️ | Spec for Solar Farm | ⏳ Blocked: the semantic model has 3 tables and 4 measures for 26 CSVs |
 
 ---
 

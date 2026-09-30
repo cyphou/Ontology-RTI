@@ -1,0 +1,43 @@
+{
+  "reportName": "Healthcare Operations Report",
+  "domain": "Healthcare",
+  "$comment": "Theme and logo inherited from deploy/domain-branding.json. Titles are written as questions because this domain is not deployed yet: rewrite them as findings once New-ReportMockup.ps1 has run against a live model.",
+  "pages": [
+    {
+      "name": "Capacity & staffing",
+      "storyNote": "How much bed capacity exists, where it sits, and who staffs it.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/healthcare.png", "plain": true },
+
+        { "type": "card", "title": "Total bed capacity", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimhospital[Total Bed Capacity]"], "altText": "Total licensed beds across every hospital in the current filter." },
+        { "type": "card", "title": "Patients", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["dimpatient[Patient Count]"], "altText": "Number of patients currently recorded." },
+        { "type": "card", "title": "Physicians", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["dimphysician[Physician Count]"], "altText": "Number of physicians on staff." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Capacity at a glance", "fontSize": 13, "subtext": "Beds are the constraint that everything else is measured against. Compare ward mix and department mix before reading clinical activity.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which ward types hold the beds", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimward[WardType]", "measures": ["dimward[Total Ward Beds]"], "sort": "desc", "altText": "Bed count for each ward type, sorted from largest to smallest." },
+        { "type": "bar", "title": "How beds are spread across department types", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimdepartment[DepartmentType]", "measures": ["dimdepartment[Total Department Beds]"], "sort": "desc", "altText": "Bed count for each department type, sorted from largest to smallest." },
+
+        { "type": "bar", "title": "Which hospitals carry the capacity", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimhospital[HospitalName]", "measures": ["dimhospital[Total Bed Capacity]"], "sort": "desc", "altText": "Licensed bed capacity for each hospital, sorted from largest to smallest." },
+        { "type": "table", "title": "Department detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimdepartment[DepartmentName]", "dimdepartment[DepartmentType]"], "measures": ["dimdepartment[Total Department Beds]", "dimward[Ward Count]"], "sort": "desc", "fontSize": 9, "altText": "Bed count and ward count for every department." }
+      ]
+    },
+    {
+      "name": "Clinical activity",
+      "storyNote": "What the wards actually do: procedures, lab work and medication administration.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/healthcare.png", "plain": true },
+
+        { "type": "card", "title": "Procedures", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["factprocedure[Procedure Count]"], "altText": "Number of recorded procedures." },
+        { "type": "card", "title": "Lab results", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factlabresult[Lab Result Count]"], "altText": "Number of recorded lab results." },
+        { "type": "card", "title": "Medication administrations", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factmedicationadmin[Administration Count]"], "altText": "Number of medication administration events." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Activity, not outcomes", "fontSize": 13, "subtext": "These are volume counts. They say what was done, not how well: read them against bed capacity rather than as quality measures.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which medication categories are administered most", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimmedication[Category]", "measures": ["factmedicationadmin[Administration Count]"], "sort": "desc", "altText": "Medication administration count by medication category, sorted from most to least." },
+        { "type": "bar", "title": "Where patients are admitted", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimward[WardType]", "measures": ["dimpatient[Patient Count]"], "sort": "desc", "altText": "Patient count by ward type, sorted from most to least." },
+
+        { "type": "bar", "title": "Which device types are deployed", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimmedicaldevice[DeviceType]", "measures": ["dimmedicaldevice[Device Count]"], "sort": "desc", "altText": "Medical device count by device type, sorted from most to least." },
+        { "type": "bar", "title": "Procedure duration across physicians", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimphysician[PhysicianName]", "measures": ["factprocedure[Avg Procedure Duration]"], "sort": "desc", "altText": "Average procedure duration for each physician, sorted from longest to shortest." }
+      ]
+    }
+  ]
+}

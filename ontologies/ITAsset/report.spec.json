@@ -1,0 +1,43 @@
+{
+  "reportName": "IT Asset Operations Report",
+  "domain": "ITAsset",
+  "$comment": "Theme and logo inherited from deploy/domain-branding.json. Titles are written as questions because this domain is not deployed yet: rewrite them as findings once New-ReportMockup.ps1 has run against a live model.",
+  "pages": [
+    {
+      "name": "Infrastructure",
+      "storyNote": "What the estate is made of: data centers, racks, servers and the virtual machines on top.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/it-asset.png", "plain": true },
+
+        { "type": "card", "title": "Servers", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimserver[Server Count]"], "altText": "Number of physical servers in the estate." },
+        { "type": "card", "title": "CPU cores", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["dimserver[Total CPU Cores]"], "altText": "Total physical CPU cores across all servers." },
+        { "type": "card", "title": "Virtual machines", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["dimvirtualmachine[VM Count]"], "altText": "Number of virtual machines running on the estate." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Estate shape", "fontSize": 13, "subtext": "Read capacity before incidents: a data center carrying a disproportionate share of servers is also carrying the risk.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which data centers carry the servers", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimdatacenter[DataCenterName]", "measures": ["dimserver[Server Count]"], "sort": "desc", "altText": "Server count per data center, sorted from most to least." },
+        { "type": "bar", "title": "Which server types hold the memory", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimserver[ServerType]", "measures": ["dimserver[Total Memory GB]"], "sort": "desc", "altText": "Total memory in gigabytes for each server type, sorted from most to least." },
+
+        { "type": "bar", "title": "Power capacity across data centers", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimdatacenter[DataCenterName]", "measures": ["dimdatacenter[Total Power Capacity KW]"], "sort": "desc", "altText": "Installed power capacity in kilowatts per data center." },
+        { "type": "table", "title": "Data center detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimdatacenter[DataCenterName]", "dimdatacenter[TierLevel]"], "measures": ["dimrack[Rack Count]", "dimserver[Total Storage TB]"], "sort": "desc", "fontSize": 9, "altText": "Rack count and total storage for every data center, with its tier level." }
+      ]
+    },
+    {
+      "name": "Incidents & licences",
+      "storyNote": "Where the estate breaks, how long it takes to recover, and what the software costs.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/it-asset.png", "plain": true },
+
+        { "type": "card", "title": "Open incidents", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["factincident[Open Incident Count]"], "altText": "Incidents that are still open." },
+        { "type": "card", "title": "Average resolution (hours)", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["factincident[Avg Resolution Hours]"], "altText": "Mean hours between an incident being raised and resolved." },
+        { "type": "card", "title": "Critical alerts", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Critical Alert Count]"], "altText": "Number of alerts raised at critical severity." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Cost follows failure", "fontSize": 13, "subtext": "Compare where incidents land with where licence spend goes. The two rarely line up, and the gap is where the budget argument is.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which server types generate the incidents", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimserver[ServerType]", "measures": ["factincident[Incident Count]"], "sort": "desc", "altText": "Incident count by server type, sorted from most to least." },
+        { "type": "bar", "title": "Where licence spend concentrates", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimapplication[AppType]", "measures": ["dimlicense[Total License Cost]"], "sort": "desc", "altText": "Total licence cost by application type, sorted from most to least expensive." },
+
+        { "type": "bar", "title": "Who reports the incidents", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimuser[AccessLevel]", "measures": ["factincident[Incident Count]"], "sort": "desc", "altText": "Incident count by the access level of the reporting user." },
+        { "type": "bar", "title": "How much of each licence type is actually used", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimlicense[LicenseType]", "measures": ["dimlicense[License Utilization]"], "sort": "desc", "altText": "Share of purchased licences actually in use, for each licence type." }
+      ]
+    }
+  ]
+}

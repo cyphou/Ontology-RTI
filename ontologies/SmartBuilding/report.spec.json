@@ -1,0 +1,43 @@
+{
+  "reportName": "Smart Building Report",
+  "domain": "SmartBuilding",
+  "$comment": "Theme and logo inherited from deploy/domain-branding.json. Titles are written as questions because this domain is not deployed yet: rewrite them as findings once New-ReportMockup.ps1 has run against a live model.",
+  "pages": [
+    {
+      "name": "Portfolio",
+      "storyNote": "How much space the portfolio holds, how it is divided, and how many people it serves.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/smart-building.png", "plain": true },
+
+        { "type": "card", "title": "Total area (sq ft)", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimbuilding[Total Building Area SqFt]"], "precision": 2, "altText": "Combined floor area of every building in the portfolio." },
+        { "type": "card", "title": "Zones", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["dimzone[Zone Count]"], "altText": "Number of distinct zones across all floors." },
+        { "type": "card", "title": "Occupants", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["dimoccupant[Occupant Count]"], "altText": "Number of registered occupants." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Space before systems", "fontSize": 13, "subtext": "Area and zone mix set the baseline. HVAC and lighting load only mean something once you know how much space they serve.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which buildings hold the floor area", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimbuilding[BuildingName]", "measures": ["dimbuilding[Total Building Area SqFt]"], "sort": "desc", "altText": "Floor area for each building, sorted from largest to smallest." },
+        { "type": "bar", "title": "Where the occupancy capacity sits", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimzone[ZoneType]", "measures": ["dimzone[Total Max Occupancy]"], "sort": "desc", "altText": "Maximum occupancy for each zone type, sorted from largest to smallest." },
+
+        { "type": "bar", "title": "Which building types hold the most area", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimbuilding[BuildingType]", "measures": ["dimbuilding[Total Building Area SqFt]"], "sort": "desc", "altText": "Floor area by building type, sorted from largest to smallest." },
+        { "type": "table", "title": "Building detail", "x": 648, "y": 500, "w": 616, "h": 204, "columns": ["dimbuilding[BuildingName]", "dimbuilding[BuildingType]"], "measures": ["dimfloor[Floor Count]", "dimzone[Zone Count]"], "sort": "desc", "fontSize": 9, "altText": "Floor and zone count for every building, with its type." }
+      ]
+    },
+    {
+      "name": "Systems & alerts",
+      "storyNote": "What the building systems draw, and where the alerts and tickets come from.",
+      "visuals": [
+        { "type": "logo", "x": 16, "y": 16, "w": 228, "h": 60, "image": "assets/logos/smart-building.png", "plain": true },
+
+        { "type": "card", "title": "HVAC capacity (BTU)", "x": 16, "y": 92, "w": 300, "h": 128, "measures": ["dimhvacsystem[Total HVAC Capacity BTU]"], "precision": 2, "altText": "Combined rated capacity of every HVAC system." },
+        { "type": "card", "title": "Lighting load (W)", "x": 332, "y": 92, "w": 300, "h": 128, "measures": ["dimlightingsystem[Total Wattage W]"], "precision": 2, "altText": "Combined rated wattage of every lighting system." },
+        { "type": "card", "title": "Critical alerts", "x": 648, "y": 92, "w": 300, "h": 128, "measures": ["factalert[Critical Alert Count]"], "altText": "Number of alerts raised at critical severity." },
+        { "type": "textbox", "x": 964, "y": 92, "w": 300, "h": 128, "background": "#FFFFFF", "text": "Load and failure", "fontSize": 13, "subtext": "Systems with the largest installed load are not always the ones raising alerts. Where the two diverge is worth a site visit.", "subFontSize": 9 },
+
+        { "type": "bar", "title": "Which HVAC types carry the load", "x": 16, "y": 236, "w": 616, "h": 248, "category": "dimhvacsystem[HVACType]", "measures": ["dimhvacsystem[Total HVAC Capacity BTU]"], "sort": "desc", "altText": "Rated HVAC capacity by system type, sorted from largest to smallest." },
+        { "type": "bar", "title": "Which sensor types raise the alerts", "x": 648, "y": 236, "w": 616, "h": 248, "category": "dimsensor[SensorType]", "measures": ["factalert[Alert Count]"], "sort": "desc", "altText": "Alert count by sensor type, sorted from most to least." },
+
+        { "type": "bar", "title": "Where lighting wattage concentrates", "x": 16, "y": 500, "w": 616, "h": 204, "category": "dimlightingsystem[LightingType]", "measures": ["dimlightingsystem[Total Wattage W]"], "sort": "desc", "altText": "Rated wattage by lighting system type, sorted from largest to smallest." },
+        { "type": "bar", "title": "Who raises the maintenance tickets", "x": 648, "y": 500, "w": 616, "h": 204, "category": "dimoccupant[AccessLevel]", "measures": ["factmaintenanceticket[Ticket Count]"], "sort": "desc", "altText": "Maintenance ticket count by the access level of the assigned occupant." }
+      ]
+    }
+  ]
+}
